@@ -1,8 +1,8 @@
 # torchdyn
-A PyTorch based library for all things neural differential equations 
+A PyTorch based library for all things neural differential equations. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 <p align="center"> 
-<img src="test/figs/logo.png" width="150" height="150">
+<img src="media/logo.png" width="150" height="150">
 </p>
 
 #### Installation
@@ -22,6 +22,10 @@ Central to the `torchdyn` approach are continuous neural networks, where *width*
 By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately contribute to turning neural differential equations into an effective tool for control, system identification and common machine learning tasks.
 
 `torchdyn` is developed and maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
+
+<p align="center"> 
+<img src="media/GalNODE.gif" width="400" height="400">
+</p>
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[6](https://www.dgl.ai/)].
@@ -78,28 +82,14 @@ In particular, we are missing the following, which will be added, in order.
 
 ### Contribute
  `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. 
- 
-### Folder structure
-```
-├── tutorials
-├── torchdyn
-│   ├── check.py    # compatibility checks for defunc variants			
-│   ├── learner.py    # learner template (pytorch-lightning)
-│   ├── adjoint.py    # adjoint class template
-│   ├── utils.py    # utility functions
-|   ├── data_utils
-│   |	├── dataset.py    # toy example data: classification, time series
-│   |	├── dataloader.py
-│   ├── models
-│   |	├── defunc.py
-│   |	├── galerkin.py
-│   |	├── neuralde.py
-├── .gitignore
-├── LICENSE
-├── README.md
-├── setup.py
-```
 
 #### Cite us
 If you find `torchdyn` valuable for your research or applied projects:
-`cit. here`
+`
+@article{massaroli2020stable,
+  title={Stable Neural Flows},
+  author={Massaroli, Stefano and Poli, Michael and Bin, Michelangelo and Park, Jinkyoo and Yamashita, Atsushi and Asama, Hajime},
+  journal={arXiv preprint arXiv:2003.08063},
+  year={2020}
+}
+`
