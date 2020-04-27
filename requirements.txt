@@ -1,3 +1,10 @@
 sphinx>=1.4
 ipykernel
 nbsphinx
+pdb
+pytorch_lightning
+torch
+torchdiffeq
+numpy
+scipy
+matplotlib
