@@ -85,11 +85,11 @@ In particular, we are missing the following, which will be added, in order.
 
 #### Cite us
 If you find `torchdyn` valuable for your research or applied projects:
-`
+```
 @article{massaroli2020stable,
   title={Stable Neural Flows},
   author={Massaroli, Stefano and Poli, Michael and Bin, Michelangelo and Park, Jinkyoo and Yamashita, Atsushi and Asama, Hajime},
   journal={arXiv preprint arXiv:2003.08063},
   year={2020}
 }
-`
+```
