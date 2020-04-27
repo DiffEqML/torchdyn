@@ -30,10 +30,4 @@ Learner
 
 Plotting Functions 
 -------------------
-(The API might be subjected to substantial changes in future releases)
-
-.. autofunction:: plot_2d_boundary
-
-.. autofunction:: plot_2d_flows
-
-.. autofunction:: plot_traj_vf_1D
+This API is experimental and might be subjected to substantial changes. It will be made available in the next release.
