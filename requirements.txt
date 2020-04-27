@@ -8,3 +8,4 @@ torchdiffeq
 numpy
 scipy
 matplotlib
+dgl
