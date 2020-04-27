@@ -5,7 +5,11 @@ End-to-end Pytorch suite for continuous neural architectures featuring several m
 
 .. code-block:: bash
 
-	$ pip install git+https://github.com/diffeqml/torchdyn.git
+  git clone https://github.com/DiffEqML/torchdyn.git
+  
+  cd torchdyn
+ 
+  python setup.py install
 
 Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
 
