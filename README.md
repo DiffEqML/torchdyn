@@ -12,6 +12,9 @@ A PyTorch based library for all things neural differential equations. Maintained
 
 `python setup.py install`
 
+#### Documentation 
+https://torchdyn.readthedocs.io/
+
 #### Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with versions dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)],  to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)])
 
