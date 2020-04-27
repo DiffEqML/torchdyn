@@ -32,12 +32,6 @@ Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
    tutorials/06_hamiltonian_nn
    tutorials/07_graph_neural_de
 
-.. tutorials/05_integral_adjoint
-..notebooks/quickstart
-..notebooks/torchdyn_cookbook
-..notebooks/classification
-.. notebooks/regression
-
 .. toctree::
    :maxdepth: 1
    :caption: API documentation
