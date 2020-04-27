@@ -1,7 +1,7 @@
 TorchDyn reference documentation
 ====================================
 
-End-to-end Pytorch suite for continuous neural architectures featuring several models, training methods and visualization tools for research, intustry and amateurs.
+End-to-end Pytorch suite for continuous neural architectures featuring several models, training methods and visualization tools for research, industry and amateurs.
 
 .. code-block:: bash
 
