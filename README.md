@@ -24,7 +24,9 @@ Central to the `torchdyn` approach are continuous neural networks, where *width*
 
 By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately contribute to turning neural differential equations into an effective tool for control, system identification and common machine learning tasks.
 
-`torchdyn` is developed and maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
+The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefano Massaroli, has been supported throughout by their *almae matres*. In particular, by  **Prof. Jinkyoo Park** (KAIST), **Prof. Atsushi Yamashita** (The University of Tokyo) and **Prof. Hajime Asama** (The University of Tokyo).
+
+`torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
 
 <p align="center"> 
 <img src="media/GalNODE.gif" width="400" height="400">
