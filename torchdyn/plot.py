@@ -201,5 +201,17 @@ def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
     ax.set_ylabel(r"$h_1$")
     ax.set_title("Learned Vector Field")
     
-    
-
+def plot_3D_dataset(X, yn):
+    colors = ['orange', 'blue'] 
+    fig = plt.figure(figsize=(4,4))
+    ax = Axes3D(fig)
+    for i in range(len(X)):
+        ax.scatter(X[:,0],X[:,1],X[:,2], color=colors[yn[i].int()], alpha = .1)
+    ax.set_xlabel(r"$h_0$")
+    ax.set_ylabel(r"$h_1$")
+    ax.set_zlabel(r"$h_2$")
+    ax.set_title("Data Points")
+    ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+    ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+  
