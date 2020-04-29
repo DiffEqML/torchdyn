@@ -14,7 +14,7 @@ def NOT_ALLOWED_ARG(st:dict):
     ## non supported incompatibilities ##
     conflict_type = 'not_supported'
     
-    if not st['backprop_style']=='AD' and st['type']=='stable':
+    if not st['backprop_style']=='autograd' and st['type']=='stable':
         not_allowed.append(
             conflict(
                 conflict_type, 
@@ -26,7 +26,7 @@ def NOT_ALLOWED_ARG(st:dict):
     ## general API misuses ##
     conflict_type = 'general'
     
-    # qui aggiungere altri types nel caso 
+    # to add more conflicts
     if st['type'] not in ['classic', 'stable']:
         not_allowed.append(
             conflict(
@@ -35,7 +35,7 @@ def NOT_ALLOWED_ARG(st:dict):
                 [st['type']]
             )
         )
-    if st['backprop_style'] not in ['AD', 'adjoint', 'integral_adjoint']:
+    if st['backprop_style'] not in ['autograd', 'adjoint', 'integral_adjoint']:
         not_allowed.append(
             conflict(
                 conflict_type, 
@@ -43,14 +43,17 @@ def NOT_ALLOWED_ARG(st:dict):
                 [st['backprop_style']]
             )
         )    
-    if st['s_start']==st['s_end']:
-        not_allowed.append(
-            conflict(
-                conflict_type, 
-                'initial depth and final depth',
-                [st['s_start'], st['s_end']]
-            )
-        )
+        
+# DEPRECATED: new s_span API
+#     if st['s_start']==st['s_end']:
+#         not_allowed.append(
+#             conflict(
+#                 conflict_type, 
+#                 'initial depth and final depth',
+#                 [st['s_start'], st['s_end']]
+#             )
+#         )
+
     if st['atol']<=0:
         not_allowed.append(
             conflict(
