@@ -33,6 +33,7 @@ Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
    :caption: Advanced Tutorials
 
    tutorials/04_augmentation_strategies   
+   tutorials/05_integral_adjoint
    tutorials/06_hamiltonian_nn
    tutorials/07_graph_neural_de
 
