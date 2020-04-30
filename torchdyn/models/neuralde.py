@@ -62,7 +62,7 @@ class NeuralDE(pl.LightningModule):
         # zero augmentation 
         if self.st['augment']: self._augment(x)           
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
-                                 rtol=st['rtol'], atol=st['atol'], method=st['solver'])        
+                                 rtol=self.st['rtol'], atol=self.st['atol'], method=self.st['solver'])        
         return sol
     
     # TO DO
