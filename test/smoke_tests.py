@@ -4,6 +4,7 @@ import torch.utils.data as data
 import pytorch_lightning as pl
 import sys
 
+
 def train_traj_neural_de():
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
@@ -38,25 +39,20 @@ def train_traj_neural_de():
 
         def train_dataloader(self):
             return trainloader
-        
-    # model settings
+       
     settings = {'type':'classic', 'controlled':False, 'solver':'dopri5'}
 
-    # vector field parametrized by a NN
     f = DEFunc(nn.Sequential(
             nn.Linear(2, 64),
             nn.Tanh(), 
             nn.Linear(64, 2)))
 
-    # neural ODE
     model = NeuralDE(f, settings).to(device)
     
-    # train the neural ODE
     learn = Learner(model)
     trainer = pl.Trainer(min_nb_epochs=10, max_nb_epochs=30)
     trainer.fit(learn)
     
-    # Evaluate the data trajectories
     s_span = torch.linspace(0,1,100)
     trajectory = model.trajectory(X_train, s_span).detach().cpu()
     print("Test done")
