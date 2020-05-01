@@ -39,7 +39,7 @@ def train_traj_neural_de():
 
         def train_dataloader(self):
             return trainloader
-       
+        
     settings = {'type':'classic', 'controlled':False, 'solver':'dopri5'}
 
     f = DEFunc(nn.Sequential(
