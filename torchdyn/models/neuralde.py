@@ -64,7 +64,6 @@ class NeuralDE(pl.LightningModule):
                                  rtol=self.st['rtol'], atol=self.st['atol'], method=self.st['solver'])        
         return sol
     
-    # TO DO
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         assert self.adjoint, 'Propagating backward dynamics only possible with Adjoint systems'
         # register hook
