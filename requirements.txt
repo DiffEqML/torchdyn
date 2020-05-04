@@ -7,4 +7,3 @@ matplotlib
 torch
 torchdiffeq
 pytorch_lightning
-dgl-cu100 
