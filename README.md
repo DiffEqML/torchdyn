@@ -42,7 +42,7 @@ Our aim with  `torchdyn` aims is to provide a unified, flexible API  to the most
 * Graph Neural ODEs [[9](https://arxiv.org/abs/1911.07532)]
 * Hamiltonian Neural Networks [[10](https://arxiv.org/abs/1906.01563)]
 
-Depth--variant versions, 
+Depth-variant versions, 
 * ANODEv2 [[11](https://arxiv.org/abs/1906.04596)]
 * Galerkin Neural ODE [[12](https://arxiv.org/abs/2002.08071)]
 
