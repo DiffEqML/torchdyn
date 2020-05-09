@@ -28,11 +28,8 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 
 `torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
 
-![](media/GalNODE.gif)
-.center[A figure caption.]
 <p align="center"> 
 <img src="media/GalNODE.gif" width="400" height="400">
-<em>Galerkin Neural ODE (parameter-varying model) separate the nested circles dataset</em>
 </p>
 
 #### Dependencies
