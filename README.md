@@ -30,6 +30,7 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 
 <p align="center"> 
 <img src="media/GalNODE.gif" width="400" height="400">
+<em>Galerkin Neural ODE (parameter-varying model) separate the nested circles dataset</em>
 </p>
 
 #### Dependencies
