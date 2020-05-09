@@ -32,14 +32,6 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 <img src="media/GalNODE.gif" width="400" height="400">
 </p>
 
-<figure>
-    <img src="media/GalNODE.gif" width="400" height="400" />
-    <font size="2">
-    <figcaption> Galerkin neural ODEs (parameter-varying model) </a> 
-    </figcaption>
-    </font>
-</figure>
-
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[6](https://www.dgl.ai/)].
 
