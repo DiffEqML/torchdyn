@@ -32,10 +32,6 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 <img src="media/GalNODE.gif" width="400" height="400">
 </p>
 
-<p align="center"> 
-<img src="media/GalNODE.gif" width="400" height="400">
-</p>
-
 <figure>
     <img src="media/GalNODE.gif" width="400" height="400" />
     <font size="2">
