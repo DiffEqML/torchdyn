@@ -1,6 +1,7 @@
 """
 Conflict manager for non-compatible Neural DE variants
 """
+#ALLOWED = ['autograd', 'adjoint']
 
 class conflict:
     def __init__(self, c_type, c_settings, c_value):
