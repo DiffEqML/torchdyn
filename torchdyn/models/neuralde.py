@@ -98,7 +98,7 @@ class NeuralDE(pl.LightningModule):
     def _integral_autograd_defunc(self, s, x):
         x = x[:,:-1]
         dxds = self.defunc(s, x)
-        dξds = self.settings['cost'](s, x).repeat(x.shape[0]).unsqueeze(1)
+        dξds = self.settings['cost'](s, x, dxds).repeat(x.shape[0]).unsqueeze(1)
         return torch.cat([dxds,dξds],1)
             
     def __repr__(self):

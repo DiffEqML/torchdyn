@@ -14,12 +14,14 @@ class Adjoint(nn.Module):
 
     :param integral: `True` if an *integral cost* (see **link alla pagina degli adj**) is specified
     :type integral: bool
+    :param terminal: `True` if a *terminal cost* (see **link alla pagina degli adj**) is specified
+    :type integral: bool
     :param return_traj: `True` if we want to return the whole adjoint trajectory and not only the final point (loss gradient)
     :type return_traj: bool
     """
-    def __init__(self, integral:bool=False, return_traj:bool=False):
+    def __init__(self, integral:bool=False, terminal:bool=True, return_traj:bool=False):
         super().__init__()
-        self.integral, self.return_traj = integral, return_traj
+        self.integral, self.terminal, self.return_traj = integral, terminal, return_traj
         self.autograd_func = self._define_autograd_adjoint()
 
     def adjoint_dynamics(self, s, adjoint_state):
@@ -31,7 +33,7 @@ class Adjoint(nn.Module):
         :type adjoint_state: tuple of tensors
         """
         h, λ, μ, s_adj = adjoint_state[0:4]
-        with torch.set_grad_enabled(True):
+        with torch.enable_grad():
             s = s.to(h.device).requires_grad_(True)
             h = h.requires_grad_(True) #.detach()
             f = self.func(s, h)
@@ -39,19 +41,21 @@ class Adjoint(nn.Module):
             # dμds is a tuple! of all self.f_params groups
             dμds = torch.autograd.grad(f, self.f_params, -λ, allow_unused=True, retain_graph=True)
             if self.integral:
-                g = self.cost(s, h)
-                dgdh = torch.autograd.grad(g.sum(), h, allow_unused=True, retain_graph=True)[0]
+                with torch.enable_grad():
+                    g = self.cost(s, h, f)
+                    dgdh = torch.autograd.grad(g.mean(), h, allow_unused=True, retain_graph=True)[0]
                 dλds = dλds - dgdh   
         ds_adjds = torch.tensor(0.).to(self.s_span)
-        dμds = torch.cat([el.flatten() for el in dμds]).to(dλds)
+        dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(dλds)
         return (f, dλds, dμds, ds_adjds)
   
     def _init_adjoint_state(self, sol, *grad_output):
         # check grad_output
-        if self.integral: 
-            λ0 = torch.zeros_like(grad_output[-1][0])
-        else:
+        if self.terminal:
             λ0 = grad_output[-1][0]
+        else:
+            λ0 = torch.zeros_like(grad_output[-1][0])
+
         s_adj0 = torch.tensor(0.).to(self.s_span)
         μ0 = torch.zeros_like(self.flat_params)
         
@@ -71,10 +75,9 @@ class Adjoint(nn.Module):
             def backward(ctx, *grad_output):
                 s, flat_params, sol = ctx.saved_tensors
                 self.f_params = tuple(self.func.parameters())
-                with torch.no_grad():                       
-                    adj0 = self._init_adjoint_state(sol, grad_output) 
-                    adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0), 
-                                   rtol=self.rtol, atol=self.atol, method=self.method, options=self.options)
+                adj0 = self._init_adjoint_state(sol, grad_output) 
+                adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0), 
+                               rtol=self.rtol, atol=self.atol, method=self.method, options=self.options)
                 λ = adj_sol[1]
                 μ = adj_sol[2]
                 return (λ, μ, None) 
