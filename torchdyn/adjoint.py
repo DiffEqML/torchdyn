@@ -41,9 +41,8 @@ class Adjoint(nn.Module):
             # dμds is a tuple! of all self.f_params groups
             dμds = torch.autograd.grad(f, self.f_params, -λ, allow_unused=True, retain_graph=True)
             if self.integral:
-                with torch.enable_grad():
-                    g = self.cost(s, h, f)
-                    dgdh = torch.autograd.grad(g.mean(), h, allow_unused=True, retain_graph=True)[0]
+                g = self.cost(s, h, f)
+                dgdh = torch.autograd.grad(g.mean(), h, allow_unused=True, retain_graph=True)[0]
                 dλds = dλds - dgdh   
         ds_adjds = torch.tensor(0.).to(self.s_span)
         dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(dλds)
@@ -75,9 +74,10 @@ class Adjoint(nn.Module):
             def backward(ctx, *grad_output):
                 s, flat_params, sol = ctx.saved_tensors
                 self.f_params = tuple(self.func.parameters())
-                adj0 = self._init_adjoint_state(sol, grad_output) 
-                adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0), 
-                               rtol=self.rtol, atol=self.atol, method=self.method, options=self.options)
+                with torch.no_grad():
+                    adj0 = self._init_adjoint_state(sol, grad_output) 
+                    adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0), 
+                                   rtol=self.rtol, atol=self.atol, method=self.method, options=self.options)
                 λ = adj_sol[1]
                 μ = adj_sol[2]
                 return (λ, μ, None) 
