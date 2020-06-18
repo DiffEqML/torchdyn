@@ -13,7 +13,7 @@ class DEFuncTemplate(nn.Module):
     """
     def __init__(self, model, order, func_type):
         super().__init__()  
-        self.m, self.nfe = model, 0.
+        self.m, self.nfe, self.controlled = model, 0., False
         self.func_type, self.order = func_type, order
         
     def forward(self, s, x):
@@ -27,10 +27,11 @@ class DEFuncTemplate(nn.Module):
         return x
         
     def stable_forward(self, s, x):
-        x = torch.autograd.Variable(x, requires_grad=True)
-        energy = self.m(x)
-        grad = -torch.autograd.grad(energy.sum(), x, create_graph=True)[0]
-        if self.controlled: grad = grad[:, :x.size(1)//2]
+        with torch.set_grad_enabled(True):
+            x = torch.autograd.Variable(x, requires_grad=True)
+            energy = self.m(x)**2
+            grad = -torch.autograd.grad(energy.sum(1), x, create_graph=True)[0]
+            if self.controlled: grad = grad[:, :x.size(1)//2]
         return grad
     
     def horder_forward(self, s, x):
@@ -60,7 +61,6 @@ class DEFunc(DEFuncTemplate):
         for idx in idx_to_set:
             if int(idx) > -1: self.m[int(idx)]._set_s(s)
         return super().forward(s, x)
-
 
 class Augmenter(nn.Module):
     """Augmentation class. Can handle several types of augmentation strategies for Neural DEs.

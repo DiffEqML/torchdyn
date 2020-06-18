@@ -13,10 +13,10 @@ defaults = {'type':'classic', 'controlled':False, 'augment':False, # model
 class NeuralDE(pl.LightningModule):
     """General Neural DE template
 
-    :param integral: `True` if an *integral cost* (see **link alla pagina degli adj**) is specified
-    :type integral: bool
-    :param return_traj: `True` if we want to return the whole adjoint trajectory and not only the final point (loss gradient)
-    :type return_traj: bool
+    :param func: function parametrizing the vector field.
+    :type func: nn.Module
+    :param settings: specifies parameters of the Neural DE. 
+    :type settings: dict
     """
     def __init__(self, func:nn.Module, settings:dict):
         super().__init__()
@@ -51,21 +51,19 @@ class NeuralDE(pl.LightningModule):
         return sol
 
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        """The adjoint is basically the adjoint
+        """Returns a data-flow trajectory at `s_span` points
 
-        :param integral: `True` if an *integral cost* (see **link alla pagina degli adj**) is specified
-        :type integral: bool
-        :param return_traj: `True` if we want to return the whole adjoint trajectory and not only the final point (loss gradient)
-        :type return_traj: bool
+        :param x: input data
+        :type x: torch.Tensor
+        :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
+                       between 0 and 1
+        :type s_span: torch.Tensor
         """
-        if self.defunc.controlled: self.defunc.u = x      
-        # zero augmentation 
-        if self.st['augment']: self._augment(x)           
+        if self.defunc.controlled: self.defunc.u = x             
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.st['rtol'], atol=self.st['atol'], method=self.st['solver'])        
         return sol
     
-    # TO DO
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         assert self.adjoint, 'Propagating backward dynamics only possible with Adjoint systems'
         # register hook
@@ -91,12 +89,12 @@ class NeuralDE(pl.LightningModule):
         assert self.st['cost'], 'Cost nn.Module needs to be specified for integral adjoint'
         ξ0 = 0.*torch.ones(1).to(x.device)
         ξ0 = ξ0.repeat(x.shape[0]).unsqueeze(1)
-        x = torch.cat([x,ξ0],1)
+        x = torch.cat([x,ξ0], 1)
         return torchdiffeq.odeint(self._integral_autograd_defunc, x, self.s_span,
                                 rtol=self.st['rtol'], atol=self.st['atol'],method=self.st['solver'])
 
     def _integral_autograd_defunc(self, s, x):
-        x = x[:,:-1]
+        x = x[:, :-1]
         dxds = self.defunc(s, x)
         dξds = self.settings['cost'](s, x, dxds).repeat(x.shape[0]).unsqueeze(1)
         return torch.cat([dxds,dξds],1)
