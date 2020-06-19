@@ -42,7 +42,7 @@ class Adjoint(nn.Module):
             dμds = torch.autograd.grad(f, self.f_params, -λ, allow_unused=True, retain_graph=True)
             if self.integral:
                 g = self.cost(s, h, f)
-                dgdh = torch.autograd.grad(g.mean(), h, allow_unused=True, retain_graph=True)[0]
+                dgdh = torch.autograd.grad(g.sum(), h, allow_unused=True, retain_graph=True)[0]
                 dλds = dλds - dgdh   
         ds_adjds = torch.tensor(0.).to(self.s_span)
         dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(dλds)
