@@ -38,13 +38,26 @@ class DepthCat(nn.Module):
 
     def __init__(self, idx_cat=1):
         super().__init__()
-        self.idx_cat = idx_cat
-
-    def _set_s(self, s):
-        self.s = s
+        self.idx_cat = idx_cat ; self.s = None
 
     def forward(self, x):
         s_shape = list(x.shape);
         s_shape[self.idx_cat] = 1
         self.s = self.s * torch.ones(s_shape).to(x)
         return torch.cat([x, self.s], self.idx_cat).to(x)
+
+    
+class DataControl(nn.Module):
+    """Depth variable `s` concatenation module. Allows for easy concatenation of `s` each call of the numerical solver, at specified layers of the DEFunc.
+
+    :param idx_cat: index of the data dimension to concatenate `s` to.
+    :type idx_cat: int
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.u = None
+
+    def forward(self, x):
+        return torch.cat([x, self.u], 1).to(x)
+    

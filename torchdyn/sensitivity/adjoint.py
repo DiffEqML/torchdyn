@@ -13,7 +13,7 @@ def flatten(iterable):
 class Adjoint(nn.Module):
     """Adjoint class template.
 
-    :param integral: `True` if an *integral cost* (see **link alla pagina degli adj**) is specified
+    :param integral: `True` if an *integral cost* (see **link to adj page**) is specified
     :type integral: bool
     """
     def __init__(self, intloss = None):
@@ -43,9 +43,8 @@ class Adjoint(nn.Module):
                 dλds = dλds - dgdh   
         ds_adjds = torch.tensor(0.).to(self.s_span)
         
-        # `None` safety check necessary for cert. applicaitons e.g. Stable with bias on out layer
-        dμds = [el.flatten() if not el is None else torch.zeros(1).to(dλds) for el in dμds ]
-        dμds = torch.cat(dμds).to(dλds)
+        # `None` safety check necessary for cert. applications e.g. Stable with bias on out layer
+        dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(dλds)
         
         return (f, dλds, dμds, ds_adjds)
   

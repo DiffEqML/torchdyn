@@ -16,17 +16,12 @@ class DEFunc(nn.Module):
         self.intloss, self.sensitivity = None, None
 
     def forward(self, s, x):
-        self.nfe += 1
-        # depth-concatenation routine preceded by data-control
-        # TO DO set Stable `depth-var`
-        if (not self.intloss is None) and self.sensitivity == 'autograd':
-            if self.controlled: x = torch.cat([x, self.u[:, 1:]], 1).to(x)
-        else:      
-            if self.controlled: x = torch.cat([x, self.u], 1).to(x)
-        idx_to_set = [el[0] if 'Depth' in str(el[1]) else -1 for el in list(self.m.named_children())]
-        for idx in idx_to_set:
-            if int(idx) > -1: self.m[int(idx)]._set_s(s)
-                
+        self.nfe += 1        
+        # set `s` depth-variable to DepthCat modules
+        for _, module in self.m.named_modules(): 
+            if hasattr(module, 's'):
+                module.s = s
+
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]
@@ -36,6 +31,7 @@ class DEFunc(nn.Module):
             else: x_dyn = self.m(x_dyn)
             self.dxds = x_dyn
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
+        
         # regular forward
         else:   
             if self.order > 1: x = self.horder_forward(s, x)

@@ -25,20 +25,41 @@ class NeuralDE(pl.LightningModule):
                        intloss=None):
         super().__init__()
         #compat_check(defaults)
+        # TO DO: remove controlled from input args
         self.defunc, self.controlled, self.order = DEFunc(func, order, controlled), controlled, order
         self.sensitivity, self.s_span, self.solver = sensitivity, s_span, solver
         self.nfe = self.defunc.nfe
         self.rtol, self.atol = rtol, atol
         self.intloss = intloss
+        self.u = None # data-control
+        
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
            
     def forward(self, x:torch.Tensor):
+        self.s_span = self.s_span.to(x)
+                
+        # TO DO: check if DEFunc is input depth-var i.e existence of DepthCat as first nn.Module
+                
+        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+        if (not self.intloss is None) and self.sensitivity == 'autograd':
+            if self.controlled: u = x[:, 1:].detach() # if integral autograd loss, first dim is reserved to loss forward propagation
+        else: u = x.detach()
+        # TO DO: extend the above check to include CNFs, since first dim is used as div propagation there too
+
+                
+        # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchkinson's
+        # as well as data-control set to DataControl module
+        for name, module in self.defunc.named_modules():
+            if hasattr(module, 'trace_estimator'):
+                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))             
+            if hasattr(module, 'controlled'): 
+                module.controlled = self.controlled
+            if hasattr(module, 'u'): 
+                module.u = u
+                
         return self._odesolve(x)    
 
-    def _odesolve(self, x:torch.Tensor):
-        # TO DO: implement adaptive_depth check, insert here
-        if self.controlled: self.defunc.u = x
-        self.s_span = self.s_span.to(x)
+    def _odesolve(self, x:torch.Tensor):                          
         switcher = {
             'autograd': self._autograd,
             'adjoint': self._adjoint,
