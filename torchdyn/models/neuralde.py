@@ -75,7 +75,6 @@ class NeuralDE(pl.LightningModule):
                        between 0 and 1
         :type s_span: torch.Tensor
         """
-        if self.defunc.controlled: self.defunc.u = x
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
@@ -109,7 +108,7 @@ class NeuralDE(pl.LightningModule):
             
     def __repr__(self):
         npar = sum([p.numel() for p in self.defunc.parameters()])
-        return f"Neural DE:\n\t- data-controlled: {self.controlled}\n\t- order: {self.order}\
+        return f"Neural DE:\n\t- order: {self.order}\
         \n\t- solver: {self.solver}\n\t- integration interval: {self.s_span[0]} to {self.s_span[-1]}\
         \n\t- num_checkpoints: {len(self.s_span)}\
         \n\t- tolerances: relative {self.rtol} absolute {self.atol}\

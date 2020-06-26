@@ -53,7 +53,6 @@ master_doc = 'index'
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = [
     # Slow
-    'tutorials/05_integral_adjoint.ipynb',
     '_build', '**.ipynb_checkpoints',
     'tutorials/wip_tutorials', 
     'tutorials/lightning_logs',

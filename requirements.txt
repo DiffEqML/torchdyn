@@ -1,10 +1,9 @@
 sphinx>=1.4
 ipykernel
 nbsphinx
-pytorch_lightning
-torch
-torchdiffeq
 numpy
 scipy
 matplotlib
-dgl
+torch
+torchdiffeq
+pytorch_lightning
