@@ -4,7 +4,6 @@ import torchdyn; from torchdyn.models import *; from torchdyn.datasets import *
 import torch ; import torch.nn as nn
 from torch.distributions import *
 
-
 def test_vanilla():
     device = torch.device('cuda')
     net = nn.Sequential(
@@ -36,4 +35,20 @@ def test_hutch_vanilla():
     x = torch.randn((512, 2)).to(device)
     out = model(x)
     assert out.shape[1] == x.shape[1] + 1
+    
+def test_hutch_estimator_gauss_noise():
+    noise_dist = MultivariateNormal(torch.zeros(2), torch.eye(2)) 
+    x_in = torch.randn((64, 2), requires_grad=True)
+    m = nn.Sequential(nn.Linear(2, 32), nn.Softplus(), nn.Linear(32, 2))
+    x_out = m(x_in)
+    trJ = autograd_trace(x_out, x_in)
+    hutch_trJ = torch.zeros(trJ.shape)
+    for i in range(10000):
+        x_out = m(x_in)
+        eps = noise_dist.sample((64,))
+        hutch_trJ += hutch_trace(x_out, x_in, noise=eps)
+    assert (hutch_trJ / 10000 - trJ < 1e-2).all()
+
+
+    
     

@@ -9,7 +9,7 @@ def autograd_trace(x_out, x_in, **kwargs):
     return trJ
 
 def hutch_trace(x_out, x_in, noise=None, **kwargs):
-    """Hutchkinson's trace Jacobian estimator, O(1) call to autograd"""
+    """Hutchinson's trace Jacobian estimator, O(1) call to autograd"""
     jvp = torch.autograd.grad(x_out, x_in, noise, create_graph=True)[0]
     trJ = torch.einsum('bi,bi->b', jvp, noise)
     
@@ -18,15 +18,13 @@ def hutch_trace(x_out, x_in, noise=None, **kwargs):
 REQUIRES_NOISE = [hutch_trace]
 
 class CNF(nn.Module):
-    def __init__(self, net, trace_estimator=None, noise_dist=None, depth_var=False, controlled=False):
+    def __init__(self, net, trace_estimator=None, noise_dist=None):
         super().__init__()
         self.net = net
         self.trace_estimator = trace_estimator if trace_estimator is not None else autograd_trace;
         self.noise_dist, self.noise = noise_dist, None
         if self.trace_estimator in REQUIRES_NOISE:
             assert self.noise_dist is not None, 'This type of trace estimator requires specification of a noise distribution'
-            
-        self.controlled, self.depth_var = controlled, depth_var
             
     def forward(self, x):   
         with torch.set_grad_enabled(True):

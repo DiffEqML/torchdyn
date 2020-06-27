@@ -15,7 +15,6 @@ class NeuralDE(pl.LightningModule):
     :type settings: dict
     """
     def __init__(self, func:nn.Module,
-                       controlled=False,
                        order=1,
                        sensitivity='autograd',
                        s_span=torch.linspace(0, 1, 2),
@@ -26,7 +25,7 @@ class NeuralDE(pl.LightningModule):
         super().__init__()
         #compat_check(defaults)
         # TO DO: remove controlled from input args
-        self.defunc, self.controlled, self.order = DEFunc(func, order, controlled), controlled, order
+        self.defunc, self.order = DEFunc(func, order), order
         self.sensitivity, self.s_span, self.solver = sensitivity, s_span, solver
         self.nfe = self.defunc.nfe
         self.rtol, self.atol = rtol, atol
@@ -37,26 +36,25 @@ class NeuralDE(pl.LightningModule):
            
     def forward(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
-                
-        # TO DO: check if DEFunc is input depth-var i.e existence of DepthCat as first nn.Module
-                
-        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+             
+        # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
+        excess_dims = 0
         if (not self.intloss is None) and self.sensitivity == 'autograd':
-            if self.controlled: u = x[:, 1:].detach() # if integral autograd loss, first dim is reserved to loss forward propagation
-        else: u = x.detach()
-        # TO DO: extend the above check to include CNFs, since first dim is used as div propagation there too
-
+            excess_dims += 1
                 
-        # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchkinson's
+        # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as data-control set to DataControl module
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'trace_estimator'):
-                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))             
-            if hasattr(module, 'controlled'): 
-                module.controlled = self.controlled
-            if hasattr(module, 'u'): 
-                module.u = u
+                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))  
+                excess_dims += 1
                 
+        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC 
+        # TO DO: merge the named_modules loop for perf
+        for name, module in self.defunc.named_modules():
+            if hasattr(module, 'u'): 
+                module.u = x[:, excess_dims:].detach()
+                   
         return self._odesolve(x)    
 
     def _odesolve(self, x:torch.Tensor):                          
@@ -77,7 +75,6 @@ class NeuralDE(pl.LightningModule):
                        between 0 and 1
         :type s_span: torch.Tensor
         """
-        if self.defunc.controlled: self.defunc.u = x
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
@@ -111,7 +108,7 @@ class NeuralDE(pl.LightningModule):
             
     def __repr__(self):
         npar = sum([p.numel() for p in self.defunc.parameters()])
-        return f"Neural DE:\n\t- data-controlled: {self.controlled}\n\t- order: {self.order}\
+        return f"Neural DE:\n\t- order: {self.order}\
         \n\t- solver: {self.solver}\n\t- integration interval: {self.s_span[0]} to {self.s_span[-1]}\
         \n\t- num_checkpoints: {len(self.s_span)}\
         \n\t- tolerances: relative {self.rtol} absolute {self.atol}\

@@ -12,8 +12,7 @@ class DEFunc(nn.Module):
     def __init__(self, model, order=1, controlled=False):
         super().__init__()  
         self.m, self.nfe,  = model, 0.
-        self.controlled, self.order = controlled, order
-        self.intloss, self.sensitivity = None, None
+        self.order, self.intloss, self.sensitivity = order, None, None
 
     def forward(self, s, x):
         self.nfe += 1        

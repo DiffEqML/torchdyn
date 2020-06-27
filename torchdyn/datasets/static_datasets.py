@@ -4,6 +4,8 @@ Commonly used static datasets. Several can be used in both `density estimation` 
 
 import torch
 from torch.distributions import Normal
+from scipy.integrate import solve_ivp
+from sklearn.neighbors import KernelDensity
 import numpy as np
 import math
 
@@ -126,6 +128,32 @@ def generate_checkerboard():
         dims = [mesh_dim[i:i+1] for j in range(k)]
         dist = Uniform([mesh_dim[i:i+1] for j in range(len(mesh))])
         
+def generate_diffeqml(n_samples=100, noise=1e-3):
+    mu = 1
+    X0 = [[0,2],[-1.6, -1.2],[1.6, -1.2],]
+    ti, tf = 0., 3.2 
+    t = np.linspace(ti,tf,500)
+    # define the ODE model
+    def odefunc(t,x):
+        dxdt = -x[1] + mu*x[0]*(1- x[0]**2 - x[1]**2)
+        dydt =  x[0] + mu*x[1]*(1- x[0]**2 - x[1]**2)
+        return np.array([dxdt,dydt]).T
+    # integrate ODE
+    X = []
+    for x0 in X0:
+        sol = solve_ivp(odefunc, [ti, tf], x0, method='LSODA', t_eval=t)
+        X.append(torch.tensor(sol.y.T).float())
+
+    theta = torch.linspace(0,2*np.pi, 1000)
+    X.append(torch.cat([2*torch.cos(theta)[:,None], 2*torch.sin(theta)[:,None]],1))
+    X = torch.cat(X)
+    k = KernelDensity(kernel='gaussian',bandwidth=.01)
+    k.fit(X)
+    
+    X = torch.tensor(k.sample(n_samples) + noise*np.random.randn(n_samples, 2)).float()
+    return X, None   
+
+
 class ToyDataset:
     """Handles the generation of classification toy datasets"""
     def generate(self, n_samples, dataset_type, **kwargs):
@@ -149,6 +177,8 @@ class ToyDataset:
             return generate_concentric_spheres(n_samples=n_samples, **kwargs)
         elif dataset_type == 'gaussians':
             return generate_gaussians(n_samples=n_samples, **kwargs)
+        elif dataset_type == 'diffeq_logo':
+            return generate_diffeq_logo(n_samples=n_samples, **kwargs)
 
 
 
