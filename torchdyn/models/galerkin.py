@@ -5,7 +5,7 @@ import numpy as np
 def FourierExpansion(n_range, s):
     """Fourier eigenbasis expansion
     """
-    s_n_range = 2*np.pi*s*n_range
+    s_n_range = s*n_range
     basis = [torch.cos(s_n_range), torch.sin(s_n_range)]
     return basis
   
@@ -32,10 +32,11 @@ class GalLinear(nn.Module):
     :param bias: include bias parameter vector in the layer computation
     :type bias: bool
     """
-    def __init__(self, in_features, out_features, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, bias=True):
+    def __init__(self, in_features, out_features, bias=True, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
         super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features, self.out_features = in_features, out_features
+        self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
+        self.shift = torch.zeros(1) if not shift else nn.Parameter(data=torch.zeros(1), requires_grad=True)
         self.expfunc = expfunc
         self.n_eig = n_eig
         self.n_harmonics = n_harmonics
@@ -48,11 +49,11 @@ class GalLinear(nn.Module):
         self.reset_parameters()  
         
     def reset_parameters(self):
-        torch.nn.init.zeros_(self.coeffs)
+        torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**2)
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s)
+        basis = self.expfunc(n_range, s*self.dilation + self.shift)
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
@@ -95,11 +96,12 @@ class GalConv2d(nn.Module):
     """
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'n_harmonics']
 
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, 
-                 expfunc=FourierExpansion, n_harmonics=10, n_eig=2, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=True,
+                 expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.in_channels, self.out_channels = in_channels, out_channels
+        self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
+        self.shift = torch.zeros(1) if not shift else nn.Parameter(data=torch.zeros(1), requires_grad=True)
         self.pad = padding
         self.stride = stride
         self.expfunc = expfunc
@@ -121,7 +123,7 @@ class GalConv2d(nn.Module):
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s)
+        basis = self.expfunc(n_range, s*self.dilation + self.shift)
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
@@ -140,3 +142,4 @@ class GalConv2d(nn.Module):
         self.weight = w[0:n].reshape(self.oc, self.ic, self.ks, self.ks)
         self.bias = w[n:].reshape(self.oc)
         return torch.nn.functional.conv2d(input, self.weight, self.bias, stride=self.stride, padding=self.pad)
+    

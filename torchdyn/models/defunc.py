@@ -39,10 +39,11 @@ class DEFunc(nn.Module):
             return x
 
     def horder_forward(self, s, x):
+        # NOTE: higher-order in CNF is handled at the CNF level, to refactor
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
             x_new += [x[:, size_order*i:size_order*(i+1)]]
         x_new += [self.m(x)]
-        return torch.cat(x_new, 1).to(x).to(x)
+        return torch.cat(x_new, 1).to(x)
     

@@ -18,9 +18,9 @@ def hutch_trace(x_out, x_in, noise=None, **kwargs):
 REQUIRES_NOISE = [hutch_trace]
 
 class CNF(nn.Module):
-    def __init__(self, net, trace_estimator=None, noise_dist=None):
+    def __init__(self, net, trace_estimator=None, noise_dist=None, order=1):
         super().__init__()
-        self.net = net
+        self.net, self.order = net, order # order at the CNF level will be merged with DEFunc
         self.trace_estimator = trace_estimator if trace_estimator is not None else autograd_trace;
         self.noise_dist, self.noise = noise_dist, None
         if self.trace_estimator in REQUIRES_NOISE:
@@ -29,9 +29,20 @@ class CNF(nn.Module):
     def forward(self, x):   
         with torch.set_grad_enabled(True):
             x_in = torch.autograd.Variable(x[:,1:], requires_grad=True).to(x) # first dimension reserved to divergence propagation
-            x_out = self.net(x_in) # the neural network will handle the data-dynamics here
+            
+            # the neural network will handle the data-dynamics here
+            if self.order > 1: self.higher_order(x_in)
+            else: x_out = self.net(x_in)
                 
             trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
         return torch.cat([-trJ[:, None], x_out], 1) + 0*x # `+ 0*x` has the only purpose of connecting x[:, 0] to autograd graph
     
+    def higher_order(self, x):
+        # NOTE: higher-order in CNF is handled at the CNF level, to refactor
+        x_new = []
+        size_order = x.size(1) // self.order
+        for i in range(1, self.order):
+            x_new += [x[:, size_order*i:size_order*(i+1)]]
+        x_new += [self.m(x)]
+        return torch.cat(x_new, 1).to(x)
     

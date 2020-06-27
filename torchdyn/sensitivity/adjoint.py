@@ -38,7 +38,7 @@ class Adjoint(nn.Module):
             # dμds is a tuple! of all self.f_params groups
             dμds = torch.autograd.grad(f, self.f_params, -λ, allow_unused=True, retain_graph=True)
             if not self.intloss is None:
-                g = self.intloss(h)
+                g = self.intloss(s, h)
                 dgdh = torch.autograd.grad(g.sum(), h, allow_unused=True, retain_graph=True)[0]
                 dλds = dλds - dgdh   
         ds_adjds = torch.tensor(0.).to(self.s_span)
