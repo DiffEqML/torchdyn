@@ -9,7 +9,7 @@ class DEFunc(nn.Module):
     :param order: order of the differential equation
     :type order: int
    """
-    def __init__(self, model, order=1, controlled=False):
+    def __init__(self, model, order=1):
         super().__init__()  
         self.m, self.nfe,  = model, 0.
         self.order, self.intloss, self.sensitivity = order, None, None

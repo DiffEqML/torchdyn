@@ -13,19 +13,31 @@ class Augmenter(nn.Module):
     :type augment_func: nn.Module
     """
 
-    def __init__(self, augment_idx:int=1, augment_dims: int=5, augment_func=None):
+    def __init__(self, augment_idx:int=1, augment_dims:int=5, augment_func=None, order='first'):
         super().__init__()
         self.augment_dims, self.augment_idx, self.augment_func = augment_dims, augment_idx, augment_func
+        self.order = order
 
     def forward(self, x: torch.Tensor):
         if not self.augment_func:
             new_dims = list(x.shape)
             new_dims[self.augment_idx] = self.augment_dims
-            x = torch.cat([torch.zeros(new_dims).to(x), x],
-                          self.augment_idx)
+            
+            # if-else check for augmentation order
+            if self.order == 'first':
+                x = torch.cat([torch.zeros(new_dims).to(x), x],
+                              self.augment_idx)
+            else: 
+                x = torch.cat([x, torch.zeros(new_dims).to(x)],
+                              self.augment_idx)
         else:
-            x = torch.cat([x, self.augment_func(x).to(x)],
-                          self.augment_idx)
+            # if-else check for augmentation order
+            if self.order == 'first':
+                x = torch.cat([self.augment_func(x).to(x), x],
+                              self.augment_idx) 
+            else:    
+                x = torch.cat([x, torch.augment_func(new_dims).to(x)],
+                               self.augment_idx)
         return x
 
 

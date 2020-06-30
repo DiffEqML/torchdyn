@@ -34,7 +34,7 @@ class NeuralDE(pl.LightningModule):
         
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
            
-    def forward(self, x:torch.Tensor):
+    def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
              
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
@@ -55,9 +55,10 @@ class NeuralDE(pl.LightningModule):
             if hasattr(module, 'u'): 
                 module.u = x[:, excess_dims:].detach()
                    
-        return self._odesolve(x)    
+        return x  
 
-    def _odesolve(self, x:torch.Tensor):                          
+    def forward(self, x:torch.Tensor):  
+        x = self._prep_odeint(x)        
         switcher = {
             'autograd': self._autograd,
             'adjoint': self._adjoint,
@@ -75,6 +76,7 @@ class NeuralDE(pl.LightningModule):
                        between 0 and 1
         :type s_span: torch.Tensor
         """
+        x = self._prep_odeint(x)
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol

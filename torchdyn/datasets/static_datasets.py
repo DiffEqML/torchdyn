@@ -92,11 +92,19 @@ def generate_spirals(n_samples=100, noise=1e-4, **kwargs):
     X, y = torch.Tensor(X), torch.Tensor(y).long()
     return X, y
 
-def generate_gaussians(n_samples=100, n_gaussians=7, dim=3, radius=0.5, std_gaussians=0.1, noise=1e-3):
+def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaussians=0.1, noise=1e-3):
     """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`. 
 
     :param n_samples: number of data points in the generated dataset
     :type n_samples: int
+    :param n_gaussians: number of gaussians distributions placed on the circle of radius `radius`
+    :type n_gaussians: int
+    :param dim: dimension of the dataset. The distributions are placed on the hyperplane (x1, x2, 0, 0..) if dim > 2
+    :type dim: int
+    :param radius: radius of the circle on which the distributions lie
+    :type radius: int
+    :param std_gaussians: standard deviation of the gaussians.
+    :type std_gaussians: int
     :param noise: standard deviation of noise magnitude added to each data point
     :type noise: float
     """
@@ -108,13 +116,50 @@ def generate_gaussians(n_samples=100, n_gaussians=7, dim=3, radius=0.5, std_gaus
 
     for i in range(n_gaussians):  
         angle += 2*math.pi / n_gaussians
-        if dim > 2: dist.loc = torch.Tensor([torch.cos(angle), torch.sin(angle), torch.zeros(dim-2)])
-        else: dist.loc = torch.Tensor([torch.cos(angle), torch.sin(angle)])
+        if dim > 2: dist.loc = torch.Tensor([radius*torch.cos(angle), torch.sin(angle), radius*torch.zeros(dim-2)])
+        else: dist.loc = torch.Tensor([radius*torch.cos(angle), radius*torch.sin(angle)])
+        X[i*n_samples:(i+1)*n_samples] = dist.sample(sample_shape=(n_samples,)) + torch.randn(dim)*noise
+        y[i*n_samples:(i+1)*n_samples] = i
+    return X, y
+
+def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop=4, dim=2, 
+                              radius_start=1, radius_end=0.2, std_gaussians_start=0.3, std_gaussians_end=0.1, noise=1e-3):
+    """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`. 
+
+    :param n_samples: number of data points in the generated dataset
+    :type n_samples: int
+    :param n_gaussians: number of gaussians distributions placed on the circle of radius `radius`
+    :type n_gaussians: int
+    :param dim: dimension of the dataset. The distributions are placed on the hyperplane (x1, x2, 0, 0..) if dim > 2
+    :type dim: int
+    :param radius: radius of the circle on which the distributions lie
+    :type radius: int
+    :param std_gaussians: standard deviation of the gaussians.
+    :type std_gaussians: int
+    :param noise: standard deviation of noise magnitude added to each data point
+    :type noise: float
+    """
+    X = torch.zeros(n_samples * n_gaussians, dim) ; y = torch.zeros(n_samples * n_gaussians).long()
+    angle = torch.zeros(1)
+    radiuses = torch.linspace(radius_start, radius_end, n_gaussians)
+    std_devs = torch.linspace(std_gaussians_start, std_gaussians_end, n_gaussians)
+    
+    if dim > 2: loc = torch.cat([radiuses[0]*torch.cos(angle), radiuses[0]*torch.sin(angle), torch.zeros(dim-2)])
+    else: loc = torch.cat([radiuses[0]*torch.cos(angle), radiuses[0]*torch.sin(angle)])
+    dist = Normal(loc, scale=std_devs[0])
+
+    for i in range(n_gaussians):  
+        angle += 2*math.pi / n_gaussians_per_loop
+        if dim > 2: dist.loc = torch.Tensor([radiuses[i]*torch.cos(angle), torch.sin(angle), radiuses[i]*torch.zeros(dim-2)])
+        else: dist.loc = torch.Tensor([radiuses[i]*torch.cos(angle), radiuses[i]*torch.sin(angle)])
+        dist.scale = std_devs[i]
+        
         X[i*n_samples:(i+1)*n_samples] = dist.sample(sample_shape=(n_samples,)) + torch.randn(dim)*noise
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
 
 def generate_checkerboard():
+    """Not yet implemented"""
     raise NotImplementedError
     ranges = [[0, 2], [0, 2]]
     n_chunks = 4
@@ -129,6 +174,13 @@ def generate_checkerboard():
         dist = Uniform([mesh_dim[i:i+1] for j in range(len(mesh))])
         
 def generate_diffeqml(n_samples=100, noise=1e-3):
+    """Samples `n_samples` 2-dim points from the DiffEqML logo.
+    
+    :param n_samples: number of data points in the generated dataset
+    :type n_samples: int
+    :param noise: standard deviation of noise magnitude added to each data point
+    :type noise: float
+    """
     mu = 1
     X0 = [[0,2],[-1.6, -1.2],[1.6, -1.2],]
     ti, tf = 0., 3.2 
@@ -153,14 +205,13 @@ def generate_diffeqml(n_samples=100, noise=1e-3):
     X = torch.tensor(k.sample(n_samples) + noise*np.random.randn(n_samples, 2)).float()
     return X, None   
 
-
 class ToyDataset:
     """Handles the generation of classification toy datasets"""
     def generate(self, n_samples, dataset_type, **kwargs):
         """Handles the generation of classification toy datasets
         :param n_samples: number of data points in the generated dataset
         :type n_samples: int
-        :param dataset_type: {'moons', 'spirals', 'spheres'}
+        :param dataset_type: {'moons', 'spirals', 'spheres', 'gaussians', 'diffeqml'}
         :type dataset_type: str
         :param dim: if 'spheres': dimension of the spheres
         :type dim: float
@@ -177,8 +228,10 @@ class ToyDataset:
             return generate_concentric_spheres(n_samples=n_samples, **kwargs)
         elif dataset_type == 'gaussians':
             return generate_gaussians(n_samples=n_samples, **kwargs)
-        elif dataset_type == 'diffeq_logo':
-            return generate_diffeq_logo(n_samples=n_samples, **kwargs)
+        elif dataset_type == 'gaussians_spiral':
+            return generate_gaussians_spiral(n_samples=n_samples, **kwargs)
+        elif dataset_type == 'diffeqml':
+            return generate_diffeqml(n_samples=n_samples, **kwargs)
 
 
 
