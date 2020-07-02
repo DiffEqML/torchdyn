@@ -26,6 +26,11 @@ https://torchdyn.readthedocs.io/
 ## Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with versions dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)],  to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)])
 
+<p align="center"> 
+<img src="media/GalNODE.gif" width="200" height="200">
+<img src="media/cnf_diffeq.gif" width="200" height="200">
+</p>
+
 Since the introduction of the `torchdiffeq` library with the seminal work [[1](https://arxiv.org/abs/1806.07366)] in 2018, little effort has been expended by the PyTorch research community on an unified framework for neural differential equations. While significant progress is being made by the Julia community and SciML [[5](https://sciml.ai/2020/03/29/SciML.html)], we believe a native PyTorch version of `torchdyn` with a focus on deep learning to be a valuable asset for the research ecosystem. 
 
 Central to the `torchdyn` approach are continuous neural networks, where *width*, *depth* (or both) are taken to their infinite limit. On the optimization front, we consider continuous "data-stream" regimes and gradient flow methods, where the dataset represents a time-evolving signal processed by the neural network to adapt its parameters. 
@@ -35,11 +40,6 @@ By providing a centralized, easy-to-access collection of model templates, tutori
 The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefano Massaroli, has been supported throughout by their *almae matres*. In particular, by  **Prof. Jinkyoo Park** (KAIST), **Prof. Atsushi Yamashita** (The University of Tokyo) and **Prof. Hajime Asama** (The University of Tokyo).
 
 `torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
-
-<p align="center"> 
-<img src="media/GalNODE.gif" width="200" height="200">
-<img src="media/cnf_diffeq.gif" width="200" height="200">
-</p>
 
 ### Feature roadmap
 The current offering of `torchdyn` is limited compared to the rich ecosystem of continuous deep learning. If you are a researcher working in this space, and particularly if one of your previous works happens to be a `WIP feature`, feel free to reach out and help us in its implementation. 
