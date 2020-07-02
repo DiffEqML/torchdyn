@@ -3,7 +3,6 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 
 <p align="center"> 
 <img src="media/logo.png" width="150" height="150">
- <img src="media/cnf_diffeq.gif" width="150" height="150">
 </p>
 
 #### Continuous Integration
@@ -39,6 +38,7 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 
 <p align="center"> 
 <img src="media/GalNODE.gif" width="400" height="400">
+<img src="media/cnf_diffeq.gif" width="400" height="400">
 </p>
 
 ### Feature roadmap
