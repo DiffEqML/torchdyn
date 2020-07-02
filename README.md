@@ -13,17 +13,17 @@ A PyTorch based library for all things neural differential equations. Maintained
 | Linux -- python 3.8      |       |
 | Windows -- python 3.7    |       |
 
-#### Installation
+## Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
 `cd torchdyn`
 
 `python setup.py install`
 
-#### Documentation 
+## Documentation 
 https://torchdyn.readthedocs.io/
 
-#### Introduction
+## Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with versions dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)],  to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)])
 
 Since the introduction of the `torchdiffeq` library with the seminal work [[1](https://arxiv.org/abs/1806.07366)] in 2018, little effort has been expended by the PyTorch research community on an unified framework for neural differential equations. While significant progress is being made by the Julia community and SciML [[5](https://sciml.ai/2020/03/29/SciML.html)], we believe a native PyTorch version of `torchdyn` with a focus on deep learning to be a valuable asset for the research ecosystem. 
