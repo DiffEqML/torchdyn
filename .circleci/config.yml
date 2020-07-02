@@ -13,7 +13,7 @@ jobs:
           pip install -r requirements.txt 
           python setup.py install
       - run:
-	  command: |
+        command: |
             python test/test_neural_de.py
 	    python test/test_ode_adjoint.py
             python test/test_flows.py         
