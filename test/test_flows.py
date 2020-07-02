@@ -5,7 +5,7 @@ import torch ; import torch.nn as nn
 from torch.distributions import *
 
 def test_cnf_vanilla():
-    device = torch.device('cuda')
+    device = torch.device('cpu')
     net = nn.Sequential(
             nn.Linear(2, 512),
             nn.ELU(),
@@ -20,7 +20,7 @@ def test_cnf_vanilla():
     assert out.shape[1] == x.shape[1] + 1
     
 def test_hutch_vanilla():
-    device = torch.device('cuda')
+    device = torch.device('cpu')
     net = nn.Sequential(
             nn.Linear(2, 512),
             nn.ELU(),

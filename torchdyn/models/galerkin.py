@@ -52,7 +52,8 @@ class GalLinear(nn.Module):
         self.reset_parameters()  
         
     def reset_parameters(self):
-        torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
+        #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
+        torch.nn.init.zeros_(self.coeffs)
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
@@ -122,7 +123,8 @@ class GalConv2d(nn.Module):
         self.ic, self.oc, self.ks, self.nh = in_channels, out_channels, kernel_size, n_harmonics
         
     def reset_parameters(self):
-        torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
+        #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
+        torch.nn.init.zeros_(self.coeffs)
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
