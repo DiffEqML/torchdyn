@@ -2,6 +2,7 @@ version: 2.1
 
 jobs:
   build:
+    working_directory: ~/torchdyn_test_suite
     docker:
       - image: circleci/python:3.7
     steps:
