@@ -4,6 +4,6 @@ nbsphinx
 numpy
 scipy
 matplotlib
-torch
+torch>=1.5.1
 torchdiffeq
 pytorch_lightning
