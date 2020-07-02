@@ -3,6 +3,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 
 <p align="center"> 
 <img src="media/logo.png" width="150" height="150">
+ <img src="media/cnf_diffeq.gif" width="150" height="150">
 </p>
 
 #### Continuous Integration
