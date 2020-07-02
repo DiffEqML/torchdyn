@@ -48,6 +48,7 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
 * **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️, sde adjoint ⬜️
 * **Regularization tutorials:** regularization ⬜️
+* **Controlled Neural DEs: data control ✅, neural cde ⬜️
 * **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅, forward differentiation ⬜️
 * **Image classification:** MNIST ✅, CIFAR10 and ImageNet ⬜️
 * **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
