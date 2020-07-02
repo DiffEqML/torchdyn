@@ -1,16 +1,21 @@
 # torchdyn
 A PyTorch based library for all things neural differential equations. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
-<p align="left"> 
+<p align="center"> 
 <img src="media/logo.png" width="150" height="150">
 </p>
+
 #### Continuous Integration
 
+<center>
+ 
 | System / PyTorch version | 1.5.1 |
 |--------------------------|-------|
 | Linux  -- python 3.7     |  [![DiffEqML](https://circleci.com/gh/DiffEqML/torchdyn.svg?style=svg)](https://app.circleci.com/pipelines/github/DiffEqML?filter=mine)  |
 | Linux -- python 3.8      |       |
 | Windows -- python 3.7    |       |
+
+<\center>
 
 ## Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
