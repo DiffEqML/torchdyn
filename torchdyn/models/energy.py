@@ -3,14 +3,12 @@ import torch.nn as nn
 from torch.autograd.functional import jacobian as jac
 
 class Stable(nn.Module):
-    """General Neural DE class
+    """Stable Neural ODE
 
     :param func: function parametrizing the vector field.
     :type func: nn.Module
-    :param settings: specifies parameters of the Neural DE. 
-    :type settings: dict
     """
-    def __init__(self, net, depth_var=False, controlled=False):
+    def __init__(self, net:nn.Module):
         super().__init__()
         self.net = net
 
@@ -23,33 +21,28 @@ class Stable(nn.Module):
         return out
 
 class HNN(nn.Module):
-    """General Neural DE class
+    """Hamiltonian Neural ODE
 
-    :param func: function parametrizing the vector field.
-    :type func: nn.Module
-    :param settings: specifies parameters of the Neural DE. 
-    :type settings: dict
+    :param net: function parametrizing the vector field.
+    :type net: nn.Module
     """
-    def __init__(self, Hamiltonian:nn.Module, dim=1):
+    def __init__(self, net:nn.Module):
         super().__init__()
-        self.H = Hamiltonian
-        self.n = dim
+        self.net = net
 
     def forward(self, x):
-        x.requires_grad_(True)
+        x.requires_grad_(True) ; n = x.shape[1] // 2
         gradH = torch.autograd.grad(self.H(x).sum(), x,
                                     create_graph=True)[0]
-        return torch.cat([gradH[:,self.n:], -gradH[:,:self.n]], 1).to(x)
+        return torch.cat([gradH[:, n:], -gradH[:, :n]], 1).to(x)
 
 class LNN(nn.Module):
-    """General Neural DE class
+    """Lagrangian Neural ODE
 
-    :param func: function parametrizing the vector field.
-    :type func: nn.Module
-    :param settings: specifies parameters of the Neural DE. 
-    :type settings: dict
+    :param net: function parametrizing the vector field.
+    :type net: nn.Module
     """
-    def __init__(self, net):
+    def __init__(self, net:nn.Module):
         super().__init__()
         self.net = net
         

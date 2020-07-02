@@ -2,13 +2,13 @@ import setuptools
 
 setuptools.setup(
     name="torchdyn",
-    version="0.1.1",
+    version="0.2.0",
     author="DiffEqML",
     author_email="polimic03@gmail.com, massaroli@robot.t.u-tokyo.ac.jp",
     description="PyTorch package for all things neural differential equations",
-    url="https://github.com/Zymrael/torchdyn",
+    url="https://github.com/DiffEqML/torchdyn",
     packages=setuptools.find_packages(),
-    install_requires=['torch>=1.4.1',
+    install_requires=['torch>=1.5.1',
                       'pytorch-lightning>=0.7.3',
                       'dgl>=0.4.1',
                       'torchdiffeq>=0.0.1'],
