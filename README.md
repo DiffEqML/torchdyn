@@ -37,8 +37,8 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 `torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
 
 <p align="center"> 
-<img src="media/GalNODE.gif" width="400" height="400">
-<img src="media/cnf_diffeq.gif" width="400" height="400">
+<img src="media/GalNODE.gif" width="200" height="200">
+<img src="media/cnf_diffeq.gif" width="200" height="200">
 </p>
 
 ### Feature roadmap
