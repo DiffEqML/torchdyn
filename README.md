@@ -5,6 +5,8 @@ A PyTorch based library for all things neural differential equations. Maintained
 <img src="media/logo.png" width="150" height="150">
 </p>
 
+[![DiffEqML](https://circleci.com/gh/DiffEqML/torchdyn.svg?style=svg)](https://app.circleci.com/pipelines/github/DiffEqML?filter=mine)
+
 #### Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
