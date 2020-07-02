@@ -30,7 +30,7 @@ class NeuralDE(pl.LightningModule):
         self.nfe = self.defunc.nfe
         self.rtol, self.atol = rtol, atol
         self.intloss = intloss
-        self.u = None # data-control
+        self.u, self.controlled = None, False # data-control
         
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
            
@@ -53,6 +53,7 @@ class NeuralDE(pl.LightningModule):
         # TO DO: merge the named_modules loop for perf
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'u'): 
+                self.controlled = True
                 module.u = x[:, excess_dims:].detach()
                    
         return x  

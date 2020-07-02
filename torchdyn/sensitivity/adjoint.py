@@ -12,8 +12,8 @@ def flatten(iterable):
 class Adjoint(nn.Module):
     """Adjoint class template.
 
-    :param integral: `True` if an *integral cost* (see **link to adj page**) is specified
-    :type integral: bool
+    :param intloss: `nn.Module` specifying the integral loss term
+    :type intloss: nn.Module
     """
     def __init__(self, intloss = None):
         super().__init__()
@@ -21,7 +21,7 @@ class Adjoint(nn.Module):
         self.intloss = intloss ; self.autograd_func = self._define_autograd_adjoint()
 
     def adjoint_dynamics(self, s, adjoint_state):
-        """ Define the vector field of the augmented adjoint dynamics(as in [link]) to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
+        """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
 
         :param s: current depth
         :type s: float

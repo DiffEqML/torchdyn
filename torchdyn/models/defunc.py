@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 class DEFunc(nn.Module):
-    """Differential Equation Function Wrapper.
+    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation, 
+    higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
     :type model: nn.Module

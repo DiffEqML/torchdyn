@@ -85,7 +85,7 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
     
     S, X = torch.meshgrid(ss,xx)
     
-    if model.settings['controlled']:
+    if model.controlled:
         ax = st['ax']
         u_traj = traj[0,:,0].repeat(traj.shape[1],1)
         e = torch.abs(st['y'].T - traj[:,:,0])

@@ -124,18 +124,24 @@ def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaus
 
 def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop=4, dim=2, 
                               radius_start=1, radius_end=0.2, std_gaussians_start=0.3, std_gaussians_end=0.1, noise=1e-3):
-    """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`. 
+    """Creates `dim`-dimensional `n_gaussians` on a spiral. 
 
     :param n_samples: number of data points in the generated dataset
     :type n_samples: int
-    :param n_gaussians: number of gaussians distributions placed on the circle of radius `radius`
+    :param n_gaussians: number of total gaussians distributions placed on the spirals
     :type n_gaussians: int
+    :param n_gaussians_per_loop: number of gaussians distributions per loop of the spiral
+    :type n_gaussians_per_loop: int
     :param dim: dimension of the dataset. The distributions are placed on the hyperplane (x1, x2, 0, 0..) if dim > 2
     :type dim: int
-    :param radius: radius of the circle on which the distributions lie
-    :type radius: int
-    :param std_gaussians: standard deviation of the gaussians.
-    :type std_gaussians: int
+    :param radius_start: starting radius of the spiral
+    :type radius_start: int
+    :param radius_end: end radius of the spiral
+    :type radius_end: int
+    :param std_gaussians_start: standard deviation of the gaussians at the start of the spiral. Linear interpolation (start, end, num_gaussians)
+    :type std_gaussians_start: int
+    :param std_gaussians_end: standard deviation of the gaussians at the end of the spiral
+    :type std_gaussians_end: int
     :param noise: standard deviation of noise magnitude added to each data point
     :type noise: float
     """

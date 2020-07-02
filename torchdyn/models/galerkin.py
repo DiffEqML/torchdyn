@@ -23,14 +23,18 @@ class GalLinear(nn.Module):
     :type in_features: int
     :param out_features: output dimensions
     :type out_features: int
+    :param bias: include bias parameter vector in the layer computation
+    :type bias: bool
     :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
     :type expfunc: str
     :param n_harmonics: number of elements of the truncated eigenfunction expansion.
     :type n_harmonics: int
     :param n_eig: number of distinct eigenfunctions in the basis
     :type n_eig: int
-    :param bias: include bias parameter vector in the layer computation
-    :type bias: bool
+    :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
+    :type dilation: bool
+    :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
+    :type shift: bool
     """
     def __init__(self, in_features, out_features, bias=True, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
         super().__init__()
@@ -85,14 +89,18 @@ class GalConv2d(nn.Module):
     :type stride: int
     :param padding: zero-padding added to both sides of the input. Default: 0
     :type padding: int
+    :param bias: include bias parameter vector in the layer computation
+    :type bias: bool
     :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
     :type expfunc: str
     :param n_harmonics: number of elements of the truncated eigenfunction expansion.
     :type n_harmonics: int
     :param n_eig: number of distinct eigenfunctions in the basis
     :type n_eig: int
-    :param bias: include bias parameter vector in the layer computation
-    :type bias: bool
+    :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
+    :type dilation: bool
+    :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
+    :type shift: bool
     """
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'n_harmonics']
 
