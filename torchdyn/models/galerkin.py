@@ -57,7 +57,7 @@ class GalLinear(nn.Module):
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s*self.dilation + self.shift)
+        basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
