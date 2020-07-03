@@ -55,6 +55,7 @@ def test_data_control():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
+
     f = nn.Sequential(DataControl(),
             nn.Linear(4, 64),
             nn.Tanh(), 
@@ -62,6 +63,7 @@ def test_data_control():
     model = NeuralDE(f, solver='dopri5').to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+
     trainer.fit(learn) 
     s_span = torch.linspace(0, 1, 100)
     trajectory = model.trajectory(X_train, s_span).detach().cpu()
@@ -75,6 +77,7 @@ def test_augmenter_func_is_trained():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
+
     f = nn.Sequential(DataControl(),
                       nn.Linear(12, 64),
                       nn.Tanh(), 
@@ -84,6 +87,7 @@ def test_augmenter_func_is_trained():
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+
     p = torch.cat([p.flatten() for p in model[0].parameters()])
     trainer.fit(learn) 
     p_after = torch.cat([p.flatten() for p in model[0].parameters()])
@@ -97,6 +101,7 @@ def test_augmented_data_control():
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
+
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False) 
     
     f = nn.Sequential(DataControl(),
@@ -109,6 +114,7 @@ def test_augmented_data_control():
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+
     trainer.fit(learn) 
 
     
