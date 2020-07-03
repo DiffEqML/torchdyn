@@ -47,8 +47,8 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Basics:** quickstart ✅, cookbook ✅
 * **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
 * **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️, sde adjoint ⬜️
-* **Regularization tutorials:** regularization ⬜️
-* **Controlled Neural DEs: data control ✅, neural cde ⬜️
+* **Regularization tutorials:** regularization ⬜️ adaptive depth ⬜️ STEER ⬜️
+* **Controlled Neural DEs**: data control ✅, neural cde ⬜️
 * **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅, forward differentiation ⬜️
 * **Image classification:** MNIST ✅, CIFAR10 and ImageNet ⬜️
 * **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
@@ -57,7 +57,7 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Variational Neural DE tutorials:** variational neural ode ⬜️ variational neural sde ⬜️ 
 * **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
 * **GDE applications**: traffic forecasting ⬜️
-* **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
+* **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
 * **Specific variants**: ode2vae ⬜️, neural jump stochastic ⬜️ hamiltonian cnf ⬜️
 
 #### Dependencies
