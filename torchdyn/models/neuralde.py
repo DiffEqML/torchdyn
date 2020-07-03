@@ -2,53 +2,71 @@ import torch
 import torch.nn as nn
 import torchdiffeq
 import pytorch_lightning as pl
-from ..adjoint import Adjoint
+from .defunc import DEFunc
+from torchdyn.sensitivity.adjoint import Adjoint
 from .._internals import compat_check
 
-defaults = {'type':'classic', 'controlled':False, 'augment':False, # model
-            'backprop_style':'autograd', 'cost':None, # training 
-            's_span':torch.linspace(0, 1, 2), 'solver':'rk4', 'atol':1e-3, 'rtol':1e-4, # solver params
-            'return_traj':False} 
-
 class NeuralDE(pl.LightningModule):
-    """General Neural DE template
+    """General Neural DE class
 
     :param func: function parametrizing the vector field.
     :type func: nn.Module
     :param settings: specifies parameters of the Neural DE. 
     :type settings: dict
     """
-    def __init__(self, func:nn.Module, settings:dict):
+    def __init__(self, func:nn.Module,
+                       order=1,
+                       sensitivity='autograd',
+                       s_span=torch.linspace(0, 1, 2),
+                       solver='rk4',
+                       atol=1e-4,
+                       rtol=1e-4,
+                       intloss=None):
         super().__init__()
-        defaults.update(settings)
-        compat_check(defaults)
-        self.st = defaults ; self.defunc, self.defunc.func_type = func, self.st['type']
-        self.defunc.controlled = self.st['controlled']
-        self.s_span, self.return_traj = self.st['s_span'], self.st['return_traj']
+        #compat_check(defaults)
+        # TO DO: remove controlled from input args
+        self.defunc, self.order = DEFunc(func, order), order
+        self.sensitivity, self.s_span, self.solver = sensitivity, s_span, solver
+        self.nfe = self.defunc.nfe
+        self.rtol, self.atol = rtol, atol
+        self.intloss = intloss
+        self.u, self.controlled = None, False # data-control
         
-        # check if integral
-        flag = (self.st['backprop_style'] == 'integral_adjoint')
-        self.adjoint = Adjoint(flag)
-        
-    def forward(self, x:torch.Tensor):
-        return self._odesolve(x)    
-
-    def _odesolve(self, x:torch.Tensor):
-        # TO DO: implement adaptive_depth check, insert here
-        
-        # assign control input and augment if necessary 
-        if self.defunc.controlled: self.defunc.u = x 
+        if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
+           
+    def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
-        
+             
+        # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
+        excess_dims = 0
+        if (not self.intloss is None) and self.sensitivity == 'autograd':
+            excess_dims += 1
+                
+        # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
+        # as well as data-control set to DataControl module
+        for name, module in self.defunc.named_modules():
+            if hasattr(module, 'trace_estimator'):
+                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))  
+                excess_dims += 1
+                
+        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC 
+        # TO DO: merge the named_modules loop for perf
+        for name, module in self.defunc.named_modules():
+            if hasattr(module, 'u'): 
+                self.controlled = True
+                module.u = x[:, excess_dims:].detach()
+                   
+        return x  
+
+    def forward(self, x:torch.Tensor):  
+        x = self._prep_odeint(x)        
         switcher = {
-        'autograd': self._autograd,
-        'integral_autograd': self._integral_autograd,
-        'adjoint': self._adjoint,
-        'integral_adjoint': self._integral_adjoint
+            'autograd': self._autograd,
+            'adjoint': self._adjoint,
         }
-        odeint = switcher.get(self.st['backprop_style'])
-        sol = odeint(x) if self.st['return_traj'] else odeint(x)[-1]
-        return sol
+        odeint = switcher.get(self.sensitivity)
+        out = odeint(x)
+        return out
 
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         """Returns a data-flow trajectory at `s_span` points
@@ -59,51 +77,46 @@ class NeuralDE(pl.LightningModule):
                        between 0 and 1
         :type s_span: torch.Tensor
         """
-        if self.defunc.controlled: self.defunc.u = x             
+        x = self._prep_odeint(x)
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
-                                 rtol=self.st['rtol'], atol=self.st['atol'], method=self.st['solver'])        
+                                 rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
     
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        assert self.adjoint, 'Propagating backward dynamics only possible with Adjoint systems'
-        # register hook
-        if self.defunc.controlled: self.defunc.u = x      
-        # set new s_span
-        self.adjoint.s_span = s_span ; x = x.requires_grad_(True)
-        sol = self(x)
-        sol.sum().backward()
-        return sol.grad
+        raise NotImplementedError
+
+    def reset(self):
+        self.nfe, self.defunc.nfe = 0, 0
 
     def _autograd(self, x):
-        return torchdiffeq.odeint(self.defunc, x, self.s_span, rtol=self.st['rtol'], 
-                                  atol=self.st['atol'], method=self.st['solver']) 
-    def _adjoint(self, x):
-        return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span, rtol=self.st['rtol'], 
-                                          atol=self.st['atol'], method=self.st['solver'])
-    def _integral_adjoint(self, x):
-        assert self.st['cost'], 'Cost nn.Module needs to be specified for integral adjoint'
-        return self.adjoint(self.defunc, x, self.s_span, cost=self.st['cost'],
-                            rtol=self.st['rtol'], atol=self.st['atol'], method=self.st['solver'])
-    
-    def _integral_autograd(self, x):
-        assert self.st['cost'], 'Cost nn.Module needs to be specified for integral adjoint'
-        ξ0 = 0.*torch.ones(1).to(x.device)
-        ξ0 = ξ0.repeat(x.shape[0]).unsqueeze(1)
-        x = torch.cat([x,ξ0], 1)
-        return torchdiffeq.odeint(self._integral_autograd_defunc, x, self.s_span,
-                                rtol=self.st['rtol'], atol=self.st['atol'],method=self.st['solver'])
+        self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
 
-    def _integral_autograd_defunc(self, s, x):
-        x = x[:, :-1]
-        dxds = self.defunc(s, x)
-        dξds = self.settings['cost'](s, x).repeat(x.shape[0]).unsqueeze(1)
-        return torch.cat([dxds,dξds], 1)
+        if self.intloss == None:
+            return torchdiffeq.odeint(self.defunc, x, self.s_span, rtol=self.rtol,
+                                  atol=self.atol, method=self.solver)[-1]
+        else:
+            return torchdiffeq.odeint(self.defunc, x, self.s_span,
+                                      rtol=self.rtol, atol=self.atol, method=self.solver)[-1]
+
+    def _adjoint(self, x):
+        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+    
+    @property
+    def nfe(self):
+        return self.defunc.nfe
+    
+    @nfe.setter
+    def nfe(self, val):
+        self.defunc.nfe = val
             
     def __repr__(self):
         npar = sum([p.numel() for p in self.defunc.parameters()])
-        return f"Neural DE\tType: {self.st['type']}\tControlled: {self.st['controlled']}\
-        \nSolver: {self.st['solver']}\tIntegration interval: {self.st['s_span'][0]} to {self.st['s_span'][-1]}\
-        \nCost: {self.st['cost']}\tReturning trajectory: {self.st['return_traj']}\
-        \nTolerances: relative {self.st['rtol']} absolute {self.st['atol']}\
-        \nFunction parametrizing vec. field:\n {self.defunc}\
-        \n# parameters {npar}"
+        return f"Neural DE:\n\t- order: {self.order}\
+        \n\t- solver: {self.solver}\n\t- integration interval: {self.s_span[0]} to {self.s_span[-1]}\
+        \n\t- num_checkpoints: {len(self.s_span)}\
+        \n\t- tolerances: relative {self.rtol} absolute {self.atol}\
+        \n\t- num_parameters: {npar}\
+        \n\t- NFE: {self.nfe}\n\
+        \nIntegral loss: {self.intloss}\n\
+        \nDEFunc:\n {self.defunc}"
+    

@@ -1,4 +1,3 @@
-from .adjoint import *
-from .learner import *
+from torchdyn.sensitivity.adjoint import *
 from .plot import *
 from ._internals import *

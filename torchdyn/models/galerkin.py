@@ -5,10 +5,10 @@ import numpy as np
 def FourierExpansion(n_range, s):
     """Fourier eigenbasis expansion
     """
-    s_n_range = 2*np.pi*s*n_range
+    s_n_range = s*n_range
     basis = [torch.cos(s_n_range), torch.sin(s_n_range)]
     return basis
-  
+
 def PolyExpansion(n_range, s):
     """Polynomial expansion
     """
@@ -18,24 +18,28 @@ def PolyExpansion(n_range, s):
 # can be slimmed down with template class (sharing assign_weights and reset_parameters) 
 class GalLinear(nn.Module):
     """Linear Galerkin layer for depth--variant neural differential equations
-
     :param in_features: input dimensions
     :type in_features: int
     :param out_features: output dimensions
     :type out_features: int
+    :param bias: include bias parameter vector in the layer computation
+    :type bias: bool
     :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
     :type expfunc: str
     :param n_harmonics: number of elements of the truncated eigenfunction expansion.
     :type n_harmonics: int
     :param n_eig: number of distinct eigenfunctions in the basis
     :type n_eig: int
-    :param bias: include bias parameter vector in the layer computation
-    :type bias: bool
+    :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
+    :type dilation: bool
+    :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
+    :type shift: bool
     """
-    def __init__(self, in_features, out_features, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, bias=True):
+    def __init__(self, in_features, out_features, bias=True, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
         super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
+        self.in_features, self.out_features = in_features, out_features
+        self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
+        self.shift = torch.zeros(1) if not shift else nn.Parameter(data=torch.zeros(1), requires_grad=True)
         self.expfunc = expfunc
         self.n_eig = n_eig
         self.n_harmonics = n_harmonics
@@ -48,11 +52,12 @@ class GalLinear(nn.Module):
         self.reset_parameters()  
         
     def reset_parameters(self):
+        #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
         torch.nn.init.zeros_(self.coeffs)
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s)
+        basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
@@ -62,7 +67,7 @@ class GalLinear(nn.Module):
         coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device) 
         X = torch.matmul(B, coeffs)
         return X.sum(0)
-      
+    
     def forward(self, input):
         s = input[-1,-1]
         input = input[:,:-1]
@@ -73,7 +78,6 @@ class GalLinear(nn.Module):
     
 class GalConv2d(nn.Module):
     """2D convolutional Galerkin layer for depth--variant neural differential equations
-
     :param in_channels: number of channels in the input image
     :type in_channels: int
     :param out_channels: number of channels produced by the convolution
@@ -84,22 +88,26 @@ class GalConv2d(nn.Module):
     :type stride: int
     :param padding: zero-padding added to both sides of the input. Default: 0
     :type padding: int
+    :param bias: include bias parameter vector in the layer computation
+    :type bias: bool
     :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
     :type expfunc: str
     :param n_harmonics: number of elements of the truncated eigenfunction expansion.
     :type n_harmonics: int
     :param n_eig: number of distinct eigenfunctions in the basis
     :type n_eig: int
-    :param bias: include bias parameter vector in the layer computation
-    :type bias: bool
+    :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
+    :type dilation: bool
+    :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
+    :type shift: bool
     """
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'n_harmonics']
-
-    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, 
-                 expfunc=FourierExpansion, n_harmonics=10, n_eig=2, bias=True):
+    def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=True,
+                 expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
         super().__init__()
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.in_channels, self.out_channels = in_channels, out_channels
+        self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
+        self.shift = torch.zeros(1) if not shift else nn.Parameter(data=torch.zeros(1), requires_grad=True)
         self.pad = padding
         self.stride = stride
         self.expfunc = expfunc
@@ -110,18 +118,17 @@ class GalConv2d(nn.Module):
             self.bias = torch.Tensor(out_channels)
         else:
             self.register_parameter('bias', None)
-
         self.coeffs = torch.nn.Parameter(torch.Tensor(((out_channels)*in_channels*(kernel_size**2)+out_channels), n_harmonics, 2))
-
         self.reset_parameters()
         self.ic, self.oc, self.ks, self.nh = in_channels, out_channels, kernel_size, n_harmonics
-
+        
     def reset_parameters(self):
+        #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
         torch.nn.init.zeros_(self.coeffs)
         
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s)
+        basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
@@ -131,7 +138,7 @@ class GalConv2d(nn.Module):
         coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device) 
         X = torch.matmul(B, coeffs)
         return X.sum(0)
-
+    
     def forward(self, input):
         s = input[-1,-1,0,0]
         input = input[:,:-1]
@@ -140,3 +147,4 @@ class GalConv2d(nn.Module):
         self.weight = w[0:n].reshape(self.oc, self.ic, self.ks, self.ks)
         self.bias = w[n:].reshape(self.oc)
         return torch.nn.functional.conv2d(input, self.weight, self.bias, stride=self.stride, padding=self.pad)
+    

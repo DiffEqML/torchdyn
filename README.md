@@ -1,22 +1,35 @@
 # torchdyn
-A PyTorch based library for all things neural differential equations. Maintained by [DiffEqML](https://github.com/DiffEqML).
+A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 <p align="center"> 
 <img src="media/logo.png" width="150" height="150">
 </p>
 
-#### Installation
+#### Continuous Integration
+ 
+| System / PyTorch version | 1.5.1 |
+|--------------------------|-------|
+| Linux  -- python 3.7     |       |
+| Linux -- python 3.8      |       |
+| Windows -- python 3.7    |       |
+
+## Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
 `cd torchdyn`
 
 `python setup.py install`
 
-#### Documentation 
+## Documentation 
 https://torchdyn.readthedocs.io/
 
-#### Introduction
+## Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with versions dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)],  to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)])
+
+<p align="center"> 
+<img src="media/GalNODE.gif" width="200" height="200">
+<img src="media/cnf_diffeq.gif" width="200" height="200">
+</p>
 
 Since the introduction of the `torchdiffeq` library with the seminal work [[1](https://arxiv.org/abs/1806.07366)] in 2018, little effort has been expended by the PyTorch research community on an unified framework for neural differential equations. While significant progress is being made by the Julia community and SciML [[5](https://sciml.ai/2020/03/29/SciML.html)], we believe a native PyTorch version of `torchdyn` with a focus on deep learning to be a valuable asset for the research ecosystem. 
 
@@ -28,9 +41,24 @@ The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefa
 
 `torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
 
-<p align="center"> 
-<img src="media/GalNODE.gif" width="400" height="400">
-</p>
+### Feature roadmap
+The current offering of `torchdyn` is limited compared to the rich ecosystem of continuous deep learning. If you are a researcher working in this space, and particularly if one of your previous works happens to be a `WIP feature`, feel free to reach out and help us in its implementation. 
+
+* **Basics:** quickstart ✅, cookbook ✅
+* **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
+* **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️, sde adjoint ⬜️
+* **Regularization tutorials:** regularization ⬜️
+* **Controlled Neural DEs: data control ✅, neural cde ⬜️
+* **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅, forward differentiation ⬜️
+* **Image classification:** MNIST ✅, CIFAR10 and ImageNet ⬜️
+* **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
+* **Density estimation applications:** MNIST ⬜️, CIFAR10 ⬜️
+* **Hybrid Neural DEs:** hybrid models ⬜️ 
+* **Variational Neural DE tutorials:** variational neural ode ⬜️ variational neural sde ⬜️ 
+* **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
+* **GDE applications**: traffic forecasting ⬜️
+* **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
+* **Specific variants**: ode2vae ⬜️, neural jump stochastic ⬜️ hamiltonian cnf ⬜️
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[6](https://www.dgl.ai/)].
@@ -74,16 +102,6 @@ and the *advanced* tutorials
 
 ### Features
 Check our `wiki` for a full description of available features.
-
-### Feature roadmap
-The current offering of `torchdyn` is limited compared to the rich ecosystem of continuous deep learning. If you are a researcher working in this space, and particularly if one of your previous works happens to be a `WIP feature`, feel free to reach out and help us in its implementation. 
-
-In particular, we are missing the following, which will be added, in order.
-* Latent variable variants: Latent Neural ODE, ODE2VAE
-* Advanced recurrent versions: GRU-ODE-Bayes
-* Alternative adjoint for Neural SDE and Jump Stochastic Neural ODEs, as in [[16](https://arxiv.org/abs/1905.10403)]
-* Lagrangian Neural Networks [[17](https://arxiv.org/abs/2003.04630)]
-
 
 ### Contribute
  `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. 
