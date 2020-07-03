@@ -1,5 +1,6 @@
-TorchDyn reference documentation (New release 0.2.0 is finally out!)
+TorchDyn reference documentation
 ====================================
+(New release 0.2.0 is finally out!)
 
 End-to-end Pytorch suite for continuous neural architectures featuring several models, training methods and visualization tools for research, industry and amateurs.
 
