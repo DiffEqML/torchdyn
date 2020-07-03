@@ -40,7 +40,7 @@ Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
    :caption: Generative Models
 
    tutorials/07a_continuous_normalizing_flows
-   tutorials/07a_continuous_normalizing_flows
+   tutorials/07b_ffjord
 
 .. toctree::
    :maxdepth: 1
