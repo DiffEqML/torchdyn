@@ -1,4 +1,4 @@
-# torchdyn
+# torchdyn (Release 0.2.0 is finally out!)
 A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 <p align="center"> 
