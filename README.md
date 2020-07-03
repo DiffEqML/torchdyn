@@ -58,7 +58,7 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
 * **GDE applications**: traffic forecasting ⬜️
 * **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
-* **Specific variants**: ode2vae ⬜️, neural jump stochastic ⬜️ hamiltonian cnf ⬜️
+* **Specific variants**: ode2vae ⬜️, anodev2 ⬜️, neural jump stochastic ⬜️, ode2ode ⬜️, hamiltonian cnf ⬜️
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[6](https://www.dgl.ai/)].
