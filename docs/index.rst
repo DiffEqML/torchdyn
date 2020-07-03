@@ -20,22 +20,41 @@ Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
+   :caption: Basic Tutorials
 
    tutorials/00_quickstart
    tutorials/01_neural_ode_cookbook
    tutorials/02_classification
    tutorials/03_crossing_trajectories
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Advanced Tutorials
 
    tutorials/04_augmentation_strategies   
-   tutorials/05_integral_adjoint
-   tutorials/06_hamiltonian_nn
-   tutorials/07_graph_neural_de
+   tutorials/05_generalized_adjoint
+   tutorials/06_higher_order
+ 
+.. toctree::
+   :maxdepth: 1
+   :caption: Generative Models
+
+   tutorials/07a_continuous_normalizing_flows
+   tutorials/07a_continuous_normalizing_flows
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Energy-Based Models
+
+   tutorials/08_hamiltonian_nets
+   tutorials/09_lagrangian_nets
+   tutorials/10_stable_neural_odes
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Graph Models
+
+   tutorials/11_gde_node_classification
 
 .. toctree::
    :maxdepth: 1
