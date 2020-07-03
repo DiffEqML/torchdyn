@@ -23,8 +23,8 @@ torchdyn 0.2.0 (July 3, 2020)
 
 * Improved `Adjoint` to handle both terminal and integral loss functions simultaneously
 * Restructured overall API, including `NeuralDE`
-  * `controlled` not a `setting` anymore: introduction of `DataControl` module
-  * `order`, `solver`, `atol`, `rtol` are now arguments of `NeuralDE`
+* `controlled` not a `setting` anymore: introduction of `DataControl` module
+* `order`, `solver`, `atol`, `rtol` are now arguments of `NeuralDE`
 * `DEFunc` is now implicitly called inside the NeuralDE class.
 * Slimmed down `NeuralDE` management of correct ODE solving call.
 
