@@ -40,7 +40,7 @@ jobs:
   py39:
     working_directory: ~/torchdyn_test_suite
     docker:
-      - image: circleci/python:3.9
+      - image: circleci/python:3.9.0a1
     steps:
       - checkout
       - run:
