@@ -59,6 +59,6 @@ workflows:
   version: 1
   python_linux:
     jobs:
-      - p37
+      - py37
       - py38
       - py39
