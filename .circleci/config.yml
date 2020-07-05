@@ -37,7 +37,7 @@ jobs:
             python test/test_ode_adjoint.py
             python test/test_flows.py 
             
-  py38:
+  py39:
     working_directory: ~/torchdyn_test_suite
     docker:
       - image: circleci/python:3.9
