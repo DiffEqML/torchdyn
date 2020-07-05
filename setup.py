@@ -9,7 +9,7 @@ setuptools.setup(
     url="https://github.com/DiffEqML/torchdyn",
     packages=setuptools.find_packages(),
     install_requires=['torch>=1.5.1',
-                      'pytorch-lightning>=0.7.3',
+                      'pytorch-lightning>=0.8.4',
                       'dgl>=0.4.1',
                       'torchdiffeq>=0.0.1'],
     classifiers=[
