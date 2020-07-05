@@ -9,7 +9,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
  
 | System / PyTorch version | 1.5.1 |
 |--------------------------|-------|
-| Linux  -- python 3.7     |       |
+| Linux  -- python 3.7     |  [![DiffEqML](https://circleci.com/gh/DiffEqML/torchdyn.svg?style=svg)](https://app.circleci.com/pipelines/github/DiffEqML/torchdyn)  |
 | Linux -- python 3.8      |       |
 | Windows -- python 3.7    |       |
 
