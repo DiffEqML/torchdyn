@@ -47,7 +47,7 @@ def test_hutch_estimator_gauss_noise():
         x_out = m(x_in)
         eps = noise_dist.sample((64,))
         hutch_trJ += hutch_trace(x_out, x_in, noise=eps)
-    assert (hutch_trJ / 10000 - trJ < 1e-2).all()
+    assert (hutch_trJ / 10000 - trJ < 1e-1).all()
 
 if __name__ == '__main__':
     print(f'Testing regular CNF with autograd trace...')
