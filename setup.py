@@ -1,4 +1,4 @@
-import setuptools
+'import setuptools
 
 setuptools.setup(
     name="torchdyn",
@@ -11,7 +11,10 @@ setuptools.setup(
     install_requires=['torch>=1.5.1',
                       'pytorch-lightning>=0.8.4',
                       'dgl>=0.4.1',
-                      'torchdiffeq>=0.0.1'],
+                      'torchdiffeq>=0.0.1',
+                      'matplotlib'
+                      'torchvision'
+                      'scikit-learn'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
