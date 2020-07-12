@@ -70,9 +70,10 @@ jobs:
       - run:
           command: |
             pip install codecov
-            codecov run test/test_neural_de.py
-            codecov run test/test_ode_adjoint.py
-            codecov run test/test_flows.py 
+            coverage run test/test_neural_de.py
+            coverage run test/test_ode_adjoint.py
+            coverage run test/test_flows.py 
+            codecov
             
 workflows:
   version: 1
