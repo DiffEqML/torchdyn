@@ -15,9 +15,7 @@ jobs:
             sudo python setup.py install
       - run:
           command: |
-            python test/test_neural_de.py
-            python test/test_ode_adjoint.py
-            python test/test_flows.py    
+            python test/run_tests.py 
 
   py38:
     working_directory: ~/torchdyn_test_suite
@@ -33,9 +31,7 @@ jobs:
             sudo python setup.py install
       - run:
           command: |
-            python test/test_neural_de.py
-            python test/test_ode_adjoint.py
-            python test/test_flows.py 
+            python test/run_tests.py 
             
   py39:
     working_directory: ~/torchdyn_test_suite
@@ -51,9 +47,7 @@ jobs:
             sudo python setup.py install
       - run:
           command: |
-            python test/test_neural_de.py
-            python test/test_ode_adjoint.py
-            python test/test_flows.py 
+            python test/run_tests.py 
             
   cov:
     working_directory: ~/torchdyn_test_suite
@@ -67,12 +61,11 @@ jobs:
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements.txt 
             sudo python setup.py install
+            sudo pip install pytest pytest-cov
       - run:
           command: |
             pip install codecov
-            coverage run test/test_neural_de.py
-            coverage run test/test_ode_adjoint.py
-            coverage run test/test_flows.py 
+            pytest --cov=./ 
             codecov
             
 workflows:
