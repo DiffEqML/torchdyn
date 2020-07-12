@@ -58,7 +58,7 @@ jobs:
             codecov
             
   cov:
-    working_directory: ~/torchdyn
+    working_directory: ~/torchdyn_test
     docker:
       - image: circleci/python:3.8
     steps:
@@ -69,6 +69,7 @@ jobs:
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements.txt 
             sudo pip install pytest pytest-cov
+            ls
       - run:
           command: |
             pip install codecov
