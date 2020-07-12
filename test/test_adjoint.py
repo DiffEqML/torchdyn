@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 import pytorch_lightning as pl
-from test_utils import TestLearner
+from utils import TestLearner
 
 import sys
 sys.path.append('..')
-from torchdyn.models import *; from torchdyn.data_utils import *
+from torchdyn.models import *; from torchdyn.datasets import *
 from torchdyn import *
 
 def test_adjoint_autograd():
@@ -18,13 +18,12 @@ def test_adjoint_autograd():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
-    settings = {'type':'classic', 'controlled':False, 'solver':'dopri5', 
-                'backprop_style':'adjoint', 'rtol':1e-5, 'atol':1e-5}
-    f = DEFunc(nn.Sequential(
+    f = nn.Sequential(
             nn.Linear(2, 64),
             nn.Tanh(), 
-            nn.Linear(64, 2)))
-    model = NeuralDE(f, settings).to(device)
+            nn.Linear(64, 2))
+    
+    model = NeuralDE(f, solver='dopri5', atol=1e-5, rtol=1e-5).to(device)
     x, y = next(iter(trainloader)) 
     # adjoint gradients
     y_hat = model(x)   
@@ -33,7 +32,7 @@ def test_adjoint_autograd():
     adj_grad = torch.cat([p.grad.flatten() for p in model.parameters()])
     # autograd gradients
     model.zero_grad()
-    model.st['backprop_style']= 'autograd'
+    model.sensitivity = 'autograd'
     y_hat = model(x)   
     loss = nn.CrossEntropyLoss()(y_hat, y)
     loss.backward()
