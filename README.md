@@ -5,6 +5,8 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 <img src="media/logo.png" width="150" height="150">
 </p>
 
+[!Slack]https://img.shields.io/badge/slack-chat-blue.svg?logo=slack](https://app.slack.com/client/TUYT8QKEK/G012TN66TJL)
+
 #### Continuous Integration
  
 | System / PyTorch version | 1.5.1 |
