@@ -55,10 +55,23 @@ jobs:
             python test/test_ode_adjoint.py
             python test/test_flows.py 
             
+  cov:
+    working_directory: ~/torchdyn_test_suite
+    docker:
+      - image: circleci/python:3.8
+    steps:
+      - checkout
+      - run:
+          command: |
+            pip install codecov
+            codecov run test/test_neural_de.py
+            codecov run test/test_ode_adjoint.py
+            codecov run test/test_flows.py 
+            
 workflows:
   version: 1
   python_linux:
     jobs:
       - py37
       - py38
-      - py39
+      - cov
