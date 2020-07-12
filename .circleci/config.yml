@@ -13,9 +13,12 @@ jobs:
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements.txt 
             sudo python setup.py install
+            sudo pip install pytest pytest-cov
       - run:
           command: |
-            python test/run_tests.py 
+            pip install codecov
+            pytest --cov=./ 
+            codecov
 
   py38:
     working_directory: ~/torchdyn_test_suite
@@ -29,9 +32,12 @@ jobs:
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements.txt 
             sudo python setup.py install
+            sudo pip install pytest pytest-cov
       - run:
           command: |
-            python test/run_tests.py 
+            pip install codecov
+            pytest --cov=./ 
+            codecov
             
   py39:
     working_directory: ~/torchdyn_test_suite
@@ -44,10 +50,12 @@ jobs:
             python -c "req = open('requirements.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements.txt 
-            sudo python setup.py install
+            sudo pip install pytest pytest-cov
       - run:
           command: |
-            python test/run_tests.py 
+            pip install codecov
+            pytest --cov=./ 
+            codecov
             
   cov:
     working_directory: ~/torchdyn_test_suite
@@ -72,6 +80,4 @@ workflows:
   version: 1
   python_linux:
     jobs:
-      - py37
-      - py38
       - cov
