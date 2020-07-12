@@ -4,8 +4,13 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 <p align="center"> 
 <img src="media/logo.png" width="150" height="150">
 </p>
-
+<div align="center">
+ 
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://app.slack.com/client/TUYT8QKEK/G012TN66TJL)
+[![Docs](https://img.shields.io/badge/docks-passing-green.svg?logo=slack)](https://torchdyn.readthedocs.io/)
+ 
+</div>
+
 
 #### Continuous Integration
  
