@@ -4,8 +4,6 @@ import torch.utils.data as data
 import pytorch_lightning as pl
 from utils import TestLearner
 
-import sys
-sys.path.append('..')
 from torchdyn.models import *; from torchdyn.datasets import *
 from torchdyn import *
 
