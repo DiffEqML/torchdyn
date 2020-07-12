@@ -1,4 +1,4 @@
-'import setuptools
+import setuptools
 
 setuptools.setup(
     name="torchdyn",
@@ -8,12 +8,12 @@ setuptools.setup(
     description="PyTorch package for all things neural differential equations",
     url="https://github.com/DiffEqML/torchdyn",
     packages=setuptools.find_packages(),
-    install_requires=['torch>=1.5.1',
+    install_requires=['torch>=1.5.0',
                       'pytorch-lightning>=0.8.4',
                       'dgl>=0.4.1',
                       'torchdiffeq>=0.0.1',
-                      'matplotlib'
-                      'torchvision'
+                      'matplotlib',
+                      'torchvision',
                       'scikit-learn'],
     classifiers=[
         "Programming Language :: Python :: 3",
