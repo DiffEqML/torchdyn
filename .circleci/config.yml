@@ -54,7 +54,7 @@ jobs:
       - run:
           command: |
             pip install codecov
-            pytest --cov=./ 
+            pytest --cov=torchdyn
             codecov
             
   cov:
@@ -72,7 +72,7 @@ jobs:
       - run:
           command: |
             pip install codecov
-            pytest --cov=./ 
+            pytest --cov=torchdyn
             codecov
             
 workflows:
