@@ -2,7 +2,7 @@ version: 2.1
 
 jobs:
   py37:
-    working_directory: ~/torchdyn_test_suite
+    working_directory: ~/torchdyn
     docker:
       - image: circleci/python:3.7
     steps:
@@ -21,7 +21,7 @@ jobs:
             codecov
 
   py38:
-    working_directory: ~/torchdyn_test_suite
+    working_directory: ~/torchdyn
     docker:
       - image: circleci/python:3.8
     steps:
@@ -40,7 +40,7 @@ jobs:
             codecov
             
   py39:
-    working_directory: ~/torchdyn_test_suite
+    working_directory: ~/torchdyn
     docker:
       - image: circleci/python:3.9.0a1
     steps:
@@ -58,7 +58,7 @@ jobs:
             codecov
             
   cov:
-    working_directory: ~/torchdyn_test_suite
+    working_directory: ~/torchdyn
     docker:
       - image: circleci/python:3.8
     steps:
