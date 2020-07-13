@@ -71,9 +71,10 @@ jobs:
             sudo pip install pytest pytest-cov
             sudo python setup.py install
             pip install codecov
+            pip install coverage
       - run:
           command: |           
-            pytest --cov=torchdyn
+            coverage run --source=. -m pytest
             codecov
             
 workflows:
