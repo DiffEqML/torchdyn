@@ -74,7 +74,7 @@ jobs:
             pip install coverage
       - run:
           command: |           
-            coverage run --source=. -m pytest
+            coverage run --source=torchdyn -m pytest
             codecov
             
 workflows:
