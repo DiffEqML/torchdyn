@@ -1,0 +1,2 @@
+[run]
+omit=*_internals.py*,*plot.py*

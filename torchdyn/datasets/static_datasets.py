@@ -217,7 +217,7 @@ class ToyDataset:
         """Handles the generation of classification toy datasets
         :param n_samples: number of data points in the generated dataset
         :type n_samples: int
-        :param dataset_type: {'moons', 'spirals', 'spheres', 'gaussians', 'diffeqml'}
+        :param dataset_type: {'moons', 'spirals', 'spheres', 'gaussians', 'gaussians_spiral', diffeqml'}
         :type dataset_type: str
         :param dim: if 'spheres': dimension of the spheres
         :type dim: float
