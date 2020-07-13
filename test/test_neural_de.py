@@ -1,8 +1,6 @@
 import torch.utils.data as data
 from utils import TestLearner
 
-import sys
-sys.path.append('..')
 import torchdyn; from torchdyn.models import *; from torchdyn.datasets import *
 import torch ; import torch.nn as nn
 from torch.distributions import *
