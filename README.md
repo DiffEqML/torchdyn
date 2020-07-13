@@ -9,7 +9,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://app.slack.com/client/TUYT8QKEK/G012TN66TJL)
 [![codecov](https://codecov.io/gh/DiffEqML/torchdyn/branch/master/graph/badge.svg)](https://codecov.io/gh/DiffEqML/torchdyn)
 [![Docs](https://img.shields.io/badge/docs-passing-green.svg?)](https://torchdyn.readthedocs.io/)
-[![python_sup](https://img.shields.io/badge/python-3.7%20/%203.8-green.svg?)](https://www.python.org/downloads/release/python-370/)
+[![python_sup](https://img.shields.io/badge/python-3.7%20/%203.8-black.svg?)](https://www.python.org/downloads/release/python-370/)
  
 </div>
 
