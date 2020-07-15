@@ -65,7 +65,7 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Variational Neural DE tutorials:** variational neural ode ⬜️ variational neural sde ⬜️ 
 * **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
 * **GDE applications**: traffic forecasting ⬜️
-* **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
+* **Solver suite**:  Euler ✅, Runge-Kutta(4) ✅, Dormand-Prince ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
 * **Specific variants**: ode2vae ⬜️, anodev2 ⬜️, neural jump stochastic ⬜️, ode2ode ⬜️, hamiltonian cnf ⬜️
 
 #### Dependencies
