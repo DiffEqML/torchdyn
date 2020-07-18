@@ -114,16 +114,27 @@ def test_augmented_data_control():
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
 
     trainer.fit(learn) 
-
     
-if __name__ == '__main__':  
-    print(f'Testing NeuralDE no settings...')
-    test_work_without_settings()
-    print(f'Testing NeuralDE .trajectory method...')
-    test_neural_de_traj()
-    print(f'Testing DataControl...')
-    test_data_control()
-    print(f'Testing whether Augmenter function receives weight updates...')
-    test_augmenter_func_is_trained()
-    print(f'Testing Augmenter + DataControl...')
-    test_augmented_data_control()
+def test_vanilla_galerkin():
+    """Vanilla Galerkin (MLP) Neural ODE"""
+    d = ToyDataset()
+    X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    X_train = torch.Tensor(X).to(device)
+    y_train = torch.LongTensor(yn.long()).to(device)
+    train = data.TensorDataset(X_train, y_train)
+
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False) 
+    
+    f = nn.Sequential(DepthCat(1),
+                      GalLinear(6, 64, expfunc=FourierExpansion),
+                      nn.Tanh(), 
+                      DepthCat(1),
+                      GalLinear(64, 6, expfunc=PolyExpansion, n_eig=1))
+    
+    model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
+                          NeuralDE(f, solver='dopri5')
+                         ).to(device)
+    learn = TestLearner(model, trainloader=trainloader)
+    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer.fit(learn) 
