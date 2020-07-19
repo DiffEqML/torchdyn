@@ -3,7 +3,7 @@ Conflict manager for non-compatible Neural DE variants
 """
 #ALLOWED = ['autograd', 'adjoint']
 
-class conflict:
+class conflict: # pragma: no cover
     def __init__(self, c_type, c_settings, c_value):
         self.conflict_type = c_type
         self.conflict_settings = c_settings
@@ -73,7 +73,7 @@ def NOT_ALLOWED_ARG(st:dict):
         )
     return not_allowed
     
-def compat_check(settings:dict):
+def compat_check(settings:dict): # pragma: no cover
     conflicts = NOT_ALLOWED_ARG(settings)
     n_conflicts = len(conflicts)
     if not n_conflicts:
