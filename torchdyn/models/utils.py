@@ -60,14 +60,13 @@ class DepthCat(nn.Module):
         self.s = self.s * torch.ones(s_shape).to(x)
         return torch.cat([x, self.s], self.idx_cat).to(x)
 
-    
+
 class DataControl(nn.Module):
     """Data-control module. Allows for data-control inputs at arbitrary points of the DEFunc
     """
-
-    def __init__(self):
+    def __init__(self, manual=False):
         super().__init__()
-        self.u = None
+        self.u, self.manual = None, manual
 
     def forward(self, x):
         return torch.cat([x, self.u], 1).to(x)
