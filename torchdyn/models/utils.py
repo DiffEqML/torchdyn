@@ -38,7 +38,7 @@ class Augmenter(nn.Module):
                 x = torch.cat([self.augment_func(x).to(x), x],
                               self.augment_idx) 
             else:    
-                x = torch.cat([x, torch.augment_func(new_dims).to(x)],
+                x = torch.cat([x, self.augment_func(x).to(x)],
                                self.augment_idx)
         return x
 
