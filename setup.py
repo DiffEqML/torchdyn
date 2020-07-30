@@ -8,7 +8,7 @@ setuptools.setup(
     description="PyTorch package for all things neural differential equations",
     url="https://github.com/DiffEqML/torchdyn",
     packages=setuptools.find_packages(),
-    install_requires=['torch>=1.5.0',
+    install_requires=['torch>=1.6.0',
                       'pytorch-lightning>=0.8.4',
                       'dgl>=0.4.1',
                       'torchdiffeq>=0.0.1',
