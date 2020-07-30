@@ -94,18 +94,14 @@ class GalLinear(nn.Module):
     :type out_features: int
     :param bias: include bias parameter vector in the layer computation
     :type bias: bool
-    :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
+    :param expfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
     :type expfunc: str
-    :param n_harmonics: number of elements of the truncated eigenfunction expansion.
-    :type n_harmonics: int
-    :param n_eig: number of distinct eigenfunctions in the basis
-    :type n_eig: int
     :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
     :type dilation: bool
     :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
     :type shift: bool
     """
-    def __init__(self, in_features, out_features, bias=True, expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
+    def __init__(self, in_features, out_features, bias=True, expfunc=Fourier(5), dilation=True, shift=True):       
         super().__init__()
         self.in_features, self.out_features = in_features, out_features
         self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
@@ -122,7 +118,6 @@ class GalLinear(nn.Module):
         self.reset_parameters()  
         
     def reset_parameters(self):
-        #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
         torch.nn.init.zeros_(self.coeffs)
         
     def assign_weights(self, s):
@@ -139,6 +134,8 @@ class GalLinear(nn.Module):
         return X.sum(0)
     
     def forward(self, input):
+        # For the moment, GalLayers rely on DepthCat to access the `s` variable. A better design would free the user
+        # of having to introduce DepthCat(1) every time a GalLayer is used
         s = input[-1,-1]
         input = input[:,:-1]
         w = self.assign_weights(s)
@@ -160,12 +157,8 @@ class GalConv2d(nn.Module):
     :type padding: int
     :param bias: include bias parameter vector in the layer computation
     :type bias: bool
-    :param expfunc: {'FourierExpansion', 'PolyExpansion'}. Choice of eigenfunction expansion.
+    :param expfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
     :type expfunc: str
-    :param n_harmonics: number of elements of the truncated eigenfunction expansion.
-    :type n_harmonics: int
-    :param n_eig: number of distinct eigenfunctions in the basis
-    :type n_eig: int
     :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
     :type dilation: bool
     :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
@@ -173,7 +166,7 @@ class GalConv2d(nn.Module):
     """
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'n_harmonics']
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=True,
-                 expfunc=FourierExpansion, n_harmonics=10, n_eig=2, dilation=True, shift=True):
+                 expfunc=Fourier(5), dilation=True, shift=True):
         super().__init__()
         self.in_channels, self.out_channels = in_channels, out_channels
         self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
