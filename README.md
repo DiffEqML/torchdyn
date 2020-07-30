@@ -9,6 +9,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://app.slack.com/client/TUYT8QKEK/G012TN66TJL)
 [![codecov](https://codecov.io/gh/DiffEqML/torchdyn/branch/master/graph/badge.svg)](https://codecov.io/gh/DiffEqML/torchdyn)
 [![Docs](https://img.shields.io/badge/docs-passing-green.svg?)](https://torchdyn.readthedocs.io/)
+[![python_sup](https://img.shields.io/badge/python-3.7+-black.svg?)](https://www.python.org/downloads/release/python-370/)
  
 </div>
 
@@ -64,7 +65,7 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Variational Neural DE tutorials:** variational neural ode ⬜️ variational neural sde ⬜️ 
 * **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
 * **GDE applications**: traffic forecasting ⬜️
-* **Solver suite**:  euler ✅, rk ✅, dopri ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
+* **Solver suite**:  Euler ✅, Runge-Kutta(4) ✅, Dormand-Prince ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
 * **Specific variants**: ode2vae ⬜️, anodev2 ⬜️, neural jump stochastic ⬜️, ode2ode ⬜️, hamiltonian cnf ⬜️
 
 #### Dependencies
