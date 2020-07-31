@@ -25,7 +25,7 @@ class DEFunc(nn.Module):
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]
-            dlds = self.intloss(x_dyn)
+            dlds = self.intloss(s, x_dyn)
             if len(dlds.shape) == 1: dlds = dlds[:, None]
             if self.order > 1: x_dyn = self.horder_forward(s, x_dyn)
             else: x_dyn = self.m(x_dyn)
