@@ -28,3 +28,9 @@ class TestLearner(pl.LightningModule):
 
     def train_dataloader(self):
         return self.trainloader
+    
+class TestIntegralLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+    def forward(self, s, x):
+        return x.norm(dim=1, p=2)
