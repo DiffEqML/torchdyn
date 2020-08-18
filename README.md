@@ -118,7 +118,7 @@ and the *advanced* tutorials
 Check our `wiki` for a full description of available features.
 
 ### Contribute
- `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. We do not have specific style requirements, though we subscribe to many of Jeremy Howard's [ideas](https://docs.fast.ai/dev/style.html)(https://docs.fast.ai/dev/style.html)).
+ `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. We do not have specific style requirements, though we subscribe to many of Jeremy Howard's [ideas](https://docs.fast.ai/dev/style.html).
 
 **Choosing what to work on:** There is always [ongoing work](https://github.com/DiffEqML/torchdyn/issues) on new features, tests and tutorials. Contributing to any of the above is extremely valuable to us. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details. 
 
