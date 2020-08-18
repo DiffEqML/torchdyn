@@ -1,3 +1,4 @@
+
 # torchdyn 
 A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
@@ -18,7 +19,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
  
 | System / PyTorch version | 1.5.1 | 1.6.0 |
 |--------------------------|-------|-------|
-| Linux: Python 3.7/8/9    |  [![DiffEqML](https://circleci.com/gh/DiffEqML/torchdyn.svg?style=svg)](https://app.circleci.com/pipelines/github/DiffEqML/torchdyn)  | |
+| Linux: Python 3.7/8/9    |       |[![DiffEqML](https://circleci.com/gh/DiffEqML/torchdyn.svg?style=svg)](https://app.circleci.com/pipelines/github/DiffEqML/torchdyn) |
 | Windows: Python 3.7      |       | |
 
 ## Installation
@@ -54,10 +55,10 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 
 * **Basics:** quickstart ✅, cookbook ✅
 * **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
-* **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️, sde adjoint ⬜️
+* **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️
 * **Regularization tutorials:** regularization ⬜️ adaptive depth ⬜️ STEER ⬜️
 * **Controlled Neural DEs**: data control ✅, neural cde ⬜️
-* **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅, forward differentiation ⬜️
+* **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅
 * **Image classification:** MNIST ✅, CIFAR10 and ImageNet ⬜️
 * **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
 * **Density estimation applications:** MNIST ⬜️, CIFAR10 ⬜️
@@ -117,7 +118,9 @@ and the *advanced* tutorials
 Check our `wiki` for a full description of available features.
 
 ### Contribute
- `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. 
+ `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. We do not have specific style requirements, though we subscribe to many of Jeremy Howard's [ideas]([https://docs.fast.ai/dev/style.html](https://docs.fast.ai/dev/style.html)).
+
+**Choosing what to work on:** There is always [ongoing work]([https://github.com/DiffEqML/torchdyn/issues](https://github.com/DiffEqML/torchdyn/issues)) on new features, tests and tutorials. Contributing to any of the above is extremely valuable to us. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details. 
 
 #### Cite us
 If you find `torchdyn` valuable for your research or applied projects:
