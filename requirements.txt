@@ -4,7 +4,7 @@ nbsphinx
 numpy
 scipy
 matplotlib
-torch>=1.6.0
+torch
 torchvision
 torchdiffeq
 pytorch_lightning>=0.8.4
