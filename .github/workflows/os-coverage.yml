@@ -1,4 +1,4 @@
-name: torchdyn CI testing on Ubuntu OS
+name: OS-coverage
 on: [push, pull_request]
 
 jobs:
