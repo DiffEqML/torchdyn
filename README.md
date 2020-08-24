@@ -21,7 +21,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 |--------------------------|-------|-------|-------|
 | Ubuntu 16.04  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
 | Ubuntu 16.04  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing) |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
-| Windows  |[!DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |[!DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
+| Windows  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |       |
 
 ## Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
