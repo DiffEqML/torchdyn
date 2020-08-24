@@ -36,7 +36,7 @@ def test_adjoint_autograd():
     loss = nn.CrossEntropyLoss()(y_hat, y)
     loss.backward()
     bp_grad = torch.cat([p.grad.flatten() for p in model.parameters()])
-    assert (torch.abs(bp_grad - adj_grad) <= 1e-4).all(), f'Gradient error: {torch.abs(bp_grad - adj_grad).sum()}'
+    assert (torch.abs(bp_grad - adj_grad) <= 1e-3).all(), f'Gradient error: {torch.abs(bp_grad - adj_grad).sum()}'
     
     
 
@@ -74,4 +74,4 @@ def test_integral_adjoint_integral_autograd():
     loss = loss.backward()
     g_adjoint= deepcopy(x.grad)
     
-    assert torch.abs(g_autograd - g_adjoint).norm(dim=1, p=2).mean() < 1e-4
+    assert torch.abs(g_autograd - g_adjoint).norm(dim=1, p=2).mean() < 1e-3
