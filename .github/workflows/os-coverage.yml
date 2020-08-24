@@ -1,4 +1,4 @@
-name: torchdyn CI testing on Ubuntu OS
+name: OS-coverage
 on: [push, pull_request]
 
 jobs:
@@ -11,6 +11,10 @@ jobs:
       matrix:
         os: [ubuntu-16.04, ubuntu-18.04, windows-2019]
         python-version: [3.6, 3.7, 3.8]
+        exclude:
+          # temporary exclusion until py3.8 deps work on Windows
+          - python-version: 3.8
+            os: windows-2019
         
     steps:
     - uses: actions/checkout@v2
