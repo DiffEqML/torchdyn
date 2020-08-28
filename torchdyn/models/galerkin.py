@@ -12,7 +12,7 @@
 
 import torch
 import torch.nn as nn
-import numpy as np
+
 
 def FourierExpansion(n_range, s):
     """Fourier eigenbasis expansion
@@ -27,7 +27,7 @@ def PolyExpansion(n_range, s):
     basis = [s**n_range]
     return basis
 
-# can be slimmed down with template class (sharing assign_weights and reset_parameters) 
+# can be slimmed down with template class (sharing assign_weights and reset_parameters)
 class GalLinear(nn.Module):
     """Linear Galerkin layer for depth--variant neural differential equations
     :param in_features: input dimensions
@@ -59,27 +59,27 @@ class GalLinear(nn.Module):
         if bias:
             self.bias = torch.Tensor(out_features)
         else:
-            self.register_parameter('bias', None)         
-        self.coeffs = torch.nn.Parameter(torch.Tensor((in_features+1)*out_features, n_harmonics, n_eig))        
-        self.reset_parameters()  
-        
+            self.register_parameter('bias', None)
+        self.coeffs = torch.nn.Parameter(torch.Tensor((in_features+1)*out_features, n_harmonics, n_eig))
+        self.reset_parameters()
+
     def reset_parameters(self):
         #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
         torch.nn.init.zeros_(self.coeffs)
-        
+
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
         basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
-        B = []  
+        B = []
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
             Bin[range(self.n_harmonics), range(self.n_harmonics)] = basis[i]
             B.append(Bin)
         B = torch.cat(B, 1).to(self.coeffs.device)
-        coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device) 
+        coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device)
         X = torch.matmul(B, coeffs)
         return X.sum(0)
-    
+
     def forward(self, input):
         s = input[-1,-1]
         input = input[:,:-1]
@@ -87,7 +87,7 @@ class GalLinear(nn.Module):
         self.weight = w[0:self.in_features*self.out_features].reshape(self.out_features, self.in_features)
         self.bias = w[self.in_features*self.out_features:(self.in_features+1)*self.out_features].reshape(self.out_features)
         return torch.nn.functional.linear(input, self.weight, self.bias)
-    
+
 class GalConv2d(nn.Module):
     """2D convolutional Galerkin layer for depth--variant neural differential equations
     :param in_channels: number of channels in the input image
@@ -133,24 +133,24 @@ class GalConv2d(nn.Module):
         self.coeffs = torch.nn.Parameter(torch.Tensor(((out_channels)*in_channels*(kernel_size**2)+out_channels), n_harmonics, 2))
         self.reset_parameters()
         self.ic, self.oc, self.ks, self.nh = in_channels, out_channels, kernel_size, n_harmonics
-        
+
     def reset_parameters(self):
         #torch.nn.init.uniform_(self.coeffs, 0, 1 / self.n_harmonics**6)
         torch.nn.init.zeros_(self.coeffs)
-        
+
     def assign_weights(self, s):
         n_range = torch.linspace(0, self.n_harmonics, self.n_harmonics).to(self.coeffs.device)
         basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
-        B = []  
+        B = []
         for i in range(self.n_eig):
             Bin = torch.eye(self.n_harmonics).to(self.coeffs.device)
             Bin[range(self.n_harmonics), range(self.n_harmonics)] = basis[i]
             B.append(Bin)
         B = torch.cat(B, 1).to(self.coeffs.device)
-        coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device) 
+        coeffs = torch.cat([self.coeffs[:,:,i] for i in range(self.n_eig)],1).transpose(0,1).to(self.coeffs.device)
         X = torch.matmul(B, coeffs)
         return X.sum(0)
-    
+
     def forward(self, input):
         s = input[-1,-1,0,0]
         input = input[:,:-1]
@@ -159,4 +159,3 @@ class GalConv2d(nn.Module):
         self.weight = w[0:n].reshape(self.oc, self.ic, self.ks, self.ks)
         self.bias = w[n:].reshape(self.oc)
         return torch.nn.functional.conv2d(input, self.weight, self.bias, stride=self.stride, padding=self.pad)
-    

@@ -29,5 +29,3 @@ torchdyn 0.2.0 (July 3, 2020)
 * Slimmed down `NeuralDE` management of correct ODE solving call.
 
 * New test suite for `adjoint`, `normalizing flows` and NeuralDE`.
-
-

@@ -2,9 +2,8 @@ import os.path as osp
 
 import torch
 import torch.nn.functional as F
-from torch_geometric.datasets import Planetoid
 import torch_geometric.transforms as T
-
+from torch_geometric.datasets import Planetoid
 from torch_geometric.nn import SplineConv
 from torchdyn.models import NeuralDE
 
@@ -83,4 +82,3 @@ for epoch in range(1, 201):
     train()
     log = 'Epoch: {:03d}, Train: {:.4f}, Test: {:.4f}'
     print(log.format(epoch, *test()))
-

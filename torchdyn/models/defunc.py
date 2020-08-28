@@ -13,8 +13,9 @@
 import torch
 import torch.nn as nn
 
+
 class DEFunc(nn.Module):
-    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation, 
+    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation,
     higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
@@ -23,14 +24,14 @@ class DEFunc(nn.Module):
     :type order: int
    """
     def __init__(self, model, order=1):
-        super().__init__()  
+        super().__init__()
         self.m, self.nfe,  = model, 0.
         self.order, self.intloss, self.sensitivity = order, None, None
 
     def forward(self, s, x):
-        self.nfe += 1        
+        self.nfe += 1
         # set `s` depth-variable to DepthCat modules
-        for _, module in self.m.named_modules(): 
+        for _, module in self.m.named_modules():
             if hasattr(module, 's'):
                 module.s = s
 
@@ -43,9 +44,9 @@ class DEFunc(nn.Module):
             else: x_dyn = self.m(x_dyn)
             self.dxds = x_dyn
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
-        
+
         # regular forward
-        else:   
+        else:
             if self.order > 1: x = self.horder_forward(s, x)
             else: x = self.m(x)
             self.dxds = x
@@ -59,4 +60,3 @@ class DEFunc(nn.Module):
             x_new += [x[:, size_order*i:size_order*(i+1)]]
         x_new += [self.m(x)]
         return torch.cat(x_new, 1).to(x)
-    

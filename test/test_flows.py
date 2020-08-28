@@ -1,7 +1,9 @@
-import sys
-import torchdyn; from torchdyn.models import *; from torchdyn.datasets import *
-import torch ; import torch.nn as nn
+import torch
+import torch.nn as nn
 from torch.distributions import *
+from torchdyn.datasets import *
+from torchdyn.models import *
+
 
 def test_cnf_vanilla():
     device = torch.device('cpu')
@@ -17,7 +19,7 @@ def test_cnf_vanilla():
     x = torch.randn((512, 2)).to(device)
     out = model(x)
     assert out.shape[1] == x.shape[1] + 1
-    
+
 def test_hutch_vanilla():
     device = torch.device('cpu')
     net = nn.Sequential(
@@ -27,16 +29,16 @@ def test_hutch_vanilla():
         )
     noise_dist = MultivariateNormal(torch.zeros(2).to(device), torch.eye(2).to(device))
     defunc = nn.Sequential(CNF(net, trace_estimator=hutch_trace, noise_dist=noise_dist))
-    
+
     nde = NeuralDE(defunc, solver='dopri5', s_span=torch.linspace(0, 1, 2), atol=1e-5, rtol=1e-5, sensitivity='adjoint')
     model = nn.Sequential(Augmenter(augment_idx=1, augment_dims=1),
-                          nde).to(device)  
+                          nde).to(device)
     x = torch.randn((512, 2)).to(device)
     out = model(x)
     assert out.shape[1] == x.shape[1] + 1
-    
+
 def test_hutch_estimator_gauss_noise():
-    noise_dist = MultivariateNormal(torch.zeros(2), torch.eye(2)) 
+    noise_dist = MultivariateNormal(torch.zeros(2), torch.eye(2))
     x_in = torch.randn((64, 2), requires_grad=True)
     m = nn.Sequential(nn.Linear(2, 32), nn.Softplus(), nn.Linear(32, 2))
     x_out = m(x_in)
@@ -54,8 +56,4 @@ if __name__ == '__main__':
     print(f'Testing regular CNF with Hutch. estimator...')
     test_hutch_vanilla()
     print(f'Checking accuracy of Hutch. estimator (gauss epsilon) vs autograd true trace...')
-    test_hutch_estimator_gauss_noise() 
-
-
-    
-    
+    test_hutch_estimator_gauss_noise()
