@@ -10,20 +10,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchdiffeq
-import pytorch_lightning as pl
-from .defunc import DEFunc
 from torchdyn.sensitivity.adjoint import Adjoint
-from .._internals import compat_check
+
+from .defunc import DEFunc
+
 
 class NeuralDE(pl.LightningModule):
     """General Neural DE class
 
     :param func: function parametrizing the vector field.
     :type func: nn.Module
-    :param settings: specifies parameters of the Neural DE. 
+    :param settings: specifies parameters of the Neural DE.
     :type settings: dict
     """
     def __init__(self, func:nn.Module,
@@ -43,35 +44,35 @@ class NeuralDE(pl.LightningModule):
         self.rtol, self.atol = rtol, atol
         self.intloss = intloss
         self.u, self.controlled = None, False # data-control
-        
+
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
-           
+
     def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
-             
+
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             excess_dims += 1
-                
+
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as data-control set to DataControl module
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'trace_estimator'):
-                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))  
+                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
-                
-        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC 
+
+        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         # TO DO: merge the named_modules loop for perf
         for name, module in self.defunc.named_modules():
-            if hasattr(module, 'u'): 
+            if hasattr(module, 'u'):
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
-                   
-        return x  
 
-    def forward(self, x:torch.Tensor):  
-        x = self._prep_odeint(x)        
+        return x
+
+    def forward(self, x:torch.Tensor):
+        x = self._prep_odeint(x)
         switcher = {
             'autograd': self._autograd,
             'adjoint': self._adjoint,
@@ -93,7 +94,7 @@ class NeuralDE(pl.LightningModule):
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
-    
+
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
 
@@ -112,15 +113,15 @@ class NeuralDE(pl.LightningModule):
 
     def _adjoint(self, x):
         return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
-    
+
     @property
     def nfe(self):
         return self.defunc.nfe
-    
+
     @nfe.setter
     def nfe(self, val):
         self.defunc.nfe = val
-            
+
     def __repr__(self):
         npar = sum([p.numel() for p in self.defunc.parameters()])
         return f"Neural DE:\n\t- order: {self.order}\
@@ -131,4 +132,3 @@ class NeuralDE(pl.LightningModule):
         \n\t- NFE: {self.nfe}\n\
         \nIntegral loss: {self.intloss}\n\
         \nDEFunc:\n {self.defunc}"
-    

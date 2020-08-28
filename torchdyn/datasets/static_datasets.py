@@ -14,12 +14,14 @@
 Commonly used static datasets. Several can be used in both `density estimation` as well as classification
 """
 
+import math
+
+import numpy as np
 import torch
-from torch.distributions import Normal
 from scipy.integrate import solve_ivp
 from sklearn.neighbors import KernelDensity
-import numpy as np
-import math
+from torch.distributions import Normal
+
 
 def randnsphere(dim, radius):
     """Uniform sampling on a sphere of `dim` and `radius`
@@ -105,7 +107,7 @@ def generate_spirals(n_samples=100, noise=1e-4, **kwargs):
     return X, y
 
 def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaussians=0.1, noise=1e-3):
-    """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`. 
+    """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`.
 
     :param n_samples: number of data points in the generated dataset
     :type n_samples: int
@@ -126,7 +128,7 @@ def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaus
     else: loc = torch.cat([radius*torch.cos(angle), radius*torch.sin(angle)])
     dist = Normal(loc, scale=std_gaussians)
 
-    for i in range(n_gaussians):  
+    for i in range(n_gaussians):
         angle += 2*math.pi / n_gaussians
         if dim > 2: dist.loc = torch.Tensor([radius*torch.cos(angle), torch.sin(angle), radius*torch.zeros(dim-2)])
         else: dist.loc = torch.Tensor([radius*torch.cos(angle), radius*torch.sin(angle)])
@@ -134,9 +136,9 @@ def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaus
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
 
-def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop=4, dim=2, 
+def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop=4, dim=2,
                               radius_start=1, radius_end=0.2, std_gaussians_start=0.3, std_gaussians_end=0.1, noise=1e-3):
-    """Creates `dim`-dimensional `n_gaussians` on a spiral. 
+    """Creates `dim`-dimensional `n_gaussians` on a spiral.
 
     :param n_samples: number of data points in the generated dataset
     :type n_samples: int
@@ -161,17 +163,17 @@ def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop
     angle = torch.zeros(1)
     radiuses = torch.linspace(radius_start, radius_end, n_gaussians)
     std_devs = torch.linspace(std_gaussians_start, std_gaussians_end, n_gaussians)
-    
+
     if dim > 2: loc = torch.cat([radiuses[0]*torch.cos(angle), radiuses[0]*torch.sin(angle), torch.zeros(dim-2)])
     else: loc = torch.cat([radiuses[0]*torch.cos(angle), radiuses[0]*torch.sin(angle)])
     dist = Normal(loc, scale=std_devs[0])
 
-    for i in range(n_gaussians):  
+    for i in range(n_gaussians):
         angle += 2*math.pi / n_gaussians_per_loop
         if dim > 2: dist.loc = torch.Tensor([radiuses[i]*torch.cos(angle), torch.sin(angle), radiuses[i]*torch.zeros(dim-2)])
         else: dist.loc = torch.Tensor([radiuses[i]*torch.cos(angle), radiuses[i]*torch.sin(angle)])
         dist.scale = std_devs[i]
-        
+
         X[i*n_samples:(i+1)*n_samples] = dist.sample(sample_shape=(n_samples,)) + torch.randn(dim)*noise
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
@@ -183,17 +185,17 @@ def generate_checkerboard():
     n_chunks = 4
     n_samples = 100
 
-    X = torch.zeros(n_samples * n_chunks, len(ranges))
+    torch.zeros(n_samples * n_chunks, len(ranges))
     linspaces = [torch.linspace(el[0], el[1], n_chunks) for el in ranges]
     mesh = torch.meshgrid(linspaces) ; k = len(mesh)
 
     for i in range(0, n_chunks, 2):
         dims = [mesh_dim[i:i+1] for j in range(k)]
         dist = Uniform([mesh_dim[i:i+1] for j in range(len(mesh))])
-        
+
 def generate_diffeqml(n_samples=100, noise=1e-3):
     """Samples `n_samples` 2-dim points from the DiffEqML logo.
-    
+
     :param n_samples: number of data points in the generated dataset
     :type n_samples: int
     :param noise: standard deviation of noise magnitude added to each data point
@@ -201,7 +203,7 @@ def generate_diffeqml(n_samples=100, noise=1e-3):
     """
     mu = 1
     X0 = [[0,2],[-1.6, -1.2],[1.6, -1.2],]
-    ti, tf = 0., 3.2 
+    ti, tf = 0., 3.2
     t = np.linspace(ti,tf,500)
     # define the ODE model
     def odefunc(t,x):
@@ -219,9 +221,9 @@ def generate_diffeqml(n_samples=100, noise=1e-3):
     X = torch.cat(X)
     k = KernelDensity(kernel='gaussian',bandwidth=.01)
     k.fit(X)
-    
+
     X = torch.tensor(k.sample(n_samples) + noise*np.random.randn(n_samples, 2)).float()
-    return X, None   
+    return X, None
 
 class ToyDataset:
     """Handles the generation of classification toy datasets"""
@@ -250,6 +252,3 @@ class ToyDataset:
             return generate_gaussians_spiral(n_samples=n_samples, **kwargs)
         elif dataset_type == 'diffeqml':
             return generate_diffeqml(n_samples=n_samples, **kwargs)
-
-
-

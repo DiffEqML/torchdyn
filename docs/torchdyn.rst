@@ -10,7 +10,7 @@ Subpackages
     torchdyn.models
     torchdyn.data_utils
 
-Adjoint 
+Adjoint
 ---------------
 
 .. currentmodule:: torchdyn
@@ -20,7 +20,7 @@ Adjoint
     :undoc-members:
     :show-inheritance:
 
-Learner 
+Learner
 ---------------
 
 .. autoclass:: Learner
@@ -28,6 +28,6 @@ Learner
     :undoc-members:
     :show-inheritance:
 
-Plotting Functions 
+Plotting Functions
 -------------------
 This API is experimental and might be subjected to substantial changes. It will be made available in the next release.

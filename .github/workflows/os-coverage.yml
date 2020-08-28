@@ -5,9 +5,9 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false 
-      max-parallel: 2 
-      
+      fail-fast: false
+      max-parallel: 2
+
       matrix:
         os: [ubuntu-16.04, ubuntu-18.04, windows-2019]
         python-version: [3.6, 3.7, 3.8]
@@ -15,12 +15,12 @@ jobs:
           # temporary exclusion until py3.8 deps work on Windows
           - python-version: 3.8
             os: windows-2019
-        
+
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
-      with: 
+      with:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
@@ -30,7 +30,7 @@ jobs:
         pip install -r requirements.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
         python setup.py install
         pip install pytest pytest-cov
-        
+
     - name: Run tests
       run: |
         coverage run --source=torchdyn -m pytest

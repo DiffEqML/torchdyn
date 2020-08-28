@@ -11,13 +11,13 @@ jobs:
           command: |
             python -c "req = open('requirements.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
-            sudo pip install -r requirements.txt 
+            sudo pip install -r requirements.txt
             sudo python setup.py install
             sudo pip install pytest pytest-cov
       - run:
           command: |
             pip install codecov
-            pytest --cov=./ 
+            pytest --cov=./
             codecov
 
   py38:
@@ -30,15 +30,15 @@ jobs:
           command: |
             python -c "req = open('requirements.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
-            sudo pip install -r requirements.txt 
+            sudo pip install -r requirements.txt
             sudo python setup.py install
             sudo pip install pytest pytest-cov
       - run:
           command: |
             pip install codecov
-            pytest --cov=torchdyn 
+            pytest --cov=torchdyn
             codecov
-            
+
   py39:
     working_directory: ~/torchdyn
     docker:
@@ -49,14 +49,14 @@ jobs:
           command: |
             python -c "req = open('requirements.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
-            sudo pip install -r requirements.txt 
+            sudo pip install -r requirements.txt
             sudo pip install pytest pytest-cov
       - run:
           command: |
             pip install codecov
             pytest --cov=torchdyn
             codecov
-            
+
   cov:
     working_directory: ~/torchdyn_test
     docker:
@@ -67,16 +67,16 @@ jobs:
           command: |
             python -c "req = open('requirements.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
-            sudo pip install -r requirements.txt 
+            sudo pip install -r requirements.txt
             sudo pip install pytest pytest-cov
             sudo python setup.py install
             pip install codecov
             pip install coverage
       - run:
-          command: |           
+          command: |
             coverage run --source=torchdyn -m pytest
             codecov
-            
+
 workflows:
   version: 1
   python_linux:

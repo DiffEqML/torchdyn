@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 from torchdiffeq import odeint
 
+
 def flatten(iterable):
     return torch.cat([el.contiguous().flatten() for el in iterable])
 
@@ -51,14 +52,14 @@ class Adjoint(nn.Module):
             if not self.intloss is None:
                 g = self.intloss(s, h)
                 dgdh = torch.autograd.grad(g.sum(), h, allow_unused=True, retain_graph=True)[0]
-                dλds = dλds - dgdh   
+                dλds = dλds - dgdh
         ds_adjds = torch.tensor(0.).to(self.s_span)
-        
+
         # `None` safety check necessary for cert. applications e.g. Stable with bias on out layer
         dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(dλds)
-        
+
         return (f, dλds, dμds, ds_adjds)
-  
+
     def _init_adjoint_state(self, sol, *grad_output):
         λ0 = grad_output[-1][0]
         s_adj0 = torch.tensor(0.).to(self.s_span)
@@ -69,23 +70,23 @@ class Adjoint(nn.Module):
         class autograd_adjoint(torch.autograd.Function):
             @staticmethod
             def forward(ctx, h0, flat_params, s_span):
-                sol = odeint(self.func, h0, self.s_span, rtol=self.rtol, atol=self.atol, 
+                sol = odeint(self.func, h0, self.s_span, rtol=self.rtol, atol=self.atol,
                              method=self.method, options=self.options)
                 ctx.save_for_backward(self.s_span, self.flat_params, sol)
                 return sol[-1]
 
-            @staticmethod  
+            @staticmethod
             def backward(ctx, *grad_output):
                 s, flat_params, sol = ctx.saved_tensors
-                self.f_params = tuple(self.func.parameters()) 
-                adj0 = self._init_adjoint_state(sol, grad_output) 
-                adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0), 
+                self.f_params = tuple(self.func.parameters())
+                adj0 = self._init_adjoint_state(sol, grad_output)
+                adj_sol = odeint(self.adjoint_dynamics, adj0, self.s_span.flip(0),
                                rtol=self.rtol, atol=self.atol, method=self.method, options=self.options)
                 λ = adj_sol[1]
                 μ = adj_sol[2]
                 return (λ, μ, None)
         return autograd_adjoint
-  
+
     def forward(self, func, h0, s_span, rtol=1e-4, atol=1e-4, method='dopri5', options={}):
         if not isinstance(func, nn.Module):
             raise ValueError('func is required to be an instance of nn.Module.')
@@ -95,4 +96,3 @@ class Adjoint(nn.Module):
         h0 = h0.requires_grad_(True)
         sol = self.autograd_func.apply(h0, self.flat_params, self.s_span)
         return sol
-    
