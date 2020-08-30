@@ -10,11 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import torch
+import torch.nn as nn
 import torch.utils.data as data
-from utils import TestLearner
-import torchdyn; from torchdyn.models import *; from torchdyn.datasets import *
-import torch ; import torch.nn as nn
 from torch.distributions import *
+from torchdyn.datasets import *
+from torchdyn.models import *
+from utils import TestLearner
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -25,16 +27,16 @@ def test_work_without_settings():
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
     f = nn.Sequential(
             nn.Linear(2, 64),
-            nn.Tanh(), 
+            nn.Tanh(),
             nn.Linear(64, 2))
     model = NeuralDE(f).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
-    trainer.fit(learn) 
-    
+    trainer.fit(learn)
+
 def test_neural_de_traj():
     """Vanilla NeuralDE sanity test"""
     d = ToyDataset()
@@ -42,18 +44,18 @@ def test_neural_de_traj():
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
-    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+
     f = nn.Sequential(
             nn.Linear(2, 64),
-            nn.Tanh(), 
+            nn.Tanh(),
             nn.Linear(64, 2))
     model = NeuralDE(f,  solver='dopri5').to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
-    trainer.fit(learn) 
+    trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
-    trajectory = model.trajectory(X_train, s_span).detach().cpu()
+    model.trajectory(X_train, s_span).detach().cpu()
 
 def test_data_control():
     """Data-controlled NeuralDE"""
@@ -62,19 +64,19 @@ def test_data_control():
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
 
     f = nn.Sequential(DataControl(),
             nn.Linear(4, 64),
-            nn.Tanh(), 
+            nn.Tanh(),
             nn.Linear(64, 2))
     model = NeuralDE(f, solver='dopri5').to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
 
-    trainer.fit(learn) 
+    trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
-    trajectory = model.trajectory(X_train, s_span).detach().cpu()
+    model.trajectory(X_train, s_span).detach().cpu()
 
 def test_augmenter_func_is_trained():
     """Test if augment function is trained without explicit definition"""
@@ -83,11 +85,11 @@ def test_augmenter_func_is_trained():
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
 
     f = nn.Sequential(DataControl(),
                       nn.Linear(12, 64),
-                      nn.Tanh(), 
+                      nn.Tanh(),
                       nn.Linear(64, 6))
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
                           NeuralDE(f, solver='dopri5')
@@ -96,10 +98,10 @@ def test_augmenter_func_is_trained():
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
 
     p = torch.cat([p.flatten() for p in model[0].parameters()])
-    trainer.fit(learn) 
+    trainer.fit(learn)
     p_after = torch.cat([p.flatten() for p in model[0].parameters()])
     assert (p != p_after).any()
-    
+
 def test_augmented_data_control():
     """Data-controlled NeuralDE with IL-Augmentation"""
     d = ToyDataset()
@@ -108,21 +110,21 @@ def test_augmented_data_control():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
 
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False) 
-    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+
     f = nn.Sequential(DataControl(),
                      nn.Linear(12, 64),
-                     nn.Tanh(), 
+                     nn.Tanh(),
                      nn.Linear(64, 6))
-    
+
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
                           NeuralDE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
 
-    trainer.fit(learn) 
-    
+    trainer.fit(learn)
+
 def test_vanilla_galerkin():
     """Vanilla Galerkin (MLP) Neural ODE"""
     d = ToyDataset()
@@ -131,36 +133,36 @@ def test_vanilla_galerkin():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
 
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False) 
-    
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+
     f = nn.Sequential(DepthCat(1),
                       GalLinear(6, 64, expfunc=FourierExpansion),
-                      nn.Tanh(), 
+                      nn.Tanh(),
                       DepthCat(1),
                       GalLinear(64, 6, expfunc=PolyExpansion, n_eig=1))
-    
+
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
                           NeuralDE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
-    
+
 def test_vanilla_conv_galerkin():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     """Vanilla Galerkin (CNN 2D) Neural ODE"""
     X = torch.randn(12, 1, 28, 28).to(device)
-    
+
     f = nn.Sequential(DepthCat(1),
                       GalConv2d(1, 12, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3),
-                      nn.Tanh(), 
+                      nn.Tanh(),
                       DepthCat(1),
                       GalConv2d(12, 1, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3))
-    
+
     model = nn.Sequential(NeuralDE(f, solver='dopri5')
-                          ).to(device)   
+                          ).to(device)
     model(X)
-    
+
 def test_2nd_order():
     """2nd order (MLP) Galerkin Neural ODE"""
     d = ToyDataset()
@@ -169,11 +171,11 @@ def test_2nd_order():
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
 
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False) 
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
 
     f = nn.Sequential(DepthCat(1),
                       nn.Linear(5, 64),
-                      nn.Tanh(), 
+                      nn.Tanh(),
                       DepthCat(1),
                       nn.Linear(65, 2))
 
@@ -182,5 +184,4 @@ def test_2nd_order():
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
-    trainer.fit(learn) 
-
+    trainer.fit(learn)
