@@ -96,8 +96,27 @@ class NeuralDE(pl.LightningModule):
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
     
-    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        raise NotImplementedError
+    def sensitivity_trajectory(self, x:torch.Tensor, grad_output:torch.Tensor, 
+                               s_span:torch.Tensor):
+        """Returns a data-flow trajectory of the adjoint ODE at `s_span` points
+
+        :param x: input data
+        :type x: torch.Tensor
+        :param grad_output: output gradient, initial condition for costate `lambda(S)`
+        :type x: torch.Tensor
+        :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
+                       between 0 and 1
+        :type s_span: torch.Tensor
+        """
+        assert self.sensitivity == 'adjoint', 'Sensitivity trajectory only available for `adjoint`'
+        x = torch.autograd.Variable(x, requires_grad=True)
+        sol = self(x)       
+        adj0 = self.adjoint._init_adjoint_state(sol, grad_output)
+        self.adjoint.flat_params = flatten(self.defunc.parameters())
+        self.adjoint.func = self.defunc; self.adjoint.f_params = tuple(self.defunc.parameters())
+        adj_sol = torchdiffeq.odeint(self.adjoint.adjoint_dynamics, adj0, s_span, 
+               rtol=self.rtol, atol=self.atol, method=self.solver)
+        return adj_sol
 
     def reset(self):
         self.nfe, self.defunc.nfe = 0, 0
@@ -114,6 +133,9 @@ class NeuralDE(pl.LightningModule):
 
     def _adjoint(self, x):
         return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+
+    def reset_parameters(self):
+        pass
     
     @property
     def nfe(self):

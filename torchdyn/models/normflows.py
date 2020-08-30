@@ -58,7 +58,7 @@ class CNF(nn.Module):
             else: x_out = self.net(x_in)
                 
             jvp, trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
-            if jvp not None: self.intloss.jvp = jvp
+            if jvp is not None: self.intloss.jvp = jvp
                 
         return torch.cat([-trJ[:, None], x_out], 1) + 0*x # `+ 0*x` has the only purpose of connecting x[:, 0] to autograd graph
     
