@@ -18,14 +18,13 @@ def autograd_trace(x_out, x_in, **kwargs):
     trJ = 0.
     for i in range(x_in.shape[1]):
         trJ += torch.autograd.grad(x_out[:, i].sum(), x_in, allow_unused=False, create_graph=True)[0][:, i]  
-    return trJ
+    return None, trJ
 
 def hutch_trace(x_out, x_in, noise=None, **kwargs):
     """Hutchinson's trace Jacobian estimator, O(1) call to autograd"""
     jvp = torch.autograd.grad(x_out, x_in, noise, create_graph=True)[0]
-    trJ = torch.einsum('bi,bi->b', jvp, noise)
-    
-    return trJ
+    trJ = torch.einsum('bi,bi->b', jvp, noise)   
+    return jvp, trJ
 
 REQUIRES_NOISE = [hutch_trace]
 
@@ -46,6 +45,7 @@ class CNF(nn.Module):
         self.net, self.order = net, order # order at the CNF level will be merged with DEFunc
         self.trace_estimator = trace_estimator if trace_estimator is not None else autograd_trace;
         self.noise_dist, self.noise = noise_dist, None
+        self.intloss = None # this will allow passing `jvp` to `IntegralLoss` for efficient regularization of e.g Frob. norm
         if self.trace_estimator in REQUIRES_NOISE:
             assert self.noise_dist is not None, 'This type of trace estimator requires specification of a noise distribution'
             
@@ -57,7 +57,9 @@ class CNF(nn.Module):
             if self.order > 1: self.higher_order(x_in)
             else: x_out = self.net(x_in)
                 
-            trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
+            jvp, trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
+            if jvp not None: self.intloss.jvp = jvp
+                
         return torch.cat([-trJ[:, None], x_out], 1) + 0*x # `+ 0*x` has the only purpose of connecting x[:, 0] to autograd graph
     
     def higher_order(self, x):

@@ -58,7 +58,9 @@ class NeuralDE(pl.LightningModule):
         # as well as data-control set to DataControl module
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'trace_estimator'):
-                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))  
+                if module.noise_dist is not None: 
+                    module.noise = module.noise_dist.sample((x.shape[0],))
+                    module.intloss = intloss
                 excess_dims += 1
                 
         # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC 
