@@ -6,6 +6,8 @@ import pytorch_lightning as pl
 import torchsde
 from torchsde import sdeint_adjoint
 
+from torchdyn.models import SDEFunc, LSDEFunc
+
 
 class NeuralSDE(pl.LightningModule):
     def __init__(self, drift_func, 
