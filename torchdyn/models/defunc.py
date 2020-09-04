@@ -1,8 +1,21 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import torch
 import torch.nn as nn
 
+
 class DEFunc(nn.Module):
-    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation, 
+    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation,
     higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
@@ -11,29 +24,29 @@ class DEFunc(nn.Module):
     :type order: int
    """
     def __init__(self, model, order=1):
-        super().__init__()  
+        super().__init__()
         self.m, self.nfe,  = model, 0.
         self.order, self.intloss, self.sensitivity = order, None, None
 
     def forward(self, s, x):
-        self.nfe += 1        
+        self.nfe += 1
         # set `s` depth-variable to DepthCat modules
-        for _, module in self.m.named_modules(): 
+        for _, module in self.m.named_modules():
             if hasattr(module, 's'):
                 module.s = s
 
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]
-            dlds = self.intloss(x_dyn)
+            dlds = self.intloss(s, x_dyn)
             if len(dlds.shape) == 1: dlds = dlds[:, None]
             if self.order > 1: x_dyn = self.horder_forward(s, x_dyn)
             else: x_dyn = self.m(x_dyn)
             self.dxds = x_dyn
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
-        
+
         # regular forward
-        else:   
+        else:
             if self.order > 1: x = self.horder_forward(s, x)
             else: x = self.m(x)
             self.dxds = x
@@ -47,4 +60,3 @@ class DEFunc(nn.Module):
             x_new += [x[:, size_order*i:size_order*(i+1)]]
         x_new += [self.m(x)]
         return torch.cat(x_new, 1).to(x)
-    

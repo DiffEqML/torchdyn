@@ -18,12 +18,12 @@ from torchdyn.datasets import *
 from torchdyn.models import *
 from utils import TestLearner
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def test_work_without_settings():
     """Functionality: defining Neural DEs via default settings"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -41,7 +41,6 @@ def test_neural_de_traj():
     """Vanilla NeuralDE sanity test"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -62,7 +61,6 @@ def test_data_control():
     """Data-controlled NeuralDE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -84,7 +82,6 @@ def test_augmenter_func_is_trained():
     """Test if augment function is trained without explicit definition"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -109,7 +106,6 @@ def test_augmented_data_control():
     """Data-controlled NeuralDE with IL-Augmentation"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -133,7 +129,6 @@ def test_vanilla_galerkin():
     """Vanilla Galerkin (MLP) Neural ODE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
@@ -153,11 +148,25 @@ def test_vanilla_galerkin():
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
 
+def test_vanilla_conv_galerkin():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    """Vanilla Galerkin (CNN 2D) Neural ODE"""
+    X = torch.randn(12, 1, 28, 28).to(device)
+
+    f = nn.Sequential(DepthCat(1),
+                      GalConv2d(1, 12, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3),
+                      nn.Tanh(),
+                      DepthCat(1),
+                      GalConv2d(12, 1, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3))
+
+    model = nn.Sequential(NeuralDE(f, solver='dopri5')
+                          ).to(device)
+    model(X)
+
 def test_2nd_order():
     """2nd order (MLP) Galerkin Neural ODE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     X_train = torch.Tensor(X).to(device)
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)

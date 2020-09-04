@@ -10,9 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .defunc import *
-from .energy import *
-from .galerkin import *
-from .neuralde import *
-from .normflows import *
-from .utils import *
+from torchdyn import *
+from torchdyn.datasets import *
+from torchdyn.models import *
+
+
+def test_adjoint_autograd():
+    """Test generation of (vanilla) version of all static_datasets"""
+    d = ToyDataset()
+    for dataset_type in ['moons', 'spirals', 'spheres', 'gaussians', 'gaussians_spiral', 'diffeqml']:
+        X, yn = d.generate(n_samples=512, noise=0.2, dataset_type=dataset_type)
