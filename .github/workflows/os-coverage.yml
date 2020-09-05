@@ -13,6 +13,8 @@ jobs:
         python-version: [3.6, 3.7, 3.8]
         exclude:
           # temporary exclusion until py3.8 deps work on Windows
+          - python-version: 3.7
+            os: windows-2019
           - python-version: 3.8
             os: windows-2019
 
@@ -25,12 +27,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -c "fname = 'requirements.txt' ; req = open(fname).read().replace('>=', '==') ; open(fname, 'w').write(req)"
+        python -c "fname = 'requirements/base.txt' ; req = open(fname).read().replace('>=', '==') ; open(fname, 'w').write(req)"
         python -m pip install --upgrade --user pip
-        pip install -r requirements.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
+        pip install -r requirements/base.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
+        pip install -r requirements/external.txt
         python setup.py install
         pip install pytest pytest-cov
-
+        
     - name: Run tests
       run: |
         coverage run --source=torchdyn -m pytest
