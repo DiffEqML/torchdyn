@@ -25,10 +25,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -c "fname = 'requirements.txt' ; req = open(fname).read().replace('>=', '==') ; open(fname, 'w').write(req)"
+        python -c "fname = 'requirements/base.txt' ; req = open(fname).read().replace('>=', '==') ; open(fname, 'w').write(req)"
         python -m pip install --upgrade --user pip
-        pip install -r requirements.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
-        python setup.py install
+        pip install -r requirements/base.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
+        pip install -r requirements/extra.txt
+	python setup.py install
         pip install pytest pytest-cov
 
     - name: Run tests
