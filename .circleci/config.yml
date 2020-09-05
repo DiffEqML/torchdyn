@@ -12,7 +12,7 @@ jobs:
             python -c "req = open('requirements/base.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements/base.txt
-            sudo pip install -r requirements/extra.txt
+            sudo pip install -r requirements/external.txt
             sudo python setup.py install
             sudo pip install pytest pytest-cov
       - run:
@@ -32,7 +32,7 @@ jobs:
             python -c "req = open('requirements/base.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements/base.txt
-            sudo pip install -r requirements/extra.txt
+            sudo pip install -r requirements/external.txt
             sudo python setup.py install
             sudo pip install pytest pytest-cov
       - run:
@@ -52,7 +52,7 @@ jobs:
             python -c "req = open('requirements/base.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements/base.txt
-            sudo pip install -r requirements/extra.txt
+            sudo pip install -r requirements/external.txt
             sudo pip install pytest pytest-cov
       - run:
           command: |
@@ -71,7 +71,7 @@ jobs:
             python -c "req = open('requirements/base.txt').read().replace('>', '=') ; open('requirements.txt', 'w').write(req)"
             sudo python -m pip install --upgrade --user pip
             sudo pip install -r requirements/base.txt
-            sudo pip install -r requirements/extra.txt
+            sudo pip install -r requirements/external.txt
             sudo pip install pytest pytest-cov
             sudo python setup.py install
             pip install codecov
