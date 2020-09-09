@@ -24,11 +24,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 | Windows  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |       |
 
 ## Installation
-`git clone https://github.com/DiffEqML/torchdyn.git`
-
-`cd torchdyn`
-
-`python setup.py install`
+`pip install git+https://github.com/DiffEqML/torchdyn.git`
 
 ## Documentation 
 https://torchdyn.readthedocs.io/
