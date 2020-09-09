@@ -7,9 +7,9 @@ End-to-end Pytorch suite for continuous neural architectures featuring several m
 .. code-block:: bash
 
   git clone https://github.com/DiffEqML/torchdyn.git
-  
+
   cd torchdyn
- 
+
   python setup.py install
 
 Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
@@ -32,10 +32,10 @@ Please visit our GitHub `page <https://github.com/diffeqml/torchdyn.git>`_.
    :maxdepth: 1
    :caption: Advanced Tutorials
 
-   tutorials/04_augmentation_strategies   
+   tutorials/04_augmentation_strategies
    tutorials/05_generalized_adjoint
    tutorials/06_higher_order
- 
+
 .. toctree::
    :maxdepth: 1
    :caption: Generative Models

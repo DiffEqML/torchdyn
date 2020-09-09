@@ -13,16 +13,16 @@
 """
 General plotting utilities
 """
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
-import pytorch_lightning as pl
-import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
+
 
 def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8):
     """Plots decision boundary of a 2-dimensional task
-    
+
      :param model: model
      :type model: nn.Module
      :param X: input data
@@ -45,11 +45,11 @@ def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8)
                  preds, cmap='winter', alpha=alpha, levels=10)
     for i in range(num_classes):
         plt.scatter(X[y==i,0], X[y==i,1], alpha=alpha)
-        
+
 
 def plot_2d_flows(trajectory, num_flows=2, figsize=(8,4), alpha=0.8):
     """Plots data flows learned by a neural differential equation.
-    
+
      :param trajectory: tensor of data flows. Assumed to be of dimensions `L, B, *` with `L`:length of trajectory, `B`:batch size, `*`:remaining dimensions.
      :type trajectory: torch.Tensor
      :param num_flows: number of data flows to visualize
@@ -68,17 +68,17 @@ def plot_2d_flows(trajectory, num_flows=2, figsize=(8,4), alpha=0.8):
     plt.title('Dimension: 1')
     for i in range(num_flows):
         plt.plot(trajectory[:,i,1], color='blue', alpha=alpha)
-        
-        
+
+
 defaults_1D = {'n_grid':100, 'n_levels':30, 'x_span':[-1,1],
-            'contour_alpha':0.7, 'cmap':'winter', 
+            'contour_alpha':0.7, 'cmap':'winter',
             'traj_color':'orange', 'traj_alpha':0.1,
             'device':'cuda:0'}
 
 def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
                     n_levels=30, contour_alpha=0.7, cmap='winter', traj_color='orange', traj_alpha=0.1):
     """Plots 1D data flows.
-    
+
      :param model: model
      :type model: nn.Module
      :param s_span: number of data flows to visualize
@@ -94,9 +94,9 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
      """
     ss = torch.linspace(s_span[0], s_span[-1], n_grid)
     xx = torch.linspace(x_span[0], x_span[-1], n_grid)
-    
+
     S, X = torch.meshgrid(ss,xx)
-    
+
     if model.controlled:
         ax = st['ax']
         u_traj = traj[0,:,0].repeat(traj.shape[1],1)
@@ -119,8 +119,8 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
         ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
         ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
         ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-        
-        
+
+
     else:
         U, V = torch.ones(n_grid, n_grid), torch.zeros(n_grid, n_grid)
         for i in range(n_grid):
@@ -130,18 +130,18 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
                             X[i,j].reshape(1,-1).to(device)
                             ).detach().cpu()
         F = torch.sqrt(U**2 + V**2)
-        
+
         plt.contourf(S,X,F,n_levels,cmap=cmap,alpha=contour_alpha)
         plt.streamplot(S.T.numpy(),X.T.numpy(),
                        U.T.numpy(),V.T.numpy(),
                        color='black',linewidth=1)
         if not traj==None:
-            plt.plot(s_span, traj[:,:,0], 
+            plt.plot(s_span, traj[:,:,0],
                      color=traj_color,alpha=traj_alpha)
-            
+
         plt.xlabel(r"$s$ [Depth]")
         plt.ylabel(r"$h(s)$")
-            
+
         return (S, X, U, V)
 
 def plot_2D_depth_trajectory(s_span, trajectory, yn, n_lines):
@@ -173,9 +173,9 @@ def plot_2D_state_space(trajectory, yn, n_lines):
     ax.set_xlabel(r"$h_0$")
     ax.set_ylabel(r"$h_1$")
     ax.set_title("Flows in the state-space")
-    
+
 def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
-    colors = ['orange', 'blue'] 
+    colors = ['orange', 'blue']
     fig = plt.figure(figsize=(6,3))
     ax = Axes3D(fig)
     for i in range(n_lines):
@@ -189,7 +189,7 @@ def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
     ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-    
+
 def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
     x = torch.linspace(trajectory[:,:,0].min(), trajectory[:,:,0].max(), N)
     y = torch.linspace(trajectory[:,:,1].min(), trajectory[:,:,1].max(), N)
@@ -206,15 +206,15 @@ def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
     ax = fig.add_subplot(111)
     ax.contourf(X, Y, torch.sqrt(U**2 + V**2), cmap='RdYlBu')
     ax.streamplot(X.T.numpy(),Y.T.numpy(),U.T.numpy(),V.T.numpy(), color='k')
-    
+
     ax.set_xlim([x.min(),x.max()])
-    ax.set_ylim([y.min(),y.max()])  
+    ax.set_ylim([y.min(),y.max()])
     ax.set_xlabel(r"$h_0$")
     ax.set_ylabel(r"$h_1$")
     ax.set_title("Learned Vector Field")
-    
+
 def plot_3D_dataset(X, yn):
-    colors = ['orange', 'blue'] 
+    colors = ['orange', 'blue']
     fig = plt.figure(figsize=(4,4))
     ax = Axes3D(fig)
     for i in range(len(X)):
@@ -226,4 +226,3 @@ def plot_3D_dataset(X, yn):
     ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-  

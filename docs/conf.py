@@ -12,6 +12,7 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -54,7 +55,7 @@ master_doc = 'index'
 exclude_patterns = [
     # Slow
     '_build', '**.ipynb_checkpoints',
-    'tutorials/wip_tutorials', 
+    'tutorials/wip_tutorials',
     'tutorials/lightning_logs',
     'tutorials/__pycache__'
 ]
