@@ -36,7 +36,8 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish distribution 📦 to PyPI
-      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
+      # temporarily publish every major master commit
+      # if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
