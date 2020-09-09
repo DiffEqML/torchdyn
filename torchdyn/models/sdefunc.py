@@ -1,27 +1,22 @@
-import math
-import torch
-import torch.nn as nn
-from torch.distributions import Normal, kl_divergence
 import pytorch_lightning as pl
-import torchsde
-from torchsde import sdeint_adjoint
+import torch.nn as nn
 
 
 class SDEFunc(nn.Module):
     def __init__(self, f, g, order=1):
-        super().__init__()  
+        super().__init__()
         self.order, self.intloss, self.sensitivity = order, None, None
         self.f_func, self.g_func = f, g
         self.fnfe, self.gnfe = 0, 0
 
     def forward(self, s, x):
         pass
-    
+
     def f(self, s, x):
         """Posterior drift."""
         self.fnfe += 1
         return self.f_func(x)
-    
+
     def g(self, s, x):
         """Diffusion"""
         self.gnfe += 1

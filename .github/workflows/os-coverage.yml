@@ -33,7 +33,7 @@ jobs:
         pip install -r requirements/external.txt
         python setup.py install
         pip install pytest pytest-cov
-        
+
     - name: Run tests
       run: |
         coverage run --source=torchdyn -m pytest

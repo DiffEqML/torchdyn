@@ -1,17 +1,17 @@
 import math
+
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from torch.distributions import Normal, kl_divergence
-import pytorch_lightning as pl
 import torchsde
+from torch.distributions import Normal, kl_divergence
+from torchdyn.models import LSDEFunc, SDEFunc
 from torchsde import sdeint_adjoint
-
-from torchdyn.models import SDEFunc, LSDEFunc
 
 
 class NeuralSDE(pl.LightningModule):
-    def __init__(self, drift_func, 
-                 diffusion_func, 
+    def __init__(self, drift_func,
+                 diffusion_func,
                  noise_type='diagonal',
                  order=1,
                  sensitivity='autograd',
@@ -20,27 +20,27 @@ class NeuralSDE(pl.LightningModule):
                  atol=1e-4,
                  rtol=1e-4,
                  intloss=None):
-        
+
         super().__init__()
         self.defunc = SDEFunc(f=drift_func, g=diffusion_func)
         self.defunc.noise_type, self.defunc.sde_type = noise_type, 'ito'
-        
+
         self.rtol, self.atol = rtol, atol
         self.solver, self.s_span = solver, s_span
         self.adaptive = False
-    
+
     def forward(self, x: torch.Tensor):
 
         for name, module in self.defunc.named_modules():
-            if hasattr(module, 'u'): 
+            if hasattr(module, 'u'):
                 self.controlled = True
                 module.u = x.detach()
 
         out = sdeint(self.defunc, x, self.s_span,
-                     rtol=self.rtol, atol=self.atol, 
+                     rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver)[-1]
         return out
-    
+
     def trajectory(self, x: torch.Tensor, s_span: torch.Tensor):
         sol = sdeint(self.defunc, x, s_span,
                      rtol=self.rtol, atol=self.atol, method=self.solver)

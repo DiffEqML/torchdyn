@@ -14,8 +14,8 @@ from .defunc import *
 from .energy import *
 from .galerkin import *
 from .neuralde import *
-from .normflows import *
-from .utils import *
-from .sdeutils import *
-from .sdefunc import *
 from .neuralsde import *
+from .normflows import *
+from .sdefunc import *
+from .sdeutils import *
+from .utils import *

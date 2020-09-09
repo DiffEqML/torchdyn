@@ -1,19 +1,18 @@
 """A partial Re-implementation of Xuechen Li's work (https://github.com/google-research/torchsde/blob/master/examples/latent_sde.py)"""
 
 
-import os
 import math
-import numpy as np
+import os
 from collections import namedtuple
-from matplotlib import pyplot as plt
 
-import torch
-from torch import nn, optim
+import numpy as np
 import pytorch_lightning as pl
-from torch.utils.data import Dataset, DataLoader
+import torch
+from fromtorchdyn.models import EMAMetric, LatentNeuralSDE, LinearScheduler
+from matplotlib import pyplot as plt
+from torch import nn, optim
 from torch.distributions import Laplace
-
-from from torchdyn.models import LatentNeuralSDE, LinearScheduler, EMAMetric
+from torch.utils.data import DataLoader, Dataset
 from torchsde import BrownianPath
 
 
@@ -254,11 +253,3 @@ class Learner(pl.LightningModule):
 train_dir = os.path.join('images', 'ts_ext')
 trainer = pl.Trainer(gpus=0, max_epochs=200)
 trainer.fit(Learner(train_dir))
-
-
-
-
-
-
-
-
