@@ -29,6 +29,7 @@ jobs:
 
     # We do this, since failures on test.pypi aren't that bad
     - name: Publish to Test PyPI
+      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
@@ -36,8 +37,7 @@ jobs:
         repository_url: https://test.pypi.org/legacy/
 
     - name: Publish distribution 📦 to PyPI
-      # temporarily publish every major master commit
-      # if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
+      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
       uses: pypa/gh-action-pypi-publish@master
       with:
         user: __token__
