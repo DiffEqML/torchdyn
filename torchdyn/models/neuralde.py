@@ -205,6 +205,6 @@ class NeuralSDE(NeuralDETemplate):
         return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                                    adaptive=self.adaptive, method=self.solver)[-1]
     def _adjoint(self, x):
-        out = torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
+        out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver)[-1]
         return out
