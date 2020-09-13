@@ -8,45 +8,6 @@ from torchsde import sdeint_adjoint
 
 from torchdyn.models import SDEFunc, LSDEFunc
 
-
-class NeuralSDE(pl.LightningModule):
-    def __init__(self, drift_func, 
-                 diffusion_func, 
-                 noise_type='diagonal',
-                 order=1,
-                 sensitivity='autograd',
-                 s_span=torch.linspace(0, 1, 2),
-                 solver='srk',
-                 atol=1e-4,
-                 rtol=1e-4,
-                 intloss=None):
-        
-        super().__init__()
-        self.defunc = SDEFunc(f=drift_func, g=diffusion_func)
-        self.defunc.noise_type, self.defunc.sde_type = noise_type, 'ito'
-        
-        self.rtol, self.atol = rtol, atol
-        self.solver, self.s_span = solver, s_span
-        self.adaptive = False
-    
-    def forward(self, x: torch.Tensor):
-
-        for name, module in self.defunc.named_modules():
-            if hasattr(module, 'u'): 
-                self.controlled = True
-                module.u = x.detach()
-
-        out = sdeint(self.defunc, x, self.s_span,
-                     rtol=self.rtol, atol=self.atol, 
-                     adaptive=self.adaptive, method=self.solver)[-1]
-        return out
-    
-    def trajectory(self, x: torch.Tensor, s_span: torch.Tensor):
-        sol = sdeint(self.defunc, x, s_span,
-                     rtol=self.rtol, atol=self.atol, method=self.solver)
-        return sol
-
-
 class LatentNeuralSDE(NeuralSDE, pl.LightningModule):
     def __init__(self, post_drift, diffusion, prior_drift, sigma, theta, mu, options,
                  noise_type, order, sensitivity, s_span, solver, atol, rtol, intloss):
@@ -129,17 +90,3 @@ class LatentNeuralSDE(NeuralSDE, pl.LightningModule):
     @property
     def qy0_std(self):
         return torch.exp(.5 * self.qy0_logvar)
-
-
-def sdeint(sde, x0, s_span, bm=None, logqp=False, method='srk',
-           adaptive=False, rtol=1e-6, atol=1e-5, dt=1e-2, dt_min=1e-4,
-           options=None, names=None):
-    """
-    s_span -> ts:   ts (Tensor or sequence of float): Query times in non-descending order.
-                    The state at the first time of `ts` should be `y0`.
-    x0 -> y0:       y0 (sequence of Tensor): Tensors for initial state.
-    """
-
-    return sdeint_adjoint(sde=sde, y0=x0, ts=s_span, bm=bm, logqp=logqp, method=method,
-                          dt=dt, adaptive=adaptive, rtol=rtol, atol=atol,
-                          dt_min=dt_min, options=options, names=names)
