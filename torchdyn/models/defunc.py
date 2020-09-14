@@ -15,7 +15,7 @@ import torch.nn as nn
 
 
 class DEFunc(nn.Module):
-    """Differential Equation Function Wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation,
+    """Differential Equation Function wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation,
     higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
@@ -60,3 +60,29 @@ class DEFunc(nn.Module):
             x_new += [x[:, size_order*i:size_order*(i+1)]]
         x_new += [self.m(x)]
         return torch.cat(x_new, 1).to(x)
+
+    
+class SDEFunc(nn.Module):
+    def __init__(self, f, g, order=1):
+        super().__init__()  
+        self.order, self.intloss, self.sensitivity = order, None, None
+        self.f_func, self.g_func = f, g
+        self.nfe = 0
+
+    def forward(self, s, x):
+        pass
+    
+    def f(self, s, x):
+        """Posterior drift."""
+        self.nfe += 1
+        for _, module in self.f_func.named_modules():
+            if hasattr(module, 's'):
+                module.s = s
+        return self.f_func(x)
+    
+    def g(self, s, x):
+        """Diffusion"""
+        for _, module in self.g_func.named_modules():
+            if hasattr(module, 's'):
+                module.s = s
+        return self.g_func(x)
