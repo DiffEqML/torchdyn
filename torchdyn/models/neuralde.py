@@ -161,14 +161,16 @@ class NeuralSDE(NeuralDETemplate):
                        solver='srk',
                        atol=1e-4,
                        rtol=1e-4,
+                       ds = 1e-3,
                        intloss=None):
-        super().__init__(SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
+        super().__init__(func=SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
                                       atol=atol, rtol=rtol)
         if order is not 1: raise NotImplementedError
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
         self.intloss = intloss
         self.u, self.controlled = None, False  # data-control
+        self.ds = ds
 
     def _prep_sdeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
@@ -203,8 +205,8 @@ class NeuralSDE(NeuralDETemplate):
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
-                                   adaptive=self.adaptive, method=self.solver)[-1]
+                                   adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
     def _adjoint(self, x):
         out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
-                     adaptive=self.adaptive, method=self.solver)[-1]
+                     adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
         return out
