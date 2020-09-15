@@ -193,19 +193,21 @@ class NeuralSDE(NeuralDETemplate):
         sdeint = switcher.get(self.sensitivity)
         out = sdeint(x)
         return out
-
+    
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         x = self._prep_sdeint(x)
-        sol = torchsde.sdeint(self.defunc, x, s_span,
-                     rtol=self.rtol, atol=self.atol, method=self.solver)
+        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol, 
+                              method=self.solver, dt=self.ds)
         return sol
-    ###
+    
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
+        
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                                    adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
+    
     def _adjoint(self, x):
         out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
