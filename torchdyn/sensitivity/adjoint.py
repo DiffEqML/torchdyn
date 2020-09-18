@@ -24,7 +24,6 @@ def flatten(iterable):
 
 class ODEAdjointFunc:
     """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
-
     :param s: current depth
     :type s: float
     :param adjoint_state: tuple of four tensors constituting the *augmented adjoint state* to be integrated: `h` (hidden state of the neural ODE), `λ` (Lagrange multiplier), `μ` (loss gradient state), `s_adj` (adjoint state of the integration depth)
@@ -56,7 +55,6 @@ class ODEAdjointFunc:
 
 class Adjoint(nn.Module):
     """Adjoint class template.
-
     :param intloss: `nn.Module` specifying the integral loss term
     :type intloss: nn.Module
     """
@@ -73,7 +71,7 @@ class Adjoint(nn.Module):
     def _wrap_func_autograd(self, s_span, rtol, atol, method, options):
         class autograd_adjoint(torch.autograd.Function):
             @staticmethod
-            def forward(ctx, h0, s_span):
+            def forward(ctx, h0, flat_params, s_span):
                 sol = odeint(self._adjoint_func.solve_forward, h0, s_span, rtol=rtol, atol=atol,
                              method=method, options=options)
                 ctx.save_for_backward(s_span, sol)
@@ -96,11 +94,12 @@ class Adjoint(nn.Module):
             raise ValueError('func is required to be an instance of nn.Module.')
         h0 = h0.requires_grad_(True)
         self._adjoint_func.f_params = find_f_params(func)
+        flat_params = flatten(self._adjoint_func.f_params)
         self._wrapped_adjoint_func = self._wrap_func_autograd(s_span, rtol, atol, method, options)
-        sol = self._wrapped_adjoint_func.apply(h0, s_span)
+        sol = self._wrapped_adjoint_func.apply(h0, flat_params, s_span)
         return sol
 
- 
+
 def find_f_params(module):
     assert isinstance(module, nn.Module)
     if getattr(module, '_is_replica', False):
@@ -111,4 +110,3 @@ def find_f_params(module):
         return [param for _, param in gen]
     else:
         return list(module.parameters())
-
