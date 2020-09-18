@@ -40,7 +40,7 @@ def test_strato_sde():
                     atol=1e-4,
                     rtol=1e-4).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=2, max_epochs=4)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
 def test_ito_sde():
@@ -64,7 +64,7 @@ def test_ito_sde():
                     atol=0.0001,
                     rtol=0.0001).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=2, max_epochs=4)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
@@ -91,7 +91,7 @@ def test_data_control():
                     atol=0.0001,
                     rtol=0.0001).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=2, max_epochs=4)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
@@ -119,7 +119,7 @@ def test_depth_cat():
                     atol=0.0001,
                     rtol=0.0001).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=2, max_epochs=4)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
     model.trajectory(X_train, s_span).detach().cpu()

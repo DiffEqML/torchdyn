@@ -48,7 +48,7 @@ def test_work_without_settings():
             nn.Linear(64, 2))
     model = NeuralDE(f).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
 def test_neural_de_traj():
@@ -66,7 +66,7 @@ def test_neural_de_traj():
             nn.Linear(64, 2))
     model = NeuralDE(f,  solver='dopri5').to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
@@ -86,7 +86,7 @@ def test_data_control():
             nn.Linear(64, 2))
     model = NeuralDE(f, solver='dopri5').to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
@@ -109,7 +109,7 @@ def test_augmenter_func_is_trained():
                           NeuralDE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     p = torch.cat([p.flatten() for p in model[0].parameters()])
     trainer.fit(learn)
@@ -135,7 +135,7 @@ def test_augmented_data_control():
                           NeuralDE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     trainer.fit(learn)
 
@@ -159,7 +159,7 @@ def test_vanilla_galerkin():
                           NeuralDE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
 def test_vanilla_conv_galerkin():
@@ -197,5 +197,5 @@ def test_2nd_order():
                           NeuralDE(f, solver='dopri5', order=2)
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
