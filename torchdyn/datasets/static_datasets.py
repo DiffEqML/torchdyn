@@ -178,7 +178,7 @@ def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
 
-def generate_checkerboard():
+def generate_checkerboard(): # pragma: no cover
     """Not yet implemented"""
     raise NotImplementedError
     ranges = [[0, 2], [0, 2]]

@@ -20,6 +20,20 @@ from utils import TestLearner
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+def test_pretty_print():
+    d = ToyDataset()
+    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
+    X_train = torch.Tensor(X).to(device)
+    y_train = torch.LongTensor(yn.long()).to(device)
+    train = data.TensorDataset(X_train, y_train)
+    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    f = nn.Sequential(
+            nn.Linear(2, 64),
+            nn.Tanh(),
+            nn.Linear(64, 2))
+    model = NeuralDE(f).to(device)
+    print(model)
+
 def test_work_without_settings():
     """Functionality: defining Neural DEs via default settings"""
     d = ToyDataset()

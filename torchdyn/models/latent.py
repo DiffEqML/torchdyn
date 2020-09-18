@@ -8,7 +8,7 @@ from torchsde import sdeint_adjoint
 
 from torchdyn.models import SDEFunc, LSDEFunc
 
-class LatentNeuralSDE(NeuralSDE, pl.LightningModule):
+class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
     def __init__(self, post_drift, diffusion, prior_drift, sigma, theta, mu, options,
                  noise_type, order, sensitivity, s_span, solver, atol, rtol, intloss):
 
