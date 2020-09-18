@@ -23,7 +23,7 @@ def flatten(iterable):
     return torch.cat([el.contiguous().flatten() for el in iterable])
 
 class ODEAdjointFunc:
-        """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
+    """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
 
     :param s: current depth
     :type s: float
@@ -32,10 +32,10 @@ class ODEAdjointFunc:
     """
     def __init__(self, f, g=None):
         self.f, self.g = f, g
-    
+
     def solve_forward(self, s, z):
         return self.f(s, z)
-    
+
     def solve_backward(self, s, adjoint_state):
         z, λ, μ, s_adj = adjoint_state[0:4]
         # temporarily removed
