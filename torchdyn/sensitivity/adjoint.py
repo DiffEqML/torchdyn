@@ -22,8 +22,8 @@ from torchdiffeq import odeint
 def flatten(iterable):
     return torch.cat([el.contiguous().flatten() for el in iterable])
 
-class ODEAdjointFunc(nn.Module):
-    """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
+class ODEAdjointFunc:
+        """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
 
     :param s: current depth
     :type s: float
@@ -31,7 +31,6 @@ class ODEAdjointFunc(nn.Module):
     :type adjoint_state: tuple of tensors
     """
     def __init__(self, f, g=None):
-        super().__init__()
         self.f, self.g = f, g
     
     def solve_forward(self, s, z):
@@ -40,17 +39,18 @@ class ODEAdjointFunc(nn.Module):
     def solve_backward(self, s, adjoint_state):
         z, λ, μ, s_adj = adjoint_state[0:4]
         # temporarily removed
-        # s = s.to(h.device).requires_grad_(True)           
-        z = z.requires_grad_(True)
-        dzds = self.f(s, z)
-        dλds = torch.autograd.grad(dzds, z, -λ, allow_unused=True, retain_graph=True)[0]
-        dμds = torch.autograd.grad(dzds, tuple(self.f_params), -λ, allow_unused=True, retain_graph=True)
-        if not self.g is None:
-            dgdh = torch.autograd.grad(self.g(s, z).sum(), z, allow_unused=True, retain_graph=True)[0]
-            dλds = dλds - dgdh
-        ds_adjds = torch.tensor(0.).to(z)
-        # Safety checks for `None` gradients
-        dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(z)
+        # s = s.to(h.device).requires_grad_(True)  
+        with torch.set_grad_enabled(True):
+            z = z.requires_grad_(True)
+            dzds = self.f(s, z)
+            dλds = torch.autograd.grad(dzds, z, -λ, allow_unused=True, retain_graph=True)[0]
+            dμds = torch.autograd.grad(dzds, tuple(self.f_params), -λ, allow_unused=True, retain_graph=True)
+            if not self.g is None:
+                dgdh = torch.autograd.grad(self.g(s, z).sum(), z, allow_unused=True, retain_graph=True)[0]
+                dλds = dλds - dgdh
+            ds_adjds = torch.tensor(0.).to(z)
+            # Safety checks for `None` gradients
+            dμds = torch.cat([el.flatten() if el is not None else torch.zeros_like(p) for el, p in zip(dμds, self.f_params)]).to(z)
         return (dzds, dλds, dμds, ds_adjds)
     
 
