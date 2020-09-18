@@ -81,7 +81,7 @@ class NeuralODE(NeuralDETemplate):
         self.nfe = self.defunc.nfe
         self.intloss = intloss
         self.u, self.controlled = None, False # data-control
-        if sensitivity=='adjoint': self.adjoint = Adjoint(self.intloss);
+        if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
     def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)

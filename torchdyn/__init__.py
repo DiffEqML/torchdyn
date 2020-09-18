@@ -14,3 +14,4 @@ from torchdyn.sensitivity.adjoint import *
 
 from ._internals import *
 from .plot import *
+from .models import *
