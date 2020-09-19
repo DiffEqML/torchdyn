@@ -35,7 +35,7 @@ def test_strato_sde():
                     noise_type='diagonal',
                     sde_type='stratonovich',
                     sensitivity='adjoint',
-                    s_span=torch.linspace(0, 0.5, 100),
+                    s_span=torch.linspace(0, 0.1, 100),
                     solver='euler',
                     atol=1e-4,
                     rtol=1e-4).to(device)
@@ -59,14 +59,14 @@ def test_ito_sde():
                     noise_type='diagonal',
                     sde_type='ito',
                     sensitivity='adjoint',
-                    s_span=torch.linspace(0, 0.5, 100),
+                    s_span=torch.linspace(0, 0.1, 100),
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
-    s_span = torch.linspace(0, 1, 100)
+    s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
 def test_data_control():
@@ -86,7 +86,7 @@ def test_data_control():
                     noise_type='diagonal',
                     sde_type='ito',
                     sensitivity='adjoint',
-                    s_span=torch.linspace(0, 0.5, 100),
+                    s_span=torch.linspace(0, 0.1, 100),
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
@@ -94,7 +94,7 @@ def test_data_control():
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     trainer.fit(learn)
-    s_span = torch.linspace(0, 1, 100)
+    s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
 def test_depth_cat():
@@ -114,12 +114,12 @@ def test_depth_cat():
                     noise_type='diagonal',
                     sde_type='ito',
                     sensitivity='adjoint',
-                    s_span=torch.linspace(0, 0.5, 100),
+                    s_span=torch.linspace(0, 0.1, 100),
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
-    s_span = torch.linspace(0, 1, 100)
+    s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
