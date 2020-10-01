@@ -126,10 +126,10 @@ Check our `wiki` for a full description of available features.
 #### Cite us
 If you find `torchdyn` valuable for your research or applied projects:
 ```
-@article{massaroli2020stable,
-  title={Stable Neural Flows},
-  author={Massaroli, Stefano and Poli, Michael and Bin, Michelangelo and Park, Jinkyoo and Yamashita, Atsushi and Asama, Hajime},
-  journal={arXiv preprint arXiv:2003.08063},
+@article{poli2020torchdyn,
+  title={TorchDyn: A Neural Differential Equations Library},
+  author={Poli, Michael and Massaroli, Stefano and Yamashita, Atsushi and Asama, Hajime and Park, Jinkyoo},
+  journal={arXiv preprint arXiv:2009.09346},
   year={2020}
 }
 ```
