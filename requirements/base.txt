@@ -6,4 +6,3 @@ torchvision
 torchdiffeq
 pytorch_lightning>=0.8.4
 scikit-learn
-git+git://github.com/google-research/torchsde.git
