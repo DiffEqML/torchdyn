@@ -1,87 +1,85 @@
 repos:
-    # The warnings/errors we check for here are:
-    # E101 - mix of tabs and spaces
-    # E11  - Fix indentation.
-    # E111 - 4 spaces per indentation level
-    # E112 - 4 spaces per indentation level
-    # E113 - 4 spaces per indentation level
-    # E121 - Fix indentation to be a multiple of four.
-    # E122 - Add absent indentation for hanging indentation.
-    # E123 - Align closing bracket to match opening bracket.
-    # E124 - Align closing bracket to match visual indentation.
-    # E125 - Indent to distinguish line from next logical line.
-    # E126 - Fix over-indented hanging indentation.
-    # E127 - Fix visual indentation.
-    # E128 - Fix visual indentation.
-    # E129 - Fix visual indentation.
-    # E131 - Fix hanging indent for unaligned continuation line.
-    # E133 - Fix missing indentation for closing bracket.
-    # E20  - Remove extraneous whitespace.
-    # E211 - Remove extraneous whitespace.
-    # E231 - Add missing whitespace.
-    # E241 - Fix extraneous whitespace around keywords.
-    # E242 - Remove extraneous whitespace around operator.
-    # E251 - Remove whitespace around parameter '=' sign.
-    # E252 - Missing whitespace around parameter equals.
-    # E26  - Fix spacing after comment hash for inline comments.
-    # E265 - Fix spacing after comment hash for block comments.
-    # E266 - Fix too many leading '#' for block comments.
-    # E27  - Fix extraneous whitespace around keywords.
-    # E301 - Add missing blank line.
-    # E302 - Add missing 2 blank lines.
-    # E303 - Remove extra blank lines.
-    # E304 - Remove blank line following function decorator.
-    # E305 - expected 2 blank lines after class or function definition
-    # E305 - Expected 2 blank lines after end of function or class.
-    # E306 - expected 1 blank line before a nested definition
-    # E306 - Expected 1 blank line before a nested definition.
-    # E401 - Put imports on separate lines.
-    # E402 - Fix module level import not at top of file
-    # E502 - Remove extraneous escape of newline.
-    # E701 - Put colon-separated compound statement on separate lines.
-    # E711 - Fix comparison with None.
-    # E712 - Fix comparison with boolean.
-    # E713 - Use 'not in' for test for membership.
-    # E714 - Use 'is not' test for object identity.
-    # E722 - Fix bare except.
-    # E731 - Use a def when use do not assign a lambda expression.
-    # E901 - SyntaxError or IndentationError
-    # E902 - IOError
-    # F822 - undefined name in __all__
-    # F823 - local variable name referenced before assignment
-    # W291 - Remove trailing whitespace.
-    # W292 - Add a single newline at the end of the file.
-    # W293 - Remove trailing whitespace on blank line.
-    # W391 - Remove trailing blank lines.
-    # W601 - Use "in" rather than "has_key()".
-    # W602 - Fix deprecated form of raising exception.
-    # W603 - Use "!=" instead of "<>"
-    # W604 - Use "repr()" instead of backticks.
-    # W605 - Fix invalid escape sequence 'x'.
-    # W690 - Fix various deprecated code (via lib2to3).
-    - repo: https://github.com/humitos/mirrors-autoflake
-      rev: v1.3
-      hooks:
-        - id: autoflake
-          args: ['--in-place', '--remove-all-unused-imports', '--remove-unused-variable']
-          exclude: ".*(.fits|.fts|.fit|.txt|tca.*|extern.*|.rst|.md|__init__.py)$"
-    - repo: https://github.com/timothycrosley/isort
-      rev: 4.3.21-2
-      hooks:
-        - id: isort
-          args: ['-sp','setup.cfg','-rc']
-          exclude: ".*(.fits|.fts|.fit|.txt|tca.*|extern.*|.rst|.md|cm/__init__.py)$"
-    - repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v2.4.0
-      hooks:
-        - id: check-ast
-        - id: check-case-conflict
-        - id: trailing-whitespace
-          exclude: ".*(.fits|.fts|.fit|.txt)$"
-        - id: check-yaml
-        - id: debug-statements
-        - id: check-added-large-files
-        - id: end-of-file-fixer
-          exclude: ".*(.fits|.fts|.fit|.txt|tca.*)$"
-        - id: mixed-line-ending
-          exclude: ".*(.fits|.fts|.fit|.txt|tca.*)$"
+  # The warnings/errors we check for here are:
+  # E101 - mix of tabs and spaces
+  # E11  - Fix indentation.
+  # E111 - 4 spaces per indentation level
+  # E112 - 4 spaces per indentation level
+  # E113 - 4 spaces per indentation level
+  # E121 - Fix indentation to be a multiple of four.
+  # E122 - Add absent indentation for hanging indentation.
+  # E123 - Align closing bracket to match opening bracket.
+  # E124 - Align closing bracket to match visual indentation.
+  # E125 - Indent to distinguish line from next logical line.
+  # E126 - Fix over-indented hanging indentation.
+  # E127 - Fix visual indentation.
+  # E128 - Fix visual indentation.
+  # E129 - Fix visual indentation.
+  # E131 - Fix hanging indent for unaligned continuation line.
+  # E133 - Fix missing indentation for closing bracket.
+  # E20  - Remove extraneous whitespace.
+  # E211 - Remove extraneous whitespace.
+  # E231 - Add missing whitespace.
+  # E241 - Fix extraneous whitespace around keywords.
+  # E242 - Remove extraneous whitespace around operator.
+  # E251 - Remove whitespace around parameter '=' sign.
+  # E252 - Missing whitespace around parameter equals.
+  # E26  - Fix spacing after comment hash for inline comments.
+  # E265 - Fix spacing after comment hash for block comments.
+  # E266 - Fix too many leading '#' for block comments.
+  # E27  - Fix extraneous whitespace around keywords.
+  # E301 - Add missing blank line.
+  # E302 - Add missing 2 blank lines.
+  # E303 - Remove extra blank lines.
+  # E304 - Remove blank line following function decorator.
+  # E305 - expected 2 blank lines after class or function definition
+  # E305 - Expected 2 blank lines after end of function or class.
+  # E306 - expected 1 blank line before a nested definition
+  # E306 - Expected 1 blank line before a nested definition.
+  # E401 - Put imports on separate lines.
+  # E402 - Fix module level import not at top of file
+  # E502 - Remove extraneous escape of newline.
+  # E701 - Put colon-separated compound statement on separate lines.
+  # E711 - Fix comparison with None.
+  # E712 - Fix comparison with boolean.
+  # E713 - Use 'not in' for test for membership.
+  # E714 - Use 'is not' test for object identity.
+  # E722 - Fix bare except.
+  # E731 - Use a def when use do not assign a lambda expression.
+  # E901 - SyntaxError or IndentationError
+  # E902 - IOError
+  # F822 - undefined name in __all__
+  # F823 - local variable name referenced before assignment
+  # W291 - Remove trailing whitespace.
+  # W292 - Add a single newline at the end of the file.
+  # W293 - Remove trailing whitespace on blank line.
+  # W391 - Remove trailing blank lines.
+  # W601 - Use "in" rather than "has_key()".
+  # W602 - Fix deprecated form of raising exception.
+  # W603 - Use "!=" instead of "<>"
+  # W604 - Use "repr()" instead of backticks.
+  # W605 - Fix invalid escape sequence 'x'.
+  # W690 - Fix various deprecated code (via lib2to3).
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.8.3
+    hooks:
+      - id: flake8
+        args: ['--count', '--select', 'E101,E11,E111,E112,E113,E121,E122,E123,E124,E125,E126,E127,E128,E129,E131,E133,E20,E211,E231,E241,E242,E251,E252,E26,E265,E266,E27,E301,E302,E303,E304,E305,E306,E401,E402,E502,E701,E711,E712,E713,E714,E722,E731,E901,E902,F822,F823,W191,W291,W292,W293,W391,W601,W602,W603,W604,W605,W690']
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        args: ['--in-place', '--remove-all-unused-imports', '--remove-unused-variable']
+  - repo: https://github.com/timothycrosley/isort
+    rev: 5.4.2
+    hooks:
+      - id: isort
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-ast
+      - id: check-case-conflict
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: debug-statements
+      - id: check-added-large-files
+      - id: end-of-file-fixer
