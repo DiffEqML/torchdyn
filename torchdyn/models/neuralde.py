@@ -131,8 +131,17 @@ class NeuralODE(NeuralDETemplate):
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
 
-    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        raise NotImplementedError
+    def sensitivity_trajectory(self, x:torch.Tensor, grad_output:torch.Tensor, 
+                               s_span:torch.Tensor):
+        assert self.sensitivity == 'adjoint', 'Sensitivity trajectory only available for `adjoint`'
+        x = torch.autograd.Variable(x, requires_grad=True)
+        sol = self(x)       
+        adj0 = self.adjoint._init_adjoint_state(sol, grad_output)
+        self.adjoint.flat_params = flatten(self.defunc.parameters())
+        self.adjoint.func = self.defunc; self.adjoint.f_params = tuple(self.defunc.parameters())
+        adj_sol = torchdiffeq.odeint(self.adjoint.adjoint_dynamics, adj0, s_span, 
+               rtol=self.rtol, atol=self.atol, method=self.solver)
+        return adj_sol
 
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
