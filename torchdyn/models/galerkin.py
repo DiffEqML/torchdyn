@@ -148,13 +148,13 @@ class Chebychev(nn.Module):
 
 class GalLayer(nn.Module):
     """Galerkin layer template. Introduced in https://arxiv.org/abs/2002.08071"""
-    def __init__(self, bias=True, expfunc=Fourier(5), dilation=True, shift=True):       
+    def __init__(self, bias=True, basisfunc=Fourier(5), dilation=True, shift=True):       
         super().__init__()
         self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
         self.shift = torch.zeros(1) if not shift else nn.Parameter(data=torch.zeros(1), requires_grad=True)
-        self.expfunc = expfunc
-        self.n_eig = n_eig = self.expfunc.n_eig
-        self.deg = deg = self.expfunc.deg
+        self.basisfunc = basisfunc
+        self.n_eig = n_eig = self.basisfunc.n_eig
+        self.deg = deg = self.basisfunc.deg
         
     def reset_parameters(self):
         torch.nn.init.zeros_(self.coeffs)
@@ -162,7 +162,7 @@ class GalLayer(nn.Module):
     def calculate_weights(self, s):
         "Expands `s` following the chosen eigenbasis"
         n_range = torch.linspace(0, self.deg, self.deg).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
+        basis = self.basisfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.deg).to(self.coeffs.device)
@@ -181,15 +181,15 @@ class GalLinear(GalLayer):
     :type out_features: int
     :param bias: include bias parameter vector in the layer computation
     :type bias: bool
-    :param expfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
-    :type expfunc: str
+    :param basisfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
+    :type basisfunc: str
     :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
     :type dilation: bool
     :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
     :type shift: bool
     """
-    def __init__(self, in_features, out_features, bias=True, expfunc=Fourier(5), dilation=True, shift=True):       
-        super().__init__(bias, expfunc, dilation, shift)
+    def __init__(self, in_features, out_features, bias=True, basisfunc=Fourier(5), dilation=True, shift=True):       
+        super().__init__(bias, basisfunc, dilation, shift)
         
         self.in_features, self.out_features = in_features, out_features
         self.weight = torch.Tensor(out_features, in_features)
@@ -224,8 +224,8 @@ class GalConv2d(GalLayer):
     :type padding: int
     :param bias: include bias parameter vector in the layer computation
     :type bias: bool
-    :param expfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
-    :type expfunc: str
+    :param basisfunc: {'Fourier', 'Polynomial', 'Chebychev', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF'}. Choice of eigenfunction expansion.
+    :type basisfunc: str
     :param dilation: whether to optimize for `dilation` parameter. Allows the GalLayer to dilate the eigenfunction period.
     :type dilation: bool
     :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
@@ -233,8 +233,8 @@ class GalConv2d(GalLayer):
     """
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'deg']
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=True,
-                 expfunc=Fourier(5), dilation=True, shift=True):     
-        super().__init__(bias, expfunc, dilation, shift)
+                 basisfunc=Fourier(5), dilation=True, shift=True):     
+        super().__init__(bias, basisfunc, dilation, shift)
         
         self.ic, self.oc, self.ks = in_channels, out_channels, kernel_size
         self.pad, self.stride = padding, stride
