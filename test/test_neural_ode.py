@@ -150,10 +150,10 @@ def test_vanilla_galerkin():
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
 
     f = nn.Sequential(DepthCat(1),
-                      GalLinear(6, 64, expfunc=FourierExpansion),
+                      GalLinear(6, 64, basisfunc=Fourier(5)),
                       nn.Tanh(),
                       DepthCat(1),
-                      GalLinear(64, 6, expfunc=PolyExpansion, n_eig=1))
+                      GalLinear(64, 6, basisfunc=Polynomial(2)))
 
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
                           NeuralDE(f, solver='dopri5')
@@ -168,13 +168,12 @@ def test_vanilla_conv_galerkin():
     X = torch.randn(12, 1, 28, 28).to(device)
 
     f = nn.Sequential(DepthCat(1),
-                      GalConv2d(1, 12, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3),
+                      GalConv2d(1, 12, kernel_size=3, padding=1, basisfunc=Fourier(3)),
                       nn.Tanh(),
                       DepthCat(1),
-                      GalConv2d(12, 1, kernel_size=3, padding=1, expfunc=FourierExpansion, n_harmonics=3))
+                      GalConv2d(12, 1, kernel_size=3, padding=1, basisfunc=Fourier(3)))
 
-    model = nn.Sequential(NeuralDE(f, solver='dopri5')
-                          ).to(device)
+    model = nn.Sequential(NeuralDE(f, solver='dopri5')).to(device)
     model(X)
 
 def test_2nd_order():
