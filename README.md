@@ -29,6 +29,8 @@ Stable-release:
 
 `pip install torchdyn`
 
+* NOTE: temporarily requires additional manual installation of `torchsde`: `pip install git+https://github.com/google-research/torchsde.git`
+
 Bleeding-edge version:
 
 `git clone https://github.com/DiffEqML/torchdyn.git`
