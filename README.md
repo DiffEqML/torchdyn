@@ -25,15 +25,15 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 
 ## Installation
 
-*Stable-release*:
+**Stable** release:
 
 `pip install torchdyn`
 
-* NOTE: temporarily requires additional manual installation of 
+* NOTE: temporarily requires additional manual installation of `torchsde`: 
 
-`torchsde`: `pip install git+https://github.com/google-research/torchsde.git`
+`pip install git+https://github.com/google-research/torchsde.git`
 
-*Bleeding-edge version*:
+**Bleeding-edge** version:
 
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
