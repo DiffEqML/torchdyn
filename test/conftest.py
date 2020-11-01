@@ -7,7 +7,7 @@ from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
 
-@pytest.fixture(scope='session'):
+@pytest.fixture(scope='session')
 def prepare_moons_data():
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
