@@ -142,7 +142,7 @@ from torchdiffeq import odeint
 
 
 def flatten(iterable):
-    return torch.cat([el.contiguous().flatten() for el in iterable])
+    sol = torch.zeros(1) if len(iterable) == 0 else torch.cat([el.contiguous().flatten() for el in iterable])
 
 class ODEAdjointFunc:
     """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
