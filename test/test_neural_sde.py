@@ -21,13 +21,7 @@ from utils import TestLearner
 
 def test_strato_sde():
     """Test vanilla Stratonovich Neural SDE"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    trainloader = prepare_moons_data()
     f = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
 
@@ -36,7 +30,7 @@ def test_strato_sde():
                     sde_type='stratonovich',
                     sensitivity='adjoint',
                     s_span=torch.linspace(0, 0.1, 100),
-                    solver='euler',
+                    solver='euler_heun',
                     atol=1e-4,
                     rtol=1e-4).to(device)
     learn = TestLearner(model, trainloader=trainloader)
@@ -45,13 +39,8 @@ def test_strato_sde():
 
 def test_ito_sde():
     """Test vanilla Ito Neural SDE"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    trainloader = prepare_moons_data()
+    
     f = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
 
@@ -71,13 +60,7 @@ def test_ito_sde():
 
 def test_data_control():
     """Data-controlled Neural SDE"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    trainloader = prepare_moons_data()
 
     f = nn.Sequential(DataControl(), nn.Linear(4, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(DataControl(), nn.Linear(4, 64), nn.Tanh(), nn.Linear(64, 2))
@@ -99,13 +82,7 @@ def test_data_control():
 
 def test_depth_cat():
     """DepthCat Neural SDE"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    trainloader = prepare_moons_data()
 
     f = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
