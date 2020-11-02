@@ -4,8 +4,7 @@ import torch.utils.data as data
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from utils import TestLearner
-
+from .utils import *
 
 def test_stable_neural_de():
     """Stable: basic functionality"""
