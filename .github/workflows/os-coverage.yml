@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       max-parallel: 10
 
       matrix:

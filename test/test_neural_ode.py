@@ -16,7 +16,7 @@ import torch.utils.data as data
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from utils import TestLearner
+from .utils import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

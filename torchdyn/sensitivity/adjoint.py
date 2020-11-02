@@ -143,6 +143,7 @@ from torchdiffeq import odeint
 
 def flatten(iterable):
     sol = torch.zeros(1) if len(iterable) == 0 else torch.cat([el.contiguous().flatten() for el in iterable])
+    return sol
 
 class ODEAdjointFunc:
     """ Define the vector field of the augmented adjoint dynamics to be then integrated **backward**. An `Adjoint` object is istantiated into the `NeuralDE` if the adjoint method for back-propagation was selected.
@@ -215,7 +216,8 @@ class Adjoint(nn.Module):
         if not isinstance(func, nn.Module):
             raise ValueError('func is required to be an instance of nn.Module.')
         h0 = h0.requires_grad_(True)
-        self._adjoint_func.f_params = find_f_params(func)
+        self._adjoint_func.f_params = list(func.parameters())
+
         flat_params = flatten(self._adjoint_func.f_params)
         self._wrapped_adjoint_func = self._wrap_func_autograd(s_span, rtol, atol, method, options)
         sol = self._wrapped_adjoint_func.apply(h0, flat_params, s_span)

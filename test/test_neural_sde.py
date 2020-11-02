@@ -10,18 +10,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
-import torch.nn as nn
-import torch.utils.data as data
-from torch.distributions import *
-from torchdyn.datasets import *
 from torchdyn.models import *
-from utils import TestLearner
+from .utils import *
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+torch.manual_seed(1415112413244349)
 
-def test_strato_sde():
+def test_strato_sde(moons_dataloader):
     """Test vanilla Stratonovich Neural SDE"""
-    trainloader = prepare_moons_data()
+    X_train, trainloader = moons_dataloader
     f = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
 
@@ -37,9 +34,10 @@ def test_strato_sde():
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
-def test_ito_sde():
+
+def test_ito_sde(moons_dataloader):
     """Test vanilla Ito Neural SDE"""
-    trainloader = prepare_moons_data()
+    X_train, trainloader = moons_dataloader
     
     f = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
@@ -58,9 +56,9 @@ def test_ito_sde():
     s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
-def test_data_control():
+def test_data_control(moons_dataloader):
     """Data-controlled Neural SDE"""
-    trainloader = prepare_moons_data()
+    X_train, trainloader = moons_dataloader
 
     f = nn.Sequential(DataControl(), nn.Linear(4, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(DataControl(), nn.Linear(4, 64), nn.Tanh(), nn.Linear(64, 2))
@@ -73,16 +71,16 @@ def test_data_control():
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
+
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
-
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
-def test_depth_cat():
+def test_depth_cat(moons_dataloader):
     """DepthCat Neural SDE"""
-    trainloader = prepare_moons_data()
+    X_train, trainloader = moons_dataloader
 
     f = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
@@ -95,6 +93,7 @@ def test_depth_cat():
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
+
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)

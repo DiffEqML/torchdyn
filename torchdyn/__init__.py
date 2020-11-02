@@ -15,6 +15,7 @@ __author__  = 'Michael Poli, Stefano Massaroli et al.'
 
 from torchdyn.sensitivity.adjoint import Adjoint
 from torchdyn.models import NeuralODE, NeuralSDE
+from torchdyn.plot import *
 from .models import *
 
 __all__ = ['Adjoint', 'NeuralODE', 'NeuralSDE']

@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-
+from .utils import *
 
 def test_cnf_vanilla():
     device = torch.device('cpu')
@@ -49,11 +49,3 @@ def test_hutch_estimator_gauss_noise():
         eps = noise_dist.sample((64,))
         hutch_trJ += hutch_trace(x_out, x_in, noise=eps)
     assert (hutch_trJ / 10000 - trJ < 1e-1).all()
-
-if __name__ == '__main__':
-    print(f'Testing regular CNF with autograd trace...')
-    test_cnf_vanilla()
-    print(f'Testing regular CNF with Hutch. estimator...')
-    test_hutch_vanilla()
-    print(f'Checking accuracy of Hutch. estimator (gauss epsilon) vs autograd true trace...')
-    test_hutch_estimator_gauss_noise()
