@@ -19,6 +19,7 @@ torch.manual_seed(1415112413244349)
 def test_strato_sde(moons_dataloader):
     """Test vanilla Stratonovich Neural SDE"""
     X_train, trainloader = moons_dataloader
+  
     f = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2))
 
@@ -82,6 +83,7 @@ def test_depth_cat(moons_dataloader):
     """DepthCat Neural SDE"""
     X_train, trainloader = moons_dataloader
 
+
     f = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
     g = nn.Sequential(DepthCat(1), nn.Linear(3, 64), nn.Tanh(), nn.Linear(64, 2))
 
@@ -99,3 +101,4 @@ def test_depth_cat(moons_dataloader):
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
+    

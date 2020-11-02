@@ -25,11 +25,15 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 
 ## Installation
 
-Stable-release:
+**Stable** release:
 
 `pip install torchdyn`
 
-Bleeding-edge version:
+* NOTE: temporarily requires additional manual installation of `torchsde`: 
+
+`pip install git+https://github.com/google-research/torchsde.git`
+
+**Bleeding-edge** version:
 
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
@@ -65,16 +69,14 @@ The current offering of `torchdyn` is limited compared to the rich ecosystem of 
 * **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
 * **Adjoint and beyond:** generalized adjoint ✅, adaptive checkpointing ⬜️
 * **Regularization tutorials:** regularization ⬜️ adaptive depth ⬜️ STEER ⬜️
-* **Controlled Neural DEs**: data control ✅, neural cde ⬜️
+* **Controlled Neural DEs**: data control ✅
 * **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅
 * **Image classification:** MNIST ✅, CIFAR10 and ImageNet ⬜️
 * **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
 * **Density estimation applications:** MNIST ⬜️, CIFAR10 ⬜️
-* **Hybrid Neural DEs:** hybrid models ⬜️
-* **Variational Neural DE tutorials:** variational neural ode ⬜️ variational neural sde ⬜️
+* **Hybrid Neural DEs:** hybrid models ✅
+* **Variational Neural DE tutorials:** variational neural ode ✅ variational neural sde ⬜️
 * **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde ⬜️
-* **GDE applications**: traffic forecasting ⬜️
-* **Solver suite**:  Euler ✅, Runge-Kutta(4) ✅, Dormand-Prince ⬜️, symplectic ⬜️, stiff ode ⬜️, euler-maruyama ✅, higher order sde ⬜️
 * **Specific variants**: ode2vae ⬜️, anodev2 ⬜️, gruode-bayes ⬜️, neural jump stochastic ⬜️, ode2ode ⬜️, hamiltonian cnf ⬜️
 
 #### Dependencies
