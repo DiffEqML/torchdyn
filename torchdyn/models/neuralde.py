@@ -18,6 +18,8 @@ import torchsde
 from torchdyn.sensitivity.adjoint import Adjoint
 
 from .defunc import DEFunc, SDEFunc
+from .utils import SCIPY_SOLVERS
+import warnings
 
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
@@ -83,6 +85,26 @@ class NeuralODE(NeuralDETemplate):
         self.u, self.controlled = None, False # data-control
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
+        self._solver_checks(solver, sensitivity)
+
+    def _solver_checks(self, solver, sensitivity):
+
+        self.solver =  {'method': solver}
+
+        if solver[:5] == "scipy" and solver not in SCIPY_SOLVERS:
+            available_scipy_solvers = ", ".join(SCIPY_SOLVERS.keys())
+            raise KeyError("Invalid Scipy Solver specified." +
+                           " Supported Scipy Solvers are: " + available_scipy_solvers)
+
+        elif solver in SCIPY_SOLVERS:
+            warnings.warn(UserWarning("CUDA is not available with SciPy solvers."))
+
+            if sensitivity == 'autograd':
+                raise ValueError("SciPy Solvers do not work with autograd." +
+                                 " Use adjoint sensitivity with SciPy Solvers.")
+
+            self.solver = SCIPY_SOLVERS[solver]
+
     def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
 
@@ -128,7 +150,7 @@ class NeuralODE(NeuralDETemplate):
         """
         x = self._prep_odeint(x)
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
-                                 rtol=self.rtol, atol=self.atol, method=self.solver)
+                                 rtol=self.rtol, atol=self.atol, **self.solver)
         return sol
 
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
@@ -137,10 +159,10 @@ class NeuralODE(NeuralDETemplate):
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchdiffeq.odeint(self.defunc, x, self.s_span,
-                                  rtol=self.rtol, atol=self.atol, method=self.solver)[-1]
+                                  rtol=self.rtol, atol=self.atol, **self.solver)[-1]
 
     def _adjoint(self, x):
-        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, **self.solver)
 
 class NeuralSDE(NeuralDETemplate):
     """General Neural SDE class
