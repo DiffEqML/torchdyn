@@ -21,6 +21,17 @@ from .defunc import DEFunc, SDEFunc
 from .utils import SCIPY_SOLVERS
 import warnings
 
+def rms_norm(tensor):
+    return tensor.pow(2).mean().sqrt()
+
+def make_norm(state):
+    state_size = state.numel()
+    def norm(aug_state):
+        y = aug_state[1:1 + state_size]
+        adj_y = aug_state[1 + state_size:1 + 2 * state_size]
+        return max(rms_norm(y), rms_norm(adj_y))
+    return norm
+
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
     def __init__(self, func,
@@ -134,6 +145,7 @@ class NeuralODE(NeuralDETemplate):
         switcher = {
             'autograd': self._autograd,
             'adjoint': self._adjoint,
+            'torchdiffeq_adjoint': self._torchdiffeq_adjoint
         }
         odeint = switcher.get(self.sensitivity)
         out = odeint(x)
@@ -163,7 +175,13 @@ class NeuralODE(NeuralDETemplate):
 
     def _adjoint(self, x):
         return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, **self.solver)
+    
+    def _torchdiffeq_adjoint(self, x):
+        return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span,
+                                      rtol=self.rtol, atol=self.atol, **self.solver,
+                                      adjoint_options=dict(norm=make_norm(x)))[-1]
 
+    
 class NeuralSDE(NeuralDETemplate):
     """General Neural SDE class
     :param drift_func: function parametrizing the drift.
@@ -187,7 +205,7 @@ class NeuralSDE(NeuralDETemplate):
                        intloss=None):
         super().__init__(func=SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
                                       atol=atol, rtol=rtol)
-        if order is not 1: raise NotImplementedError
+        if order != 1: raise NotImplementedError
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
         self.intloss = intloss
