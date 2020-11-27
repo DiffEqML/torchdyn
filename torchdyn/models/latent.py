@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.distributions import Normal, kl_divergence
 import pytorch_lightning as pl
 import torchsde
-from torchsde import sdeint_adjoint
+from torchsde import sdeint, sdeint_adjoint
 
 from torchdyn.models import SDEFunc, LSDEFunc
 
