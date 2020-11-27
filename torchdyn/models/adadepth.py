@@ -22,14 +22,6 @@ class HypernetDepth(nn.Module):
             with torch.no_grad():
                 if hasattr(p, 'grad'): p.grad += fxS * dLdxS * dSdp
                 else: p.grad = fxS * dLdxS * dSdp
-                
-#     def step(self):
-#         for i, p in enumerate(self.g.parameters()):
-#             p.add_(p.grad, alpha=-1e-3)
-            
-#     def zero_grad(self, x):
-#         for p in self.g.parameters(): p.grad.zero_()
-            
     
 class AdaptiveDepthNeuralODE(NeuralODE):
     """Adaptive-Depth Neural ODE
@@ -81,4 +73,3 @@ class AdaptiveDepthNeuralODE(NeuralODE):
         sol = torchdiffeq.odeint(self.defunc, x, s_span,
                                  rtol=self.rtol, atol=self.atol, method=self.solver)
         return sol
-                

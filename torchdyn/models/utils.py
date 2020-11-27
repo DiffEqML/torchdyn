@@ -12,6 +12,7 @@
 
 import torch
 import torch.nn as nn
+import warnings
 
 
 SCIPY_SOLVERS = {
@@ -23,74 +24,26 @@ SCIPY_SOLVERS = {
     "scipy_Radau": {'method':'scipy_solver', 'options':{'solver':'Radau'}},
 }
 
+def check_solver_compat(solver: str, sensitivity: str):
+    if solver[:5] == "scipy" and solver not in SCIPY_SOLVERS:
+        available_scipy_solvers = ", ".join(SCIPY_SOLVERS.keys())
+        raise KeyError("Invalid Scipy Solver specified." +
+                       " Supported Scipy Solvers are: " + available_scipy_solvers)
 
-class Augmenter(nn.Module):
-    """Augmentation class. Can handle several types of augmentation strategies for Neural DEs.
+    elif solver in SCIPY_SOLVERS:
+        warnings.warn(UserWarning("CUDA is not available with SciPy solvers."))
 
-    :param augment_dims: number of augmented dimensions to initialize
-    :type augment_dims: int
-    :param augment_idx: index of dimension to augment
-    :type augment_idx: int
-    :param augment_func: nn.Module applied to the input data of dimension `d` to determine the augmented initial condition of dimension `d + a`.
-                        `a` is defined implicitly in `augment_func` e.g. augment_func=nn.Linear(2, 5) augments a 2 dimensional input with 3 additional dimensions.
-    :type augment_func: nn.Module
-    :param order: whether to augment before data [augmentation, x] or after [x, augmentation] along dimension `augment_idx`. Options: ('first', 'last')
-    :type order: str
-    """
+        if sensitivity == 'autograd':
+            raise ValueError("SciPy Solvers do not work with autograd." +
+                             " Use adjoint sensitivity with SciPy Solvers.")
 
-    def __init__(self, augment_idx:int=1, augment_dims:int=5, augment_func=None, order='first'):
-        super().__init__()
-        self.augment_dims, self.augment_idx, self.augment_func = augment_dims, augment_idx, augment_func
-        self.order = order
+def rms_norm(tensor):
+    return tensor.pow(2).mean().sqrt()
 
-    def forward(self, x: torch.Tensor):
-        if not self.augment_func:
-            new_dims = list(x.shape)
-            new_dims[self.augment_idx] = self.augment_dims
-
-            # if-else check for augmentation order
-            if self.order == 'first':
-                x = torch.cat([torch.zeros(new_dims).to(x), x],
-                              self.augment_idx)
-            else:
-                x = torch.cat([x, torch.zeros(new_dims).to(x)],
-                              self.augment_idx)
-        else:
-            # if-else check for augmentation order
-            if self.order == 'first':
-                x = torch.cat([self.augment_func(x).to(x), x],
-                              self.augment_idx)
-            else:
-                x = torch.cat([x, self.augment_func(x).to(x)],
-                               self.augment_idx)
-        return x
-
-
-class DepthCat(nn.Module):
-    """Depth variable `s` concatenation module. Allows for easy concatenation of `s` each call of the numerical solver, at specified layers of the DEFunc.
-
-    :param idx_cat: index of the data dimension to concatenate `s` to.
-    :type idx_cat: int
-    """
-
-    def __init__(self, idx_cat=1):
-        super().__init__()
-        self.idx_cat = idx_cat ; self.s = None
-
-    def forward(self, x):
-        s_shape = list(x.shape);
-        s_shape[self.idx_cat] = 1
-        self.s = self.s * torch.ones(s_shape).to(x)
-        return torch.cat([x, self.s], self.idx_cat).to(x)
-
-
-class DataControl(nn.Module):
-    """Data-control module. Allows for data-control inputs at arbitrary points of the DEFunc
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.u = None
-
-    def forward(self, x):
-        return torch.cat([x, self.u], 1).to(x)
+def make_norm(state):
+    state_size = state.numel()
+    def norm(aug_state):
+        y = aug_state[1:1 + state_size]
+        adj_y = aug_state[1 + state_size:1 + 2 * state_size]
+        return max(rms_norm(y), rms_norm(adj_y))
+    return norm

@@ -18,19 +18,7 @@ import torchsde
 from torchdyn.sensitivity.adjoint import Adjoint
 
 from .defunc import DEFunc, SDEFunc
-from .utils import SCIPY_SOLVERS
-import warnings
-
-def rms_norm(tensor):
-    return tensor.pow(2).mean().sqrt()
-
-def make_norm(state):
-    state_size = state.numel()
-    def norm(aug_state):
-        y = aug_state[1:1 + state_size]
-        adj_y = aug_state[1 + state_size:1 + 2 * state_size]
-        return max(rms_norm(y), rms_norm(adj_y))
-    return norm
+from .utils import rms_norm, make_norm, SCIPY_SOLVERS
 
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
@@ -66,7 +54,7 @@ class NeuralDETemplate(pl.LightningModule):
         npar = sum([p.numel() for p in self.defunc.parameters()])
         return f"Neural DE:\n\t- order: {self.order}\
         \n\t- solver: {self.solver}\n\t- integration interval: {self.s_span[0]} to {self.s_span[-1]}\
-        \n\t- num_checkpoints: {len(self.s_span)}\
+        \n\t- len_grid: {len(self.s_span)}\
         \n\t- tolerances: relative {self.rtol} absolute {self.atol}\
         \n\t- num_parameters: {npar}\
         \n\t- NFE: {self.nfe}\n\
@@ -96,25 +84,8 @@ class NeuralODE(NeuralDETemplate):
         self.u, self.controlled = None, False # data-control
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
-        self._solver_checks(solver, sensitivity)
-
-    def _solver_checks(self, solver, sensitivity):
-
-        self.solver =  {'method': solver}
-
-        if solver[:5] == "scipy" and solver not in SCIPY_SOLVERS:
-            available_scipy_solvers = ", ".join(SCIPY_SOLVERS.keys())
-            raise KeyError("Invalid Scipy Solver specified." +
-                           " Supported Scipy Solvers are: " + available_scipy_solvers)
-
-        elif solver in SCIPY_SOLVERS:
-            warnings.warn(UserWarning("CUDA is not available with SciPy solvers."))
-
-            if sensitivity == 'autograd':
-                raise ValueError("SciPy Solvers do not work with autograd." +
-                                 " Use adjoint sensitivity with SciPy Solvers.")
-
-            self.solver = SCIPY_SOLVERS[solver]
+        check_solver_compat(solver, sensitivity)
+        self.solver = SCIPY_SOLVERS[solver]
 
     def _prep_odeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
@@ -143,9 +114,9 @@ class NeuralODE(NeuralDETemplate):
     def forward(self, x:torch.Tensor):
         x = self._prep_odeint(x)
         switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
-            'torchdiffeq_adjoint': self._torchdiffeq_adjoint
+            'autograd': self._autograd_forward,
+            'adjoint': self._adjoint_forward,
+            'torchdiffeq_adjoint': self._torchdiffeq_adjoint_forward
         }
         odeint = switcher.get(self.sensitivity)
         out = odeint(x)
@@ -168,15 +139,15 @@ class NeuralODE(NeuralDETemplate):
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
 
-    def _autograd(self, x):
+    def _autograd_forward(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchdiffeq.odeint(self.defunc, x, self.s_span,
                                   rtol=self.rtol, atol=self.atol, **self.solver)[-1]
 
-    def _adjoint(self, x):
+    def _adjoint_forward(self, x):
         return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, **self.solver)
     
-    def _torchdiffeq_adjoint(self, x):
+    def _torchdiffeq_adjoint_forward(self, x):
         return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span,
                                       rtol=self.rtol, atol=self.atol, **self.solver,
                                       adjoint_options=dict(norm=make_norm(x)))[-1]
@@ -227,8 +198,8 @@ class NeuralSDE(NeuralDETemplate):
     def forward(self, x:torch.Tensor):
         x = self._prep_sdeint(x)
         switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
+            'autograd': self._autograd_forward,
+            'adjoint': self._adjoint_forward,
         }
         sdeint = switcher.get(self.sensitivity)
         out = sdeint(x)
@@ -243,12 +214,12 @@ class NeuralSDE(NeuralDETemplate):
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
         
-    def _autograd(self, x):
+    def _autograd_forward(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                                    adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
     
-    def _adjoint(self, x):
+    def _adjoint_forward(self, x):
         out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
         return out
