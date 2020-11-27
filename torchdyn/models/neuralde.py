@@ -19,6 +19,7 @@ from torchdyn.sensitivity.adjoint import Adjoint
 
 from .defunc import DEFunc, SDEFunc
 
+
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
     def __init__(self, func,
@@ -80,7 +81,7 @@ class NeuralODE(NeuralDETemplate):
                                        atol=atol, rtol=rtol)
         self.nfe = self.defunc.nfe
         self.intloss = intloss
-        self.u, self.controlled = None, False # data-control
+        self.u = None # data-control
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
     def _prep_odeint(self, x:torch.Tensor):
@@ -109,13 +110,28 @@ class NeuralODE(NeuralDETemplate):
 
     def forward(self, x:torch.Tensor):
         x = self._prep_odeint(x)
-        switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
+        sensitivity_strategy = {
+            'autograd': self._forward_autograd,
+            'adjoint': self._forward_adjoint,
+            'ac_adjoint': self._forward_ac_adjoint,
+            'torchdiffeq_adjoint': self._forward_torchdiffeq_adjoint,
         }
-        odeint = switcher.get(self.sensitivity)
-        out = odeint(x)
-        return out
+        odeint = sensitivity_strategy[self.sensitivity]
+        return odeint(x)
+
+    def _forward_autograd(self, x):
+        self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
+        return torchdiffeq.odeint(self.defunc, x, self.s_span,
+                                  rtol=self.rtol, atol=self.atol, method=self.solver)[-1]
+
+    def _forward_adjoint(self, x):
+        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+
+    def _forward_ac_adjoint(self, x):
+        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+
+    def _forward_torchdiffeq_adjoint(self, x):
+        return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
 
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         """Returns a data-flow trajectory at `s_span` points
@@ -134,13 +150,6 @@ class NeuralODE(NeuralDETemplate):
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
 
-    def _autograd(self, x):
-        self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
-        return torchdiffeq.odeint(self.defunc, x, self.s_span,
-                                  rtol=self.rtol, atol=self.atol, method=self.solver)[-1]
-
-    def _adjoint(self, x):
-        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
 
 class NeuralSDE(NeuralDETemplate):
     """General Neural SDE class
