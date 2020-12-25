@@ -16,7 +16,7 @@ import torch.utils.data as data
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from utils import TestLearner
+from .utils import TestLearner
 
 
 def test_strato_sde():
@@ -36,7 +36,7 @@ def test_strato_sde():
                     sde_type='stratonovich',
                     sensitivity='adjoint',
                     s_span=torch.linspace(0, 0.1, 100),
-                    solver='euler',
+                    solver='euler_heun',
                     atol=1e-4,
                     rtol=1e-4).to(device)
     learn = TestLearner(model, trainloader=trainloader)
