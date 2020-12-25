@@ -10,87 +10,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+from pytest.mark import parametrize
 import torch
-import torch.nn as nn
 import torch.utils.data as data
 from torchdyn.datasets import *
 from torchdyn.models import *
-from .utils import TestLearner
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def test_pretty_print():
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
-    f = nn.Sequential(
-            nn.Linear(2, 64),
-            nn.Tanh(),
-            nn.Linear(64, 2))
-    model = NeuralDE(f).to(device)
-    print(model)
+if torch.cuda.is_available():
+    devices = [torch.device("cuda:0"), torch.device("cpu")]
+else:
+    devices = [torch.device("cpu")]
 
-def test_work_without_settings():
-    """Functionality: defining Neural DEs via default settings"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
-    f = nn.Sequential(
-            nn.Linear(2, 64),
-            nn.Tanh(),
-            nn.Linear(64, 2))
-    model = NeuralDE(f).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
+vector_fields = [nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2)),
+                 nn.Sequential(DataControl(), nn.Linear(4, 64), nn.Tanh(), nn.Linear(64, 2))
+                 ]
+
+
+def test_repr(small_mlp):
+    model = NeuralODE(small_mlp)
+    assert type(model.__repr__()) == str and 'NFE' in model.__repr__()
+
+
+# TODO: extend to GPU and Multi-GPU
+@parametrize('device', devices)
+@parametrize('vector_field', vector_fields)
+def test_default_run(moons_trainloader, vector_field, testlearner, device):
+    model = NeuralODE(vector_field)
+    learn = testlearner(model, trainloader=moons_trainloader)
+    trainer = pl.Trainer(min_epochs=500, max_epochs=500)
     trainer.fit(learn)
+    assert trainer.logged_metrics['train_loss'] < 1e-1
 
-def test_neural_de_traj():
-    """Vanilla NeuralDE sanity test"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
 
-    f = nn.Sequential(
-            nn.Linear(2, 64),
-            nn.Tanh(),
-            nn.Linear(64, 2))
-    model = NeuralDE(f,  solver='dopri5').to(device)
-    learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
+# TODO: extend to GPU and Multi-GPU
+@parametrize('device', devices)
+def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
+    model = NeuralODE(small_mlp)
+    learn = testlearner(model, trainloader=moons_trainloader)
+    trainer = pl.Trainer(min_epochs=500, max_epochs=500)
     trainer.fit(learn)
     s_span = torch.linspace(0, 1, 100)
-    model.trajectory(X_train, s_span).detach().cpu()
 
-def test_data_control():
-    """Data-controlled NeuralDE"""
-    d = ToyDataset()
-    X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
-    train = data.TensorDataset(X_train, y_train)
-    trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
+    x, _ = next(iter(moons_trainloader))
+    trajectory = model.trajectory(x, s_span)
+    assert len(trajectory) == 100
 
-    f = nn.Sequential(DataControl(),
-            nn.Linear(4, 64),
-            nn.Tanh(),
-            nn.Linear(64, 2))
-    model = NeuralDE(f, solver='dopri5').to(device)
-    learn = TestLearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
-    trainer.fit(learn)
-    s_span = torch.linspace(0, 1, 100)
-    model.trajectory(X_train, s_span).detach().cpu()
-
+# TODO
+@pytest.mark.skip(reason='clean up to new API')
 def test_augmenter_func_is_trained():
     """Test if augment function is trained without explicit definition"""
     d = ToyDataset()
@@ -115,6 +84,9 @@ def test_augmenter_func_is_trained():
     p_after = torch.cat([p.flatten() for p in model[0].parameters()])
     assert (p != p_after).any()
 
+
+# TODO
+@pytest.mark.skip(reason='clean up to new API')
 def test_augmented_data_control():
     """Data-controlled NeuralDE with IL-Augmentation"""
     d = ToyDataset()
@@ -138,6 +110,9 @@ def test_augmented_data_control():
 
     trainer.fit(learn)
 
+
+# TODO
+@pytest.mark.skip(reason='clean up to new API')
 def test_vanilla_galerkin():
     """Vanilla Galerkin (MLP) Neural ODE"""
     d = ToyDataset()
@@ -161,6 +136,9 @@ def test_vanilla_galerkin():
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
+
+# TODO
+@pytest.mark.skip(reason='clean up to new API')
 def test_vanilla_conv_galerkin():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     """Vanilla Galerkin (CNN 2D) Neural ODE"""
@@ -175,6 +153,9 @@ def test_vanilla_conv_galerkin():
     model = nn.Sequential(NeuralDE(f, solver='dopri5')).to(device)
     model(X)
 
+
+# TODO
+@pytest.mark.skip(reason='clean up to new API')
 def test_2nd_order():
     """2nd order (MLP) Galerkin Neural ODE"""
     d = ToyDataset()

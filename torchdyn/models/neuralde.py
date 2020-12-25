@@ -19,6 +19,7 @@ from torchdyn.sensitivity.adjoint import Adjoint
 
 from .defunc import DEFunc, SDEFunc
 
+
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
     def __init__(self, func,
@@ -60,6 +61,7 @@ class NeuralDETemplate(pl.LightningModule):
         \nIntegral loss: {self.intloss}\n\
         \nDEFunc:\n {self.defunc}"
 
+
 class NeuralODE(NeuralDETemplate):
     """General Neural ODE class
 
@@ -84,7 +86,7 @@ class NeuralODE(NeuralDETemplate):
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
     def _prep_odeint(self, x:torch.Tensor):
-        self.s_span = self.s_span.to(x)
+        self.s_span = self.s_span.to(x.device)
 
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
@@ -150,6 +152,7 @@ class NeuralODE(NeuralDETemplate):
 
     def _adjoint(self, x):
         return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, method=self.solver)
+
 
 class NeuralSDE(NeuralDETemplate):
     """General Neural SDE class

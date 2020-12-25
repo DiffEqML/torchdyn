@@ -16,7 +16,6 @@ import torch.utils.data as data
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from .utils import TestLearner
 
 
 def test_strato_sde():

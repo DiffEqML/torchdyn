@@ -18,7 +18,6 @@ import torch.utils.data as data
 from torchdyn import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from utils import TestIntegralLoss
 
 
 def test_adjoint_autograd():
