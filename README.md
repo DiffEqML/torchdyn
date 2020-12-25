@@ -23,6 +23,23 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 | Ubuntu 18.04  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing) |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
 | Windows  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |       |
 
+
+## Quick Start
+
+Neural differential equations made easy:
+```
+from torchdyn import NeuralODE
+
+# your preferred torch.nn.Module here 
+f = nn.Sequential(nn.Conv2d(1, 32, 3),
+                  nn.Softplus(),
+                 nn.Conv2d(1, 32, 3)
+            )
+
+nde = NeuralODE(f)
+```
+And you're good to go. The `nde` object can be seamlessly combined with other deep learning models.
+
 ## Installation
 `git clone https://github.com/DiffEqML/torchdyn.git`
 
