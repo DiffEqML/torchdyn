@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.distributions import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from .utils import *
+
 
 def test_cnf_vanilla():
     device = torch.device('cpu')
