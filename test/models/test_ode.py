@@ -11,7 +11,6 @@
 # limitations under the License.
 
 import pytest
-from pytest.mark import parametrize
 import torch
 import torch.utils.data as data
 from torchdyn.datasets import *
@@ -34,8 +33,8 @@ def test_repr(small_mlp):
 
 
 # TODO: extend to GPU and Multi-GPU
-@parametrize('device', devices)
-@parametrize('vector_field', vector_fields)
+@pytest.mark.parametrize('device', devices)
+@pytest.mark.parametrize('vector_field', vector_fields)
 def test_default_run(moons_trainloader, vector_field, testlearner, device):
     model = NeuralODE(vector_field)
     learn = testlearner(model, trainloader=moons_trainloader)
@@ -45,7 +44,7 @@ def test_default_run(moons_trainloader, vector_field, testlearner, device):
 
 
 # TODO: extend to GPU and Multi-GPU
-@parametrize('device', devices)
+@pytest.mark.parametrize('device', devices)
 def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
     model = NeuralODE(small_mlp)
     learn = testlearner(model, trainloader=moons_trainloader)
