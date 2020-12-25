@@ -27,7 +27,6 @@ class GaussianRBF(nn.Module):
     :param centers: centers of the radial basis functions (one per degree). Same center across all degrees. x0 in the radius formulas
     :type centers: int
     """
-
     def __init__(self, deg, adaptive=False, eps_scales=2, centers=0):
         super().__init__()
         self.deg, self.n_eig = deg, 1
@@ -56,7 +55,6 @@ class VanillaRBF(nn.Module):
     :param centers: centers of the radial basis functions (one per degree). Same center across all degrees. x0 in the radius formulas
     :type centers: int
     """
-
     def __init__(self, deg, adaptive=False, eps_scales=2, centers=0):
         super().__init__()
         self.deg, self.n_eig = deg, 1
@@ -85,7 +83,6 @@ class MultiquadRBF(nn.Module):
     :param centers: centers of the radial basis functions (one per degree). Same center across all degrees. x0 in the radius formulas
     :type centers: int
     """
-
     def __init__(self, deg, adaptive=False, eps_scales=2, centers=0):
         super().__init__()
         self.deg, self.n_eig = deg, 1
@@ -110,7 +107,6 @@ class Fourier(nn.Module):
     :param adaptive: does nothing (for now)
     :type adaptive: bool
     """
-
     def __init__(self, deg, adaptive=False):
         super().__init__()
         self.deg, self.n_eig = deg, 2
@@ -128,7 +124,6 @@ class Polynomial(nn.Module):
     :param adaptive: does nothing (for now)
     :type adaptive: bool
     """
-
     def __init__(self, deg, adaptive=False):
         super().__init__()
         self.deg, self.n_eig = deg, 1
@@ -164,7 +159,6 @@ class Chebychev(nn.Module):
 
 class GalLayer(nn.Module):
     """Galerkin layer template. Introduced in https://arxiv.org/abs/2002.08071"""
-
     def __init__(self, bias=True, basisfunc=Fourier(5), dilation=True, shift=True):
         super().__init__()
         self.dilation = torch.ones(1) if not dilation else nn.Parameter(data=torch.ones(1), requires_grad=True)
@@ -181,11 +175,15 @@ class GalLayer(nn.Module):
         n_range = torch.linspace(0, self.deg, self.deg).to(self.coeffs.device)
         basis = self.basisfunc(n_range, s * self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []
-        for i in range(self.n_eig):
-            Bin = torch.eye(self.deg).to(self.coeffs.device)
-            Bin[range(self.deg), range(self.deg)] = basis[i]
-            B.append(Bin)
-        B = torch.cat(B, 1).to(self.coeffs.device)
+
+        
+    def reset_parameters(self):
+        torch.nn.init.zeros_(self.coeffs)
+        
+    def calculate_weights(self, s):
+        "Expands `s` following the chosen eigenbasis"
+        n_range = torch.linspace(0, self.deg, self.deg).to(self.coeffs.device)
+        basis = self.basisfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         coeffs = torch.cat([self.coeffs[:, :, i] for i in range(self.n_eig)], 1).transpose(0, 1).to(self.coeffs.device)
         X = torch.matmul(B, coeffs)
         return X.sum(0)
@@ -206,7 +204,6 @@ class GalLinear(GalLayer):
     :param shift: whether to optimize for `shift` parameter. Allows the GalLayer to shift the eigenfunction period.
     :type shift: bool
     """
-
     def __init__(self, in_features, out_features, bias=True, basisfunc=Fourier(5), dilation=True, shift=True):
         super().__init__(bias, basisfunc, dilation, shift)
 
@@ -215,21 +212,20 @@ class GalLinear(GalLayer):
         if bias:
             self.bias = torch.Tensor(out_features)
         else:
-            self.register_parameter('bias', None)
-        self.coeffs = torch.nn.Parameter(torch.Tensor((in_features + 1) * out_features, self.deg, self.n_eig))
-        self.reset_parameters()
-
+            self.register_parameter('bias', None)         
+        self.coeffs = torch.nn.Parameter(torch.Tensor((in_features+1)*out_features, self.deg, self.n_eig))        
+        self.reset_parameters()  
+                
     def forward(self, input):
         # For the moment, GalLayers rely on DepthCat to access the `s` variable. A better design would free the user
         # of having to introduce DepthCat(1) every time a GalLayer is used
-        s = input[-1, -1]
-        input = input[:, :-1]
+        s = input[-1,-1]
+        input = input[:,:-1]
         w = self.calculate_weights(s)
-        self.weight = w[0:self.in_features * self.out_features].reshape(self.out_features, self.in_features)
-        self.bias = w[self.in_features * self.out_features:(self.in_features + 1) * self.out_features].reshape(
-            self.out_features)
+        self.weight = w[0:self.in_features*self.out_features].reshape(self.out_features, self.in_features)
+        self.bias = w[self.in_features*self.out_features:(self.in_features+1)*self.out_features].reshape(self.out_features)
         return torch.nn.functional.linear(input, self.weight, self.bias)
-
+    
 
 class GalConv2d(GalLayer):
     """2D convolutional Galerkin layer for depth--variant neural differential equations. Introduced in https://arxiv.org/abs/2002.08071
@@ -255,7 +251,7 @@ class GalConv2d(GalLayer):
     __constants__ = ['bias', 'in_channels', 'out_channels', 'kernel_size', 'stride', 'padding', 'deg']
 
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=0, bias=True,
-                 basisfunc=Fourier(5), dilation=True, shift=True):
+                 basisfunc=Fourier(5), dilation=True, shift=True):     
         super().__init__(bias, basisfunc, dilation, shift)
 
         self.ic, self.oc, self.ks = in_channels, out_channels, kernel_size
@@ -266,6 +262,7 @@ class GalConv2d(GalLayer):
             self.bias = torch.Tensor(out_channels)
         else:
             self.register_parameter('bias', None)
+
         self.coeffs = torch.nn.Parameter(
             torch.Tensor(((out_channels) * in_channels * (kernel_size ** 2) + out_channels), self.deg, 2))
         self.reset_parameters()

@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torchdyn.sensitivity.adjoint import *
+__version__ = '0.0.2'
+__author__  = 'Michael Poli, Stefano Massaroli et al.'
 
-from ._internals import *
-from .plot import *
+from torchdyn.sensitivity.adjoint import Adjoint
+from torchdyn.models import NeuralODE, NeuralSDE
 from .models import *
+
+__all__ = ['Adjoint', 'NeuralODE', 'NeuralSDE']

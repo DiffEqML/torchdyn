@@ -5,8 +5,8 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
-      max-parallel: 2
+      fail-fast: true
+      max-parallel: 10
 
       matrix:
         os: [ubuntu-16.04, ubuntu-18.04, windows-2019]
@@ -31,7 +31,7 @@ jobs:
         python -m pip install --upgrade --user pip
         pip install -r requirements/base.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
         pip install -r requirements/external.txt
-        python setup.py install
+        pip install -e .
         pip install pytest pytest-cov
         
     - name: Run tests
