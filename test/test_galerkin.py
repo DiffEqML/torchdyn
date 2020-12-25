@@ -1,6 +1,5 @@
 import torch
 from torchdyn.models import *
-from .utils import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
