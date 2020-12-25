@@ -52,7 +52,7 @@ def test_adjoint_autograd():
 
 
 
-def test_integral_adjoint_integral_autograd():
+def test_integral_adjoint_integral_autograd(testintloss):
     """Compare ODE Adjoint vs Autograd gradients (with integral loss), s := [0, 1], adaptive-step"""
     bs = 1000
 
@@ -66,9 +66,9 @@ def test_integral_adjoint_integral_autograd():
     torch.manual_seed(0)
     aug = Augmenter(1, 1)
     torch.manual_seed(0)
-    model_autograd = NeuralDE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=TestIntegralLoss()).to(device)
+    model_autograd = NeuralDE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
     torch.manual_seed(0)
-    model_adjoint = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=TestIntegralLoss()).to(device)
+    model_adjoint = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
 
     torch.manual_seed(0)
     x = torch.randn(bs, 2).to(device)

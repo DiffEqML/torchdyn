@@ -6,7 +6,7 @@ from torchdyn.datasets import *
 from torchdyn.models import *
 
 
-def test_stable_neural_de():
+def test_stable_neural_de(testlearner):
     """Stable: basic functionality"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
@@ -20,11 +20,11 @@ def test_stable_neural_de():
             nn.Tanh(),
             nn.Linear(64, 1)))
     model = NeuralDE(f).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
 
-def test_hnn():
+def test_hnn(testlearner):
     """HNN: basic functionality"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=32, dataset_type='moons', noise=.4)
@@ -38,11 +38,11 @@ def test_hnn():
             nn.Tanh(),
             nn.Linear(64, 1)))
     model = NeuralDE(f).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
 
-def test_lnn():
+def test_lnn(testlearner):
     """LNN: basic functionality"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=32, dataset_type='moons', noise=.4)
@@ -56,6 +56,6 @@ def test_lnn():
             nn.Tanh(),
             nn.Linear(64, 1)))
     model = NeuralDE(f).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)

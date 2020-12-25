@@ -18,7 +18,7 @@ from torchdyn.datasets import *
 from torchdyn.models import *
 
 
-def test_strato_sde():
+def test_strato_sde(testlearner):
     """Test vanilla Stratonovich Neural SDE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
@@ -38,11 +38,11 @@ def test_strato_sde():
                     solver='euler_heun',
                     atol=1e-4,
                     rtol=1e-4).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
-def test_ito_sde():
+def test_ito_sde(testlearner):
     """Test vanilla Ito Neural SDE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
@@ -62,13 +62,13 @@ def test_ito_sde():
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
-def test_data_control():
+def test_data_control(testlearner):
     """Data-controlled Neural SDE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
@@ -89,14 +89,14 @@ def test_data_control():
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
 
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
     model.trajectory(X_train, s_span).detach().cpu()
 
-def test_depth_cat():
+def test_depth_cat(testlearner):
     """DepthCat Neural SDE"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
@@ -117,7 +117,7 @@ def test_depth_cat():
                     solver='euler',
                     atol=0.0001,
                     rtol=0.0001).to(device)
-    learn = TestLearner(model, trainloader=trainloader)
+    learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
