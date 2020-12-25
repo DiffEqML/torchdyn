@@ -33,7 +33,7 @@ from torchdyn import NeuralODE
 # your preferred torch.nn.Module here 
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
                   nn.Softplus(),
-                 nn.Conv2d(1, 32, 3)
+                 nn.Conv2d(32, 1, 3)
             )
 
 nde = NeuralODE(f)
