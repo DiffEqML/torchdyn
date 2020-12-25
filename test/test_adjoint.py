@@ -20,7 +20,7 @@ import torch.utils.data as data
 from torchdyn import *
 from torchdyn.datasets import *
 from torchdyn.models import *
-from .utils import *
+
 
 batch_size = 128
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -57,15 +57,18 @@ def test_adjoint_autograd():
     assert (torch.abs(bp_grad - adj_grad) <= 1e-3).all(), f'Gradient error: {torch.abs(bp_grad - adj_grad).sum()}'
 
 
-def test_integral_adjoint_integral_autograd():
+def test_integral_adjoint_integral_autograd(testintloss):
     """Compare ODE Adjoint vs Autograd gradients (with integral loss), s := [0, 1], adaptive-step"""
     f = nn.Sequential(
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64,2))
     aug = Augmenter(1, 1)
-    model_autograd = NeuralDE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-8, intloss=TestIntegralLoss()).to(device)
-    model_adjoint = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-8, intloss=TestIntegralLoss()).to(device)
+    torch.manual_seed(0)
+    model_autograd = NeuralDE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+    torch.manual_seed(0)
+    model_adjoint = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+
 
     torch.manual_seed(0)
     x = torch.randn(batch_size, 2).to(device)

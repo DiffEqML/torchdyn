@@ -32,6 +32,7 @@ def make_norm(state):
         return max(rms_norm(y), rms_norm(adj_y))
     return norm
 
+
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
     def __init__(self, func,
@@ -72,6 +73,7 @@ class NeuralDETemplate(pl.LightningModule):
         \n\t- NFE: {self.nfe}\n\
         \nIntegral loss: {self.intloss}\n\
         \nDEFunc:\n {self.defunc}"
+
 
 class NeuralODE(NeuralDETemplate):
     """General Neural ODE class
@@ -117,7 +119,7 @@ class NeuralODE(NeuralDETemplate):
             self.solver = SCIPY_SOLVERS[solver]
 
     def _prep_odeint(self, x:torch.Tensor):
-        self.s_span = self.s_span.to(x)
+        self.s_span = self.s_span.to(x.device)
 
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
@@ -165,8 +167,17 @@ class NeuralODE(NeuralDETemplate):
                                  rtol=self.rtol, atol=self.atol, **self.solver)
         return sol
 
-    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        raise NotImplementedError
+    def sensitivity_trajectory(self, x:torch.Tensor, grad_output:torch.Tensor, 
+                               s_span:torch.Tensor):
+        assert self.sensitivity == 'adjoint', 'Sensitivity trajectory only available for `adjoint`'
+        x = torch.autograd.Variable(x, requires_grad=True)
+        sol = self(x)       
+        adj0 = self.adjoint._init_adjoint_state(sol, grad_output)
+        self.adjoint.flat_params = flatten(self.defunc.parameters())
+        self.adjoint.func = self.defunc; self.adjoint.f_params = tuple(self.defunc.parameters())
+        adj_sol = torchdiffeq.odeint(self.adjoint.adjoint_dynamics, adj0, s_span, 
+               rtol=self.rtol, atol=self.atol, method=self.solver)
+        return adj_sol
 
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
@@ -181,7 +192,7 @@ class NeuralODE(NeuralDETemplate):
                                       rtol=self.rtol, atol=self.atol, **self.solver,
                                       adjoint_options=dict(norm=make_norm(x)))[-1]
 
-    
+
 class NeuralSDE(NeuralDETemplate):
     """General Neural SDE class
     :param drift_func: function parametrizing the drift.

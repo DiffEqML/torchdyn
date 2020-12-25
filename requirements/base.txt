@@ -4,5 +4,5 @@ matplotlib
 torch>=1.6.0
 torchvision
 torchdiffeq
-pytorch_lightning>=0.8.4
+pytorch_lightning>=1.0.0
 scikit-learn
