@@ -17,8 +17,8 @@ import torchdiffeq
 import torchsde
 from torchdyn.sensitivity.adjoint import Adjoint
 
-from .defunc import DEFunc, SDEFunc
-from .utils import SCIPY_SOLVERS
+from torchdyn.core.defunc import DEFunc, SDEFunc
+from torchdyn.core.utils import SCIPY_SOLVERS
 import warnings
 
 def rms_norm(tensor):

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torchdiffeq
-from .neuralde import NeuralODE
+from torchdyn.core.neuralde import NeuralODE
 
 def hook_backward_gradients(module, grad_input, grad_output):
     module.grad_output = grad_output

@@ -4,9 +4,8 @@ import torch.nn as nn
 from torch.distributions import Normal, kl_divergence
 import pytorch_lightning as pl
 import torchsde
-from torchsde import sdeint_adjoint
 
-from torchdyn.models import SDEFunc, LSDEFunc
+from torchdyn.models import LSDEFunc
 
 class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
     def __init__(self, post_drift, diffusion, prior_drift, sigma, theta, mu, options,

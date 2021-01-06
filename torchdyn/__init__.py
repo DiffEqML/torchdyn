@@ -15,10 +15,10 @@ __author__  = 'Michael Poli, Stefano Massaroli et al.'
 
 from torchdyn.sensitivity.adjoint import Adjoint
 from torchdyn.models import NeuralODE, NeuralSDE
-from .models import *
+from torchdyn.models import *
 
 from torch import Tensor
-from typing import Tuple, List
+from typing import Tuple
 
 TTuple = Tuple[Tensor, Tensor]
 

@@ -11,12 +11,9 @@
 # limitations under the License.
 
 from .adadepth import *
-from .defunc import *
 from .energy import *
-from .neuralde import *
-from .normflows import *
-from .utils import *
-from .hybrid import *
+from torchdyn.core.neuralde import *
+from .cnf import *
 
 # v0.2.2+: preserve backward compatibility
 NeuralDE = NeuralODE

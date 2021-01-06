@@ -12,13 +12,8 @@
 
 from copy import deepcopy
 
-import pytest
-
-import torch
-import torch.nn as nn
 import torch.utils.data as data
-from torchdyn import *
-from torchdyn.datasets import *
+from torchdyn.data import *
 from torchdyn.models import *
 
 

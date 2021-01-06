@@ -1,8 +1,5 @@
-import torch
-import torch.nn as nn
 import torch.utils.data as data
-from torch.distributions import *
-from torchdyn.datasets import *
+from torchdyn.data import *
 from torchdyn.models import *
 
 

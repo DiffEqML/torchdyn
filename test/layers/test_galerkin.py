@@ -1,6 +1,6 @@
 import pytest
 import torch
-from torchdyn.layers.galerkin import *
+from torchdyn.nn.galerkin import *
 from torchdyn.models import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -17,6 +17,6 @@ def test_default_run_gallinear(moons_trainloader, testlearner, basis):
                       GalLinear(8, 2, expfunc=basis))
     model = NeuralODE(f)
     learn = testlearner(model, trainloader=moons_trainloader)
-    trainer = pl.Trainer(min_epochs=500, max_epochs=500)
+    trainer = pl.Trainer(min_epochs=1000, max_epochs=1000)
     trainer.fit(learn)
     assert trainer.logged_metrics['train_loss'] < 1e-1

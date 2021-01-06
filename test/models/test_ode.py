@@ -11,9 +11,8 @@
 # limitations under the License.
 
 import pytest
-import torch
 import torch.utils.data as data
-from torchdyn.datasets import *
+from torchdyn.data import *
 from torchdyn.models import *
 import copy
 
