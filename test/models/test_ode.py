@@ -15,6 +15,7 @@ import torch
 import torch.utils.data as data
 from torchdyn.datasets import *
 from torchdyn.models import *
+import copy
 
 
 if torch.cuda.is_available():
