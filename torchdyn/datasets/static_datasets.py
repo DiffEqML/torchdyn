@@ -18,12 +18,14 @@ import math
 
 import numpy as np
 import torch
+from torch import sqrt, pow, cat, zeros, Tensor
 from scipy.integrate import solve_ivp
+from torchdyn import TTuple, Tuple
 from sklearn.neighbors import KernelDensity
 from torch.distributions import Normal
 
 
-def randnsphere(dim, radius):
+def randnsphere(dim:int, radius:float) -> Tensor:
     """Uniform sampling on a sphere of `dim` and `radius`
 
     :param dim: dimension of the sphere
@@ -32,10 +34,12 @@ def randnsphere(dim, radius):
     :type radius: float
     """
     v = torch.randn(dim)
-    inv_len = radius / torch.sqrt(torch.pow(v, 2).sum())
+    inv_len = radius / sqrt(pow(v, 2).sum())
     return v * inv_len
 
-def generate_concentric_spheres(n_samples=100, noise=1e-4, dim=3, inner_radius=0.5, outer_radius=1):
+
+def generate_concentric_spheres(n_samples:int=100, noise:float=1e-4, dim:int=3,
+                                inner_radius:float=0.5, outer_radius:int=1) -> TTuple:
     """Creates a *concentric spheres* dataset of `n_samples` data points.
 
     :param n_samples: number of data points in the generated dataset
@@ -49,22 +53,22 @@ def generate_concentric_spheres(n_samples=100, noise=1e-4, dim=3, inner_radius=0
     :param outer_radius: radius of the outer sphere
     :type outer_radius: float
     """
-    X = torch.zeros((n_samples, dim))
-    y = torch.zeros(n_samples)
+    X, y = zeros((n_samples, dim)), torch.zeros(n_samples)
     y[:n_samples // 2] = 1
     samples = []
     for i in range(n_samples // 2):
         samples.append(randnsphere(dim, inner_radius)[None, :])
-    X[:n_samples // 2] = torch.cat(samples)
-    X[:n_samples // 2] += torch.zeros((n_samples // 2, dim)).normal_(0, std=noise)
+    X[:n_samples // 2] = cat(samples)
+    X[:n_samples // 2] += zeros((n_samples // 2, dim)).normal_(0, std=noise)
     samples = []
     for i in range(n_samples // 2):
         samples.append(randnsphere(dim, outer_radius)[None, :])
-    X[n_samples // 2:] = torch.cat(samples)
-    X[n_samples // 2:] += torch.zeros((n_samples // 2, dim)).normal_(0, std=noise)
+    X[n_samples // 2:] = cat(samples)
+    X[n_samples // 2:] += zeros((n_samples // 2, dim)).normal_(0, std=noise)
     return X, y
 
-def generate_moons(n_samples=100, noise=1e-4, **kwargs):
+
+def generate_moons(n_samples:int=100, noise:float=1e-4, **kwargs) -> TTuple:
     """Creates a *moons* dataset of `n_samples` data points.
 
     :param n_samples: number of data points in the generated dataset
@@ -87,10 +91,11 @@ def generate_moons(n_samples=100, noise=1e-4, **kwargs):
     if noise is not None:
         X += np.random.rand(n_samples, 1) * noise
 
-    X, y = torch.Tensor(X), torch.Tensor(y).long()
+    X, y = Tensor(X), Tensor(y).long()
     return X, y
 
-def generate_spirals(n_samples=100, noise=1e-4, **kwargs):
+
+def generate_spirals(n_samples=100, noise=1e-4, **kwargs) -> TTuple:
     """Creates a *spirals* dataset of `n_samples` data points.
 
     :param n_samples: number of data points in the generated dataset
@@ -106,7 +111,9 @@ def generate_spirals(n_samples=100, noise=1e-4, **kwargs):
     X, y = torch.Tensor(X), torch.Tensor(y).long()
     return X, y
 
-def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaussians=0.1, noise=1e-3):
+
+def generate_gaussians(n_samples=100, n_gaussians=7, dim=2,
+                       radius=0.5, std_gaussians=0.1, noise=1e-3) -> TTuple:
     """Creates `dim`-dimensional `n_gaussians` on a ring of radius `radius`.
 
     :param n_samples: number of data points in the generated dataset
@@ -136,8 +143,10 @@ def generate_gaussians(n_samples=100, n_gaussians=7, dim=2, radius=0.5, std_gaus
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
 
+
 def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop=4, dim=2,
-                              radius_start=1, radius_end=0.2, std_gaussians_start=0.3, std_gaussians_end=0.1, noise=1e-3):
+                              radius_start=1, radius_end=0.2, std_gaussians_start=0.3,
+                              std_gaussians_end=0.1, noise=1e-3) -> TTuple:
     """Creates `dim`-dimensional `n_gaussians` on a spiral.
 
     :param n_samples: number of data points in the generated dataset
@@ -178,22 +187,8 @@ def generate_gaussians_spiral(n_samples=100, n_gaussians=7, n_gaussians_per_loop
         y[i*n_samples:(i+1)*n_samples] = i
     return X, y
 
-def generate_checkerboard(): # pragma: no cover
-    """Not yet implemented"""
-    raise NotImplementedError
-    ranges = [[0, 2], [0, 2]]
-    n_chunks = 4
-    n_samples = 100
 
-    torch.zeros(n_samples * n_chunks, len(ranges))
-    linspaces = [torch.linspace(el[0], el[1], n_chunks) for el in ranges]
-    mesh = torch.meshgrid(linspaces) ; k = len(mesh)
-
-    for i in range(0, n_chunks, 2):
-        dims = [mesh_dim[i:i+1] for j in range(k)]
-        dist = Uniform([mesh_dim[i:i+1] for j in range(len(mesh))])
-
-def generate_diffeqml(n_samples=100, noise=1e-3):
+def generate_diffeqml(n_samples=100, noise=1e-3) -> Tuple[Tensor, None]:
     """Samples `n_samples` 2-dim points from the DiffEqML logo.
 
     :param n_samples: number of data points in the generated dataset
@@ -225,9 +220,10 @@ def generate_diffeqml(n_samples=100, noise=1e-3):
     X = torch.tensor(k.sample(n_samples) + noise*np.random.randn(n_samples, 2)).float()
     return X, None
 
+
 class ToyDataset:
     """Handles the generation of classification toy datasets"""
-    def generate(self, n_samples, dataset_type, **kwargs):
+    def generate(self, n_samples:int, dataset_type:str, **kwargs) -> TTuple:
         """Handles the generation of classification toy datasets
         :param n_samples: number of data points in the generated dataset
         :type n_samples: int

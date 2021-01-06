@@ -17,4 +17,9 @@ from torchdyn.sensitivity.adjoint import Adjoint
 from torchdyn.models import NeuralODE, NeuralSDE
 from .models import *
 
+from torch import Tensor
+from typing import Tuple, List
+
+TTuple = Tuple[Tensor, Tensor]
+
 __all__ = ['Adjoint', 'NeuralODE', 'NeuralSDE']

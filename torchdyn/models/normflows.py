@@ -12,18 +12,19 @@
 
 import torch
 import torch.nn as nn
+from torch.autograd import grad
 
 
 def autograd_trace(x_out, x_in, **kwargs):
     """Standard brute-force means of obtaining trace of the Jacobian, O(d) calls to autograd"""
     trJ = 0.
     for i in range(x_in.shape[1]):
-        trJ += torch.autograd.grad(x_out[:, i].sum(), x_in, allow_unused=False, create_graph=True)[0][:, i]
+        trJ += grad(x_out[:, i].sum(), x_in, allow_unused=False, create_graph=True)[0][:, i]
     return trJ
 
 def hutch_trace(x_out, x_in, noise=None, **kwargs):
     """Hutchinson's trace Jacobian estimator, O(1) call to autograd"""
-    jvp = torch.autograd.grad(x_out, x_in, noise, create_graph=True)[0]
+    jvp = grad(x_out, x_in, noise, create_graph=True)[0]
     trJ = torch.einsum('bi,bi->b', jvp, noise)
 
     return trJ
@@ -52,7 +53,8 @@ class CNF(nn.Module):
 
     def forward(self, x):
         with torch.set_grad_enabled(True):
-            x_in = torch.autograd.Variable(x[:,1:], requires_grad=True).to(x) # first dimension reserved to divergence propagation
+            # first dimension is reserved to divergence propagation
+            x_in = x[:,1:].requires_grad_(True)
 
             # the neural network will handle the data-dynamics here
             if self.order > 1: self.higher_order(x_in)
