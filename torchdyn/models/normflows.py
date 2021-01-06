@@ -64,10 +64,4 @@ class CNF(nn.Module):
         return torch.cat([-trJ[:, None], x_out], 1) + 0*x # `+ 0*x` has the only purpose of connecting x[:, 0] to autograd graph
 
     def higher_order(self, x):
-        # NOTE: higher-order in CNF is handled at the CNF level, to refactor
-        x_new = []
-        size_order = x.size(1) // self.order
-        for i in range(1, self.order):
-            x_new += [x[:, size_order*i:size_order*(i+1)]]
-        x_new += [self.m(x)]
-        return torch.cat(x_new, 1).to(x)
+        raise NotImplementedError
