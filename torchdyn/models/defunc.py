@@ -42,14 +42,12 @@ class DEFunc(nn.Module):
             if len(dlds.shape) == 1: dlds = dlds[:, None]
             if self.order > 1: x_dyn = self.horder_forward(s, x_dyn)
             else: x_dyn = self.m(x_dyn)
-            self.dxds = x_dyn
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
 
         # regular forward
         else:
             if self.order > 1: x = self.horder_forward(s, x)
             else: x = self.m(x)
-            self.dxds = x
             return x
 
     def horder_forward(self, s, x):
