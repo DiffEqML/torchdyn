@@ -13,7 +13,7 @@ import pytorch_lightning as pl
 from torch.utils.data import Dataset, DataLoader
 from torch.distributions import Laplace
 
-from from torchdyn.models import LatentNeuralSDE, LinearScheduler, EMAMetric
+from torchdyn.models import LatentNeuralSDE, LinearScheduler, EMAMetric
 from torchsde import BrownianPath
 
 
