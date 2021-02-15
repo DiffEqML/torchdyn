@@ -31,10 +31,10 @@ class Augmenter(nn.Module):
     :type augment_dims: int
     :param augment_idx: index of dimension to augment
     :type augment_idx: int
-    :param augment_func: nn.Module applied to the input data of dimension `d` to determine the augmented initial condition of dimension `d + a`.
+    :param augment_func: nn.Module applied to the input datasets of dimension `d` to determine the augmented initial condition of dimension `d + a`.
                         `a` is defined implicitly in `augment_func` e.g. augment_func=nn.Linear(2, 5) augments a 2 dimensional input with 3 additional dimensions.
     :type augment_func: nn.Module
-    :param order: whether to augment before data [augmentation, x] or after [x, augmentation] along dimension `augment_idx`. Options: ('first', 'last')
+    :param order: whether to augment before datasets [augmentation, x] or after [x, augmentation] along dimension `augment_idx`. Options: ('first', 'last')
     :type order: str
     """
 
@@ -69,7 +69,7 @@ class Augmenter(nn.Module):
 class DepthCat(nn.Module):
     """Depth variable `s` concatenation module. Allows for easy concatenation of `s` each call of the numerical solver, at specified nn of the DEFunc.
 
-    :param idx_cat: index of the data dimension to concatenate `s` to.
+    :param idx_cat: index of the datasets dimension to concatenate `s` to.
     :type idx_cat: int
     """
 
@@ -85,7 +85,7 @@ class DepthCat(nn.Module):
 
 
 class DataControl(nn.Module):
-    """Data-control module. Allows for data-control inputs at arbitrary points of the DEFunc
+    """Data-control module. Allows for datasets-control inputs at arbitrary points of the DEFunc
     """
 
     def __init__(self):

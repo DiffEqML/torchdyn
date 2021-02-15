@@ -1,5 +1,5 @@
 import torch.utils.data as data
-from torchdyn.data import *
+from torchdyn.datasets import *
 from torchdyn.models import *
 
 

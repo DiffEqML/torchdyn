@@ -49,7 +49,7 @@ class AdaptiveDepthNeuralODE(NeuralODE):
         
     def _prep_odeint(self, x:torch.Tensor):
         # determines s_span dynamically. Does not support different
-        # s_spans for different data samples (yet)
+        # s_spans for different datasets samples (yet)
         self.s_span = self.depthfunc(x)
         self.S = self.s_span[-1]
         return super()._prep_odeint(x)
@@ -62,9 +62,9 @@ class AdaptiveDepthNeuralODE(NeuralODE):
         return out
     
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        """Returns a data-flow trajectory at `s_span` points
+        """Returns a datasets-flow trajectory at `s_span` points
 
-        :param x: input data
+        :param x: input datasets
         :type x: torch.Tensor
         :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
                        between 0 and 1

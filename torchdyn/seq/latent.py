@@ -41,7 +41,7 @@ class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
         py0 = Normal(loc=self.py0_mean, scale=self.py0_std)
         logqp0 = kl_divergence(qy0, py0).sum(1).mean(0)  # KL(time=0).
 
-        # Expand s_span to penalize out-of-data region and spread uncertainty -- moved
+        # Expand s_span to penalize out-of-datasets region and spread uncertainty -- moved
         # s_span_ext = torch.cat((torch.tensor([0.0]), self.s_span.to('cpu'), torch.tensor([2.0])))
 
         if s_span is not None:

@@ -34,7 +34,7 @@ REQUIRES_NOISE = [hutch_trace]
 class CNF(nn.Module):
     """Continuous Normalizing Flow
 
-    :param net: function parametrizing the data vector field.
+    :param net: function parametrizing the datasets vector field.
     :type net: nn.Module
     :param trace_estimator: specifies the strategy to otbain Jacobian traces. Options: (autograd_trace, hutch_trace)
     :type trace_estimator: Callable
@@ -56,7 +56,7 @@ class CNF(nn.Module):
             # first dimension is reserved to divergence propagation
             x_in = x[:,1:].requires_grad_(True)
 
-            # the neural network will handle the data-dynamics here
+            # the neural network will handle the datasets-dynamics here
             if self.order > 1: self.higher_order(x_in)
             else: x_out = self.net(x_in)
 
