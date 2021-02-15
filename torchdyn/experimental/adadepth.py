@@ -3,10 +3,10 @@ import torch.nn as nn
 import torchdiffeq
 from torchdyn.core.neuralde import NeuralODE
 
-def hook_backward_gradients(module, grad_input, grad_output):
+def hook_backward_gradients(module, grad_input, grad_output): # pragma: no cover
     module.grad_output = grad_output
 
-class HypernetDepth(nn.Module):
+class HypernetDepth(nn.Module): # pragma: no cover
     def __init__(self, g, baseline):
         super().__init__()
         self.g = g
@@ -24,7 +24,7 @@ class HypernetDepth(nn.Module):
                 else: p.grad = fxS * dLdxS * dSdp
 
     
-class AdaptiveDepthNeuralODE(NeuralODE):
+class AdaptiveDepthNeuralODE(NeuralODE): # pragma: no cover
     """Adaptive-Depth Neural ODE
 
     :param func: function parametrizing the vector field.

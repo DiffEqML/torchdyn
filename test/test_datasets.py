@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torchdyn.datasets import *
+from torchdyn.datasets import ToyDataset
 
 
 def test_adjoint_autograd():

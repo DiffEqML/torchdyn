@@ -1,7 +1,11 @@
 import pytest
+
 import torch
+import torch.nn as nn
+import pytorch_lightning as pl
+from torchdyn.models import NeuralODE
+from torchdyn import DataControl, DepthCat
 from torchdyn.nn.galerkin import *
-from torchdyn.models import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 vector_fields = [nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2)),
