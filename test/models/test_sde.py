@@ -9,8 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from torchdyn.models import *
+import torch
+import torch.nn as nn
+import pytorch_lightning as pl
+from torchdyn.models import NeuralSDE
+from torchdyn import DepthCat, DataControl
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(1415112413244349)
@@ -53,7 +56,6 @@ def test_ito_sde(moons_trainloader, testlearner):
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
-    #model.trajectory(X_train, s_span).detach().cpu()
 
 
 def test_data_control(moons_trainloader, testlearner):
@@ -74,7 +76,6 @@ def test_data_control(moons_trainloader, testlearner):
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
-    #model.trajectory(X_train, s_span).detach().cpu()
 
 
 def test_depth_cat(moons_trainloader, testlearner):
@@ -95,4 +96,3 @@ def test_depth_cat(moons_trainloader, testlearner):
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
     s_span = torch.linspace(0, 0.1, 100)
-    #model.trajectory(X_train, s_span).detach().cpu()
