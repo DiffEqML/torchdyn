@@ -8,7 +8,7 @@ from torch_geometric.nn import SplineConv
 from torchdyn.models import NeuralDE
 
 dataset = 'Cora'
-path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'data', dataset)
+path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'datasets', dataset)
 dataset = Planetoid(path, dataset, transform=T.TargetIndegree())
 data = dataset[0]
 

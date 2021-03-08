@@ -25,7 +25,7 @@ def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8)
 
      :param model: model
      :type model: nn.Module
-     :param X: input data
+     :param X: input datasets
      :type X: torch.Tensor
      :param y: input labels
      :type y: torch.Tensor
@@ -48,11 +48,11 @@ def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8)
 
 
 def plot_2d_flows(trajectory, num_flows=2, figsize=(8,4), alpha=0.8):
-    """Plots data flows learned by a neural differential equation.
+    """Plots datasets flows learned by a neural differential equation.
 
-     :param trajectory: tensor of data flows. Assumed to be of dimensions `L, B, *` with `L`:length of trajectory, `B`:batch size, `*`:remaining dimensions.
+     :param trajectory: tensor of datasets flows. Assumed to be of dimensions `L, B, *` with `L`:length of trajectory, `B`:batch size, `*`:remaining dimensions.
      :type trajectory: torch.Tensor
-     :param num_flows: number of data flows to visualize
+     :param num_flows: number of datasets flows to visualize
      :type num_flows: int
      :param figsize: figure size
      :type figsize: tuple(int, int)
@@ -77,11 +77,11 @@ defaults_1D = {'n_grid':100, 'n_levels':30, 'x_span':[-1,1],
 
 def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
                     n_levels=30, contour_alpha=0.7, cmap='winter', traj_color='orange', traj_alpha=0.1):
-    """Plots 1D data flows.
+    """Plots 1D datasets flows.
 
      :param model: model
      :type model: nn.Module
-     :param s_span: number of data flows to visualize
+     :param s_span: number of datasets flows to visualize
      :type s_span: torch.Tensor
      :param traj: figure size
      :type traj: tuple(int, int)

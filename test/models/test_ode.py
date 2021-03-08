@@ -12,9 +12,14 @@
 
 import pytest
 import torch
+import torch.nn as nn
+import pytorch_lightning as pl
 import torch.utils.data as data
-from torchdyn.datasets import *
-from torchdyn.models import *
+from torchdyn.datasets import ToyDataset
+from torchdyn.models import NeuralODE
+from torchdyn.nn.galerkin import GalLinear, GalConv2d
+from torchdyn import DepthCat, Augmenter, DataControl
+
 import copy
 
 

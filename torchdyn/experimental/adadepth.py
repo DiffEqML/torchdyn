@@ -1,12 +1,12 @@
 import torch
 import torch.nn as nn
 import torchdiffeq
-from .neuralde import NeuralODE
+from torchdyn.core.neuralde import NeuralODE
 
-def hook_backward_gradients(module, grad_input, grad_output):
+def hook_backward_gradients(module, grad_input, grad_output): # pragma: no cover
     module.grad_output = grad_output
 
-class HypernetDepth(nn.Module):
+class HypernetDepth(nn.Module): # pragma: no cover
     def __init__(self, g, baseline):
         super().__init__()
         self.g = g
@@ -22,16 +22,9 @@ class HypernetDepth(nn.Module):
             with torch.no_grad():
                 if hasattr(p, 'grad'): p.grad += fxS * dLdxS * dSdp
                 else: p.grad = fxS * dLdxS * dSdp
-                
-#     def step(self):
-#         for i, p in enumerate(self.g.parameters()):
-#             p.add_(p.grad, alpha=-1e-3)
-            
-#     def zero_grad(self, x):
-#         for p in self.g.parameters(): p.grad.zero_()
-            
+
     
-class AdaptiveDepthNeuralODE(NeuralODE):
+class AdaptiveDepthNeuralODE(NeuralODE): # pragma: no cover
     """Adaptive-Depth Neural ODE
 
     :param func: function parametrizing the vector field.
@@ -56,7 +49,7 @@ class AdaptiveDepthNeuralODE(NeuralODE):
         
     def _prep_odeint(self, x:torch.Tensor):
         # determines s_span dynamically. Does not support different
-        # s_spans for different data samples (yet)
+        # s_spans for different datasets samples (yet)
         self.s_span = self.depthfunc(x)
         self.S = self.s_span[-1]
         return super()._prep_odeint(x)
@@ -69,9 +62,9 @@ class AdaptiveDepthNeuralODE(NeuralODE):
         return out
     
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        """Returns a data-flow trajectory at `s_span` points
+        """Returns a datasets-flow trajectory at `s_span` points
 
-        :param x: input data
+        :param x: input datasets
         :type x: torch.Tensor
         :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
                        between 0 and 1

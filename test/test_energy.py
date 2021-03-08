@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.utils.data as data
-from torch.distributions import *
-from torchdyn.datasets import *
-from torchdyn.models import *
+import pytorch_lightning as pl
+from torchdyn.models import NeuralODE
+from torchdyn.models.energy import Stable, HNN, LNN
+from torchdyn.datasets import ToyDataset
 
 
 def test_stable_neural_de(testlearner):
@@ -19,7 +20,7 @@ def test_stable_neural_de(testlearner):
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64, 1)))
-    model = NeuralDE(f).to(device)
+    model = NeuralODE(f).to(device)
     learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
@@ -37,7 +38,7 @@ def test_hnn(testlearner):
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64, 1)))
-    model = NeuralDE(f).to(device)
+    model = NeuralODE(f).to(device)
     learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)
@@ -55,7 +56,7 @@ def test_lnn(testlearner):
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64, 1)))
-    model = NeuralDE(f).to(device)
+    model = NeuralODE(f).to(device)
     learn = testlearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=10, max_epochs=30)
     trainer.fit(learn)

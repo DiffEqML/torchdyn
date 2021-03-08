@@ -12,14 +12,12 @@
 
 from copy import deepcopy
 
-import pytest
-
 import torch
 import torch.nn as nn
 import torch.utils.data as data
-from torchdyn import *
-from torchdyn.datasets import *
-from torchdyn.models import *
+from torchdyn.models import NeuralODE
+from torchdyn.datasets import ToyDataset
+from torchdyn import Augmenter
 
 
 batch_size = 128
@@ -40,7 +38,7 @@ def test_adjoint_autograd():
             nn.Tanh(),
             nn.Linear(64, 2))
 
-    model = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-8).to(device)
+    model = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-8).to(device)
     x, y = next(iter(trainloader))
     # adjoint gradients
     y_hat = model(x)
@@ -65,9 +63,9 @@ def test_integral_adjoint_integral_autograd(testintloss):
             nn.Linear(64,2))
     aug = Augmenter(1, 1)
     torch.manual_seed(0)
-    model_autograd = NeuralDE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+    model_autograd = NeuralODE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
     torch.manual_seed(0)
-    model_adjoint = NeuralDE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+    model_adjoint = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
 
 
     torch.manual_seed(0)
@@ -86,3 +84,7 @@ def test_integral_adjoint_integral_autograd(testintloss):
     loss.backward()
     g_adjoint= deepcopy(x.grad)
     assert torch.abs(g_autograd - g_adjoint).norm(dim=1, p=2).mean() < 5e-3
+
+
+def test_distributed_loss():
+    assert True

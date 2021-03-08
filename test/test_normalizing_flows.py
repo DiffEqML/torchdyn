@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
-from torch.distributions import *
-from torchdyn.datasets import *
-from torchdyn.models import *
+from torch.distributions import MultivariateNormal
+from torchdyn.models import NeuralODE
+from torchdyn import Augmenter
+from torchdyn.models.cnf import CNF, hutch_trace, autograd_trace
 
 
 def test_cnf_vanilla():
@@ -13,7 +14,7 @@ def test_cnf_vanilla():
             nn.Linear(512, 2)
         )
     defunc = CNF(net)
-    nde = NeuralDE(defunc, solver='dopri5', s_span=torch.linspace(0, 1, 2), atol=1e-5, rtol=1e-5, sensitivity='adjoint')
+    nde = NeuralODE(defunc, solver='dopri5', s_span=torch.linspace(0, 1, 2), atol=1e-5, rtol=1e-5, sensitivity='adjoint')
     model = nn.Sequential(Augmenter(augment_idx=1, augment_dims=1),
                           nde).to(device)
     x = torch.randn((512, 2)).to(device)
@@ -30,7 +31,7 @@ def test_hutch_vanilla():
     noise_dist = MultivariateNormal(torch.zeros(2).to(device), torch.eye(2).to(device))
     defunc = nn.Sequential(CNF(net, trace_estimator=hutch_trace, noise_dist=noise_dist))
 
-    nde = NeuralDE(defunc, solver='dopri5', s_span=torch.linspace(0, 1, 2), atol=1e-5, rtol=1e-5, sensitivity='adjoint')
+    nde = NeuralODE(defunc, solver='dopri5', s_span=torch.linspace(0, 1, 2), atol=1e-5, rtol=1e-5, sensitivity='adjoint')
     model = nn.Sequential(Augmenter(augment_idx=1, augment_dims=1),
                           nde).to(device)
     x = torch.randn((512, 2)).to(device)

@@ -17,8 +17,8 @@ import torchdiffeq
 import torchsde
 from torchdyn.sensitivity.adjoint import Adjoint
 
-from .defunc import DEFunc, SDEFunc
-from .utils import SCIPY_SOLVERS
+from torchdyn.core.defunc import DEFunc, SDEFunc
+from torchdyn.core.utils import SCIPY_SOLVERS
 import warnings
 
 def rms_norm(tensor):
@@ -50,7 +50,7 @@ class NeuralDETemplate(pl.LightningModule):
         self.nfe = self.defunc.nfe
         self.rtol, self.atol = rtol, atol
         self.intloss = intloss
-        self.u, self.controlled = None, False # data-control
+        self.u, self.controlled = None, False # datasets-control
 
     def reset(self):
         self.nfe, self.defunc.nfe = 0, 0
@@ -95,7 +95,7 @@ class NeuralODE(NeuralDETemplate):
                                        atol=atol, rtol=rtol)
         self.nfe = self.defunc.nfe
         self.intloss = intloss
-        self.u, self.controlled = None, False # data-control
+        self.u, self.controlled = None, False # datasets-control
         if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
 
         self._solver_checks(solver, sensitivity)
@@ -127,13 +127,13 @@ class NeuralODE(NeuralDETemplate):
             excess_dims += 1
 
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
-        # as well as data-control set to DataControl module
+        # as well as datasets-control set to DataControl module
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'trace_estimator'):
                 if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
 
-        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+        # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         # TO DO: merge the named_modules loop for perf
         for name, module in self.defunc.named_modules():
             if hasattr(module, 'u'):
@@ -154,9 +154,9 @@ class NeuralODE(NeuralDETemplate):
         return out
 
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
-        """Returns a data-flow trajectory at `s_span` points
+        """Returns a datasets-flow trajectory at `s_span` points
 
-        :param x: input data
+        :param x: input datasets
         :type x: torch.Tensor
         :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
                        between 0 and 1
@@ -220,12 +220,12 @@ class NeuralSDE(NeuralDETemplate):
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
         self.intloss = intloss
-        self.u, self.controlled = None, False  # data-control
+        self.u, self.controlled = None, False  # datasets-control
         self.ds = ds
 
     def _prep_sdeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
-        # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+        # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         # TO DO: merge the named_modules loop for perf
         excess_dims = 0
         for name, module in self.defunc.named_modules():

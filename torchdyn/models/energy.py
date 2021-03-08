@@ -14,6 +14,7 @@ from functools import partial
 
 import torch
 import torch.nn as nn
+from torch.autograd import grad
 from torch.autograd.functional import hessian, jacobian
 
 
@@ -32,8 +33,9 @@ class Stable(nn.Module):
             bs, n = x.shape[0], x.shape[1] // 2
             x = x.requires_grad_(True)
             eps = self.net(x).sum()
-            out = -torch.autograd.grad(eps, x, allow_unused=False, create_graph=True)[0]
+            out = - grad(eps, x, allow_unused=False, create_graph=True)[0]
         return out
+
 
 class HNN(nn.Module):
     """Hamiltonian Neural ODE
@@ -47,9 +49,9 @@ class HNN(nn.Module):
 
     def forward(self, x):
         with torch.set_grad_enabled(True):
-            x.requires_grad_(True) ; n = x.shape[1] // 2
-            gradH = torch.autograd.grad(self.net(x).sum(), x,
-                                        create_graph=True)[0]
+            n = x.shape[1] // 2
+            x = x.requires_grad_(True)
+            gradH = grad(self.net(x).sum(), x, create_graph=True)[0]
         return torch.cat([gradH[:, n:], -gradH[:, :n]], 1).to(x)
 
 
@@ -64,8 +66,9 @@ class LNN(nn.Module):
         self.net = net
 
     def forward(self, x):
-        self.n = n = x.shape[1]//2 ; bs = x.shape[0]
-        x = torch.autograd.Variable(x, requires_grad=True)
+        self.n = n = x.shape[1]//2
+        bs = x.shape[0]
+        x = x.requires_grad_(True)
         qqd_batch = tuple(x[i, :] for i in range(bs))
         jac = tuple(map(partial(jacobian, self._lagrangian, create_graph=True), qqd_batch))
         hess = tuple(map(partial(hessian, self._lagrangian, create_graph=True), qqd_batch))
