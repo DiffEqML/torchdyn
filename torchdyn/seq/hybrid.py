@@ -20,7 +20,7 @@ class HybridNeuralDE(nn.Module):
 
     def forward(self, x):
         h = c = self._init_latent(x)
-        Y = torch.zeros(x.shape[0], *h.shape)
+        Y = torch.zeros(x.shape[0], *h.shape).to(x)
         if self.reverse: x_t = x_t.flip(0)
         for t, x_t in enumerate(x):
             h, c = self.jump_func(x_t, h, c)
