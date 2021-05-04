@@ -15,10 +15,13 @@ import pytorch_lightning as pl
 from torchdyn.models import NeuralSDE
 from torchdyn import DepthCat, DataControl
 
+import pytest
+
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(1415112413244349)
 
-
+@pytest.mark.skip()
 def test_strato_sde(moons_trainloader, testlearner):
     """Test vanilla Stratonovich Neural SDE"""
   
@@ -37,7 +40,7 @@ def test_strato_sde(moons_trainloader, testlearner):
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
 
-
+@pytest.mark.skip()
 def test_ito_sde(moons_trainloader, testlearner):
     """Test vanilla Ito Neural SDE"""
     
@@ -58,6 +61,7 @@ def test_ito_sde(moons_trainloader, testlearner):
     s_span = torch.linspace(0, 0.1, 100)
 
 
+@pytest.mark.skip()
 def test_data_control(moons_trainloader, testlearner):
     """Data-controlled Neural SDE"""
 
@@ -78,6 +82,7 @@ def test_data_control(moons_trainloader, testlearner):
     s_span = torch.linspace(0, 0.1, 100)
 
 
+@pytest.mark.skip()
 def test_depth_cat(moons_trainloader, testlearner):
     """DepthCat Neural SDE"""
 
