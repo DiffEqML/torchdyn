@@ -1,2 +1,2 @@
 [run]
-omit=*_internals.py*,*plot.py*
+omit=*_internals.py*,*plot.py*,*experimental
