@@ -1,7 +1,7 @@
 numpy
 scipy
 matplotlib
-torch>=1.6.0
+torch
 torchdiffeq
-pytorch_lightning>=1.0.0
+pytorch_lightning
 scikit-learn
