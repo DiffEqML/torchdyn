@@ -1,12 +1,14 @@
-
 # torchdyn
-A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 <p align="center">
 <img src="media/logo.png" width="150" height="150">
 </p>
 <div align="center">
 
+## A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
+
+![license](https://img.shields.io/badge/license-Apache-2.0-red.svg?)
+![CI](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://join.slack.com/t/diffeqml/shared_invite/zt-gq3jjj5x-LuHSB4m4gc9MsnvoF1UB6A)
 [![codecov](https://codecov.io/gh/DiffEqML/torchdyn/branch/master/graph/badge.svg)](https://codecov.io/gh/DiffEqML/torchdyn)
 [![Docs](https://img.shields.io/badge/docs-passing-green.svg?)](https://torchdyn.readthedocs.io/)
@@ -14,17 +16,7 @@ A PyTorch based library for all things **neural differential equations**. Mainta
 
 </div>
 
-
-#### Continuous Integration
-
-| System / Python version | 3.6 | 3.7 | 3.8+ |
-|--------------------------|-------|-------|-------|
-| Ubuntu 16.04  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
-| Ubuntu 18.04  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing) |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |
-| Windows  |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |![DiffEqML](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)       |       |
-
-
-## Quick Start
+### Quick Start
 
 Neural differential equations made easy:
 ```
@@ -33,7 +25,7 @@ from torchdyn import NeuralODE
 # your preferred torch.nn.Module here 
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
                   nn.Softplus(),
-                 nn.Conv2d(32, 1, 3)
+                  nn.Conv2d(32, 1, 3)
             )
 
 nde = NeuralODE(f)
