@@ -57,7 +57,7 @@ class CNF(nn.Module):
             x_in = x[:,1:].requires_grad_(True)
 
             # the neural network will handle the datasets-dynamics here
-            if self.order > 1: self.higher_order(x_in)
+            if self.order > 1: x_out = self.higher_order(x_in)
             else: x_out = self.net(x_in)
 
             trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
