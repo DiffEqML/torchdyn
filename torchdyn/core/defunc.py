@@ -15,7 +15,7 @@ import torch.nn as nn
 
 
 class DEFunc(nn.Module):
-    """Differential Equation Function wrapper. Handles auxiliary tasks for NeuralDEs: depth concatenation,
+    """Differential Equation Function wrapper. Handles auxiliary tasks for NeuralDEs: time ("depth") concatenation,
     higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
@@ -51,7 +51,6 @@ class DEFunc(nn.Module):
             return x
 
     def horder_forward(self, s, x):
-        # NOTE: higher-order in CNF is handled at the CNF level, to refactor
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
@@ -71,7 +70,7 @@ class SDEFunc(nn.Module):
         pass
     
     def f(self, s, x):
-        """Posterior drift."""
+        """Drift."""
         self.nfe += 1
         for _, module in self.f_func.named_modules():
             if hasattr(module, 's'):

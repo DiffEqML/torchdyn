@@ -15,7 +15,7 @@ import torch
 import torch.nn as nn
 import torchdiffeq
 import torchsde
-from torchdyn.sensitivity.adjoint import Adjoint
+from torchdyn.numerics.adjoint import Adjoint
 
 from torchdyn.core.defunc import DEFunc, SDEFunc
 from torchdyn.core.utils import SCIPY_SOLVERS
