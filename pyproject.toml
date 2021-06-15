@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "torchdyn"
 version = "0.3.0"
-license = Apache License, Version 2.0
+license = "Apache License, Version 2.0"
 description = "Your PyTorch package for neural differential equations"
 authors = ["Michael Poli", "Stefano Massaroli", ]
 packages = [
@@ -11,8 +11,8 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.8"
 torchdiffeq = "*"
-torchsde = "*"
-torchcde = "*"
+torchsde = { git = "https://github.com/google-research/torchsde.git" }
+sklearn = "*"
 pytorch-lightning = "*"
 scipy = "*"
 
