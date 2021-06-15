@@ -9,8 +9,8 @@ jobs:
       max-parallel: 10
 
       matrix:
-        os: [ubuntu-16.04, ubuntu-18.04, windows-2019]
-        python-version: [3.6, 3.7, 3.8]
+        os: [ubuntu-16.04, ubuntu-18.04]
+        python-version: [3.7, 3.8]
         exclude:
           # temporary exclusion until py3.8 deps work on Windows
           - python-version: 3.7
@@ -27,12 +27,13 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -c "fname = 'requirements/base.txt' ; req = open(fname).read().replace('>=', '==') ; open(fname, 'w').write(req)"
+        # install poetry
+        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
         python -m pip install --upgrade --user pip
-        pip install -r requirements/base.txt --find-links https://download.pytorch.org/whl/cpu/torch_stable.html --upgrade
-        pip install -r requirements/external.txt
-        pip install -e .
         pip install pytest pytest-cov
+        poetry lock
+        poetry build
+        poetry install 
         
     - name: Run tests
       run: |
