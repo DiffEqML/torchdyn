@@ -9,6 +9,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
+torch = "^1.8.0"
 python = "^3.8"
 torchdiffeq = "*"
 torchsde = { git = "https://github.com/google-research/torchsde.git" }
