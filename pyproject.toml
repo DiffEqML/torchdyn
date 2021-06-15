@@ -20,6 +20,7 @@ scipy = "*"
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
+papermill = "*"
 
 [build-system]
 build-backend = "poetry.masonry.api"
