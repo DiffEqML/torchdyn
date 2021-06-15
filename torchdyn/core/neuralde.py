@@ -132,10 +132,7 @@ class NeuralODE(NeuralDETemplate):
             if hasattr(module, 'trace_estimator'):
                 if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
-
-        # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
-        # TO DO: merge the named_modules loop for perf
-        for name, module in self.defunc.named_modules():
+            # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
             if hasattr(module, 'u'):
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
@@ -145,13 +142,42 @@ class NeuralODE(NeuralDETemplate):
     def forward(self, x:torch.Tensor):
         x = self._prep_odeint(x)
         switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
-            'torchdiffeq_adjoint': self._torchdiffeq_adjoint
+            'autograd': self._autograd_forward,
+            'adjoint': self._adjoint_forward,
+            'torchdiffeq_adjoint': self._torchdiffeq_adjoint_forward
         }
         odeint = switcher.get(self.sensitivity)
         out = odeint(x)
         return out
+
+    def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+        """Returns a data-flow trajectory at `s_span` points
+        :param x: input data
+        :type x: torch.Tensor
+        :param s_span: collections of points to evaluate the function at e.g torch.linspace(0, 1, 100) for a 100 point trajectory
+                       between 0 and 1
+        :type s_span: torch.Tensor
+        """
+        x = self._prep_odeint(x)
+        sol = torchdiffeq.odeint(self.defunc, x, s_span,
+                                 rtol=self.rtol, atol=self.atol, **self.solver)
+        return sol
+
+    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+        raise NotImplementedError
+
+    def _autograd_forward(self, x):
+        self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
+        return torchdiffeq.odeint(self.defunc, x, self.s_span,
+                                  rtol=self.rtol, atol=self.atol, **self.solver)[-1]
+
+    def _adjoint_forward(self, x):
+        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, **self.solver)
+    
+    def _torchdiffeq_adjoint_forward(self, x):
+        return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span,
+                                      rtol=self.rtol, atol=self.atol, **self.solver,
+                                      adjoint_options=dict(norm=make_norm(x)))[-1]
 
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         """Returns a datasets-flow trajectory at `s_span` points
@@ -178,19 +204,6 @@ class NeuralODE(NeuralDETemplate):
         adj_sol = torchdiffeq.odeint(self.adjoint.adjoint_dynamics, adj0, s_span, 
                rtol=self.rtol, atol=self.atol, method=self.solver)
         return adj_sol
-
-    def _autograd(self, x):
-        self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
-        return torchdiffeq.odeint(self.defunc, x, self.s_span,
-                                  rtol=self.rtol, atol=self.atol, **self.solver)[-1]
-
-    def _adjoint(self, x):
-        return self.adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol, **self.solver)
-    
-    def _torchdiffeq_adjoint(self, x):
-        return torchdiffeq.odeint_adjoint(self.defunc, x, self.s_span,
-                                      rtol=self.rtol, atol=self.atol, **self.solver,
-                                      adjoint_options=dict(norm=make_norm(x)))[-1]
 
 
 class NeuralSDE(NeuralDETemplate):

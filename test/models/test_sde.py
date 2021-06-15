@@ -12,8 +12,8 @@
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from torchdyn.models import NeuralSDE
-from torchdyn import DepthCat, DataControl
+from torchdyn.core import NeuralSDE
+from torchdyn.nn import DepthCat, DataControl
 
 import pytest
 

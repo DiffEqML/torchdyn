@@ -26,11 +26,11 @@ from torchdyn import NeuralODE
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
                   nn.Softplus(),
                   nn.Conv2d(32, 1, 3)
-            )
+          )
 
 nde = NeuralODE(f)
 ```
-And you're good to go. The `nde` object can be seamlessly combined with other deep learning models.
+And you're good to train. Feel free to combine the `NeuralODE` class with any `PyTorch` modules to build derivative models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods.
 
 ## Installation
 
@@ -54,41 +54,15 @@ And you're good to go. The `nde` object can be seamlessly combined with other de
 https://torchdyn.readthedocs.io/
 
 ## Introduction
-Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)],  to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)])
+Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385)]. Modern deep learning frameworks such as PyTorch, coupled with progressive improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[3](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems (e.g. density estimation [[4](https://arxiv.org/abs/1810.01367)]) Central to the `torchdyn` approach are continuous neural networks, where *width*, *depth* (or both) are taken to their infinite limit. 
 
 <p align="center">
 <img src="media/GalNODE.gif" width="200" height="200">
 <img src="media/cnf_diffeq.gif" width="200" height="200">
 </p>
 
-Since the introduction of the `torchdiffeq` library with the seminal work [[1](https://arxiv.org/abs/1806.07366)] in 2018, little effort has been expended by the PyTorch research community on an unified framework for neural differential equations. While significant progress is being made by the Julia community and SciML [[5](https://sciml.ai/2020/03/29/SciML.html)], we believe a native PyTorch version of `torchdyn` with a focus on deep learning to be a valuable asset for the research ecosystem.
 
-Central to the `torchdyn` approach are continuous neural networks, where *width*, *depth* (or both) are taken to their infinite limit. On the optimization front, we consider continuous "data-stream" regimes and gradient flow methods, where the dataset represents a time-evolving signal processed by the neural network to adapt its parameters.
-
-By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately contribute to turning neural differential equations into an effective tool for control, system identification and common machine learning tasks.
-
-The development of `torchdyn`, sparked by the joint work of Michael Poli & Stefano Massaroli, has been supported throughout by their *almae matres*. In particular, by  **Prof. Jinkyoo Park** (KAIST), **Prof. Atsushi Yamashita** (The University of Tokyo) and **Prof. Hajime Asama** (The University of Tokyo).
-
-`torchdyn` is maintained by the core [DiffEqML](https://github.com/DiffEqML) team, with the generous support of the deep learning community.
-
-### Feature roadmap
-The current offering of `torchdyn` is limited compared to the rich ecosystem of continuous deep learning. If you are a researcher working in this space, and particularly if one of your previous works happens to be a `WIP feature`, feel free to reach out and help us in its implementation.
-
-* **Basics:** quickstart ✅, cookbook ✅
-* **Expressivity and augmentation:** crossing trajectories ✅, augmentation ✅, higher order ✅
-* **Adjoint and beyond:** generalized adjoint ✅
-* **Regularization tutorials:** regularization (coming soon) ⬜️ adaptive depth ⬜️ STEER ⬜️
-* **Controlled Neural DEs**: data control ✅ neural cde (coming soon) ⬜️
-* **Energy models:** hamiltonian nets ✅, lagrangian nets ✅, stable models ✅
-* **Image classification:** MNIST ✅, CIFAR10 (coming soon) ⬜️
-* **Density estimation tutorials:** continuous normalizing flows ✅, ffjord ✅, manifold cnf ⬜️
-* **Density estimation applications:** 2d density ✅, images (coming soon) ⬜️
-* **Hybrid Neural DEs:** hybrid models ✅
-* **Variational Neural DE tutorials:** variational neural ode ✅ variational neural sde (coming soon) ⬜️
-* **Graph Neural DEs (GDEs) tutorials:** gde node classification ✅ autoregressive gde (coming soon) ⬜️
-
-Looking for contributions of the below variants:
-* **Specific variants**: ode2vae ⬜️, anodev2 ⬜️, gruode-bayes ⬜️, neural jump stochastic ⬜️, ode2ode ⬜️
+By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately contribute to turning neural differential equations and implicit models into an effective tool for control, system identification and general machine learning tasks.
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[6](https://www.dgl.ai/)].
@@ -140,6 +114,8 @@ Check our `wiki` for a full description of available features.
 
 ### Contribute
  `torchdyn` is meant to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous deep learning. We do not have specific style requirements, though we subscribe to many of Jeremy Howard's [ideas](https://docs.fast.ai/dev/style.html).
+
+To import `torchdyn` everywhere in a dev encironment (without needing to install), run: `pip install --editable path/to/project`
 
 **Choosing what to work on:** There is always [ongoing work](https://github.com/DiffEqML/torchdyn/issues) on new features, tests and tutorials. Contributing to any of the above is extremely valuable to us. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details.
 

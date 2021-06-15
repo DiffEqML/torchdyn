@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.distributions import MultivariateNormal
-from torchdyn.models import NeuralODE
-from torchdyn import Augmenter
+from torchdyn.core import NeuralODE
+from torchdyn.nn import Augmenter
 from torchdyn.models.cnf import CNF, hutch_trace, autograd_trace
 
 
