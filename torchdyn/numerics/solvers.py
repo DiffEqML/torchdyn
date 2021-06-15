@@ -1,10 +1,9 @@
-import attr
+"Contains ODE solvers. The stateful design allows users to modify or tweak Tableaus during training"
 import torch
 import torch.nn as nn
-from .constants import construct_rk4, construct_dopri5, construct_tsit5
+from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
 
-# TODO: move to device is not convenient nor automatic for all these solvers
-@attr.s(init=False)
+
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
         super().__init__()
@@ -17,18 +16,15 @@ class SolverTemplate(nn.Module):
         pass
 
 
-@attr.s
 class RungeKutta4(SolverTemplate):
-    order = attr.ib(default=6)
-    dtype = attr.ib(default=torch.float32)
-    stepping_class = attr.ib(default='fixed')
-
-    def __attrs_post_init__(self):
-        super().__init__(self.order)
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=4)
+        self.dtype = dtype
+        self.stepping_class = stepping_class='fixed'
         self.c, self.a, self.bsol, self.berr = construct_rk4(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.c, self.a, self.bsol, self.berr
+        c, a, bsol = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x)
 
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * (a[0] * k1))
@@ -38,20 +34,18 @@ class RungeKutta4(SolverTemplate):
         return k3, None, x_sol
 
 
-@attr.s
 class DormandPrince45(SolverTemplate):
-    order = attr.ib(default=6)
-    dtype = attr.ib(default=torch.float32)
-    stepping_class = attr.ib(default='adaptive')
-
-    def __attrs_post_init__(self):
-        super().__init__(self.order)
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=6)
+        self.dtype = dtype
+        self.stepping_class = 'adaptive'
         self.c, self.a, self.bsol, self.berr = construct_dopri5(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.c, self.a, self.bsol, self.berr
+        c, a, bsol, berr = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x), self.berr.to(device)
 
         if k1 == None: k1 = f(t, x)
+
         k2 = f(t + c[0] * dt, x + dt * a[0] * k1)
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
         k4 = f(t + c[2] * dt, x + dt * a[2][0] * k1 + dt * a[2][1] * k2 + dt * a[2][2] * k3)
@@ -68,19 +62,15 @@ class DormandPrince45(SolverTemplate):
         return k7, x_sol, x_err
 
 
-@attr.s
 class Tsitouras45(SolverTemplate):
-    order = attr.ib(default=6)
-    dtype = attr.ib(default=torch.float32)
-    stepping_class = attr.ib(default='adaptive')
-
-    def __attrs_post_init__(self):
-        super().__init__(self.order)
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=6)
+        self.dtype = dtype
+        self.stepping_class = 'adaptive'
         self.c, self.a, self.bsol, self.berr = construct_tsit5(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.c, self.a, self.bsol, self.berr
-
+        c, a, bsol, berr = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x), self.berr.to(device)
 
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0][0] * k1)

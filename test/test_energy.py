@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 import pytorch_lightning as pl
-from torchdyn.models import NeuralODE
-from torchdyn.models.energy import Stable, HNN, LNN
+from torchdyn.core import NeuralODE
+from torchdyn.models.energy import GNF, HNN, LNN
 from torchdyn.datasets import ToyDataset
 
 
@@ -16,7 +16,7 @@ def test_stable_neural_de(testlearner):
     y_train = torch.LongTensor(yn.long()).to(device)
     train = data.TensorDataset(X_train, y_train)
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
-    f = Stable(nn.Sequential(
+    f = GNF(nn.Sequential(
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64, 1)))

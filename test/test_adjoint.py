@@ -15,9 +15,9 @@ from copy import deepcopy
 import torch
 import torch.nn as nn
 import torch.utils.data as data
-from torchdyn.models import NeuralODE
+from torchdyn.core import NeuralODE
+from torchdyn.nn import Augmenter
 from torchdyn.datasets import ToyDataset
-from torchdyn import Augmenter
 
 
 batch_size = 128
