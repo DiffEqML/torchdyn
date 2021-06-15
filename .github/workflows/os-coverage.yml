@@ -37,4 +37,5 @@ jobs:
         
     - name: Run tests
       run: |
+        source $HOME/.poetry/env
         poetry run coverage run --source=torchdyn -m pytest
