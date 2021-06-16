@@ -1,4 +1,4 @@
-name: OS-coverage
+name: run testing suite
 on: [push, pull_request]
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
         pip install pytest pytest-cov
         poetry lock
         poetry build
-        poetry install 
+        poetry install
         
     - name: Run tests
       run: |

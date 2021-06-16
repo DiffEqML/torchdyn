@@ -1,4 +1,4 @@
-name: OS-coverage
+name: test notebook tutorials
 on: [push, pull_request]
 
 jobs:
@@ -35,7 +35,6 @@ jobs:
         poetry build
         poetry install 
         
-    - name: Run tests
+    - name: Validate all notebook tutorials
       run: |
-        papermill tutorials/00_quickstart.ipynb tutorials/00_quickstart.ipynb
-
+        poetry run python test/validate_tutorials.py

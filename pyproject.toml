@@ -9,18 +9,25 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-torch = "^1.8.0"
 python = "^3.8"
+torch = "^1.8.1"
 torchdiffeq = "*"
 torchsde = { git = "https://github.com/google-research/torchsde.git" }
 sklearn = "*"
 pytorch-lightning = "*"
 scipy = "*"
+matplotlib = "*"
+ipykernel = "*"
+poethepoet = "^0.10.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
 pytest-cov = "*"
 papermill = "*"
+poethepoet = "^0.10.0"
+
+[tool.poe.tasks]
+force-cuda11 = "python -m pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html"
 
 [build-system]
 build-backend = "poetry.masonry.api"
