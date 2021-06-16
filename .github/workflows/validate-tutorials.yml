@@ -37,4 +37,5 @@ jobs:
         
     - name: Validate all notebook tutorials
       run: |
+        source $HOME/.poetry/env
         poetry run python test/validate_tutorials.py
