@@ -142,3 +142,6 @@ data/
 
 # poetry
 poetry.lock
+
+# idea
+.idea
