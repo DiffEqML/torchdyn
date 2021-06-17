@@ -1,3 +1,37 @@
+[tool.poetry]
+name = "torchdyn"
+version = "0.3.0"
+license = "Apache License, Version 2.0"
+description = "Your PyTorch package for neural differential equations"
+authors = ["Michael Poli", "Stefano Massaroli", ]
+packages = [
+    {include = "torchdyn"}
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+torch = "^1.8.1"
+torchdiffeq = "*"
+torchsde = { git = "https://github.com/google-research/torchsde.git" }
+torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }
+sklearn = "*"
+pytorch-lightning = "*"
+torchvision = "*"
+scipy = "*"
+matplotlib = "*"
+ipykernel = "*"
+ipywidgets = "*"
+poethepoet = "^0.10.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "*"
+pytest-cov = "*"
+papermill = "*"
+poethepoet = "^0.10.0"
+
+[tool.poe.tasks]
+force-cuda11 = "python -m pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html"
+
 [build-system]
-requires = ["setuptools", "wheel", "setuptools_scm"]
-build-backend = 'setuptools.build_meta'
+build-backend = "poetry.masonry.api"
+requires = ["poetry", "wheel", "setuptools-cpp"]

@@ -16,9 +16,8 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torch.utils.data as data
 from torchdyn.datasets import ToyDataset
-from torchdyn.models import NeuralODE
-from torchdyn.nn.galerkin import GalLinear, GalConv2d
-from torchdyn import DepthCat, Augmenter, DataControl
+from torchdyn.core import NeuralODE
+from torchdyn.nn import GalLinear, GalConv2d, DepthCat, Augmenter, DataControl
 
 import copy
 

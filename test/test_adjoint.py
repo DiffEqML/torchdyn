@@ -15,22 +15,20 @@ from copy import deepcopy
 import torch
 import torch.nn as nn
 import torch.utils.data as data
-from torchdyn.models import NeuralODE
+from torchdyn.core import NeuralODE
+from torchdyn.nn import Augmenter
 from torchdyn.datasets import ToyDataset
-from torchdyn import Augmenter
 
 
 batch_size = 128
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 torch.manual_seed(1415112413244349)
 
 def test_adjoint_autograd():
     """Compare ODE Adjoint vs Autograd gradients, s := [0, 1], adaptive-step"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='moons', noise=.4)
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    X_train = torch.Tensor(X).to(device)
-    y_train = torch.LongTensor(yn.long()).to(device)
+    X_train = torch.Tensor(X)
+    y_train = torch.LongTensor(yn.long())
     train = data.TensorDataset(X_train, y_train)
     trainloader = data.DataLoader(train, batch_size=len(X), shuffle=False)
     f = nn.Sequential(
@@ -38,7 +36,7 @@ def test_adjoint_autograd():
             nn.Tanh(),
             nn.Linear(64, 2))
 
-    model = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-8).to(device)
+    model = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-8)
     x, y = next(iter(trainloader))
     # adjoint gradients
     y_hat = model(x)
@@ -63,13 +61,13 @@ def test_integral_adjoint_integral_autograd(testintloss):
             nn.Linear(64,2))
     aug = Augmenter(1, 1)
     torch.manual_seed(0)
-    model_autograd = NeuralODE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+    model_autograd = NeuralODE(f, solver='dopri5', sensitivity='autograd', atol=1e-5, rtol=1e-5, intloss=testintloss())
     torch.manual_seed(0)
-    model_adjoint = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss()).to(device)
+    model_adjoint = NeuralODE(f, solver='dopri5', sensitivity='adjoint', atol=1e-5, rtol=1e-5, intloss=testintloss())
 
 
     torch.manual_seed(0)
-    x = torch.randn(batch_size, 2).to(device)
+    x = torch.randn(batch_size, 2)
     x = x.requires_grad_(True)
     a = model_autograd(aug(x))
     loss = a[:, 0].sum()
@@ -77,7 +75,7 @@ def test_integral_adjoint_integral_autograd(testintloss):
     g_autograd = deepcopy(x.grad)
 
     torch.manual_seed(0)
-    x = torch.randn(batch_size, 2).to(device)
+    x = torch.randn(batch_size, 2)
     x = x.requires_grad_(True)
     a = model_adjoint(x)
     loss = 0.*a.sum()

@@ -135,3 +135,13 @@ wandb/
 
 # data
 data/
+
+# vscode
+.dccache
+.vscode/
+
+# poetry
+poetry.lock
+
+# idea
+.idea

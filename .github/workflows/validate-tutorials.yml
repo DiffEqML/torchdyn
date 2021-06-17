@@ -1,4 +1,4 @@
-name: run testing suite
+name: test notebook tutorials
 on: [push, pull_request]
 
 jobs:
@@ -30,12 +30,12 @@ jobs:
         curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - 
         source $HOME/.poetry/env
         python -m pip install --upgrade --user pip
-        pip install pytest pytest-cov
+        pip install papermill
         poetry lock
         poetry build
-        poetry install
+        poetry install 
         
-    - name: Run tests
+    - name: Validate all notebook tutorials
       run: |
         source $HOME/.poetry/env
-        poetry run coverage run --source=torchdyn -m pytest
+        poetry run python test/validate_tutorials.py

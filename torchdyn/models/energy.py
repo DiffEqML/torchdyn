@@ -13,27 +13,52 @@
 from functools import partial
 
 import torch
+from torch import Tensor
 import torch.nn as nn
 from torch.autograd import grad
 from torch.autograd.functional import hessian, jacobian
 
 
-class Stable(nn.Module):
-    """Stable Neural ODE
-
-    :param func: function parametrizing the vector field.
-    :type func: nn.Module
+class ConservativeLinearSNF(nn.Module):
+    """Stable Neural Flows: https://arxiv.org/abs/2003.08063
+    A generalization of Hamiltonian Neural Networks and other energy-based parametrization of Neural ODEs
+    Conservative version with energy preservation. Input assumed to be of dimensions `batch, dim`
+    :param energy: function parametrizing the energy.
+    :type energy: nn.Module
+    :param J:
+    :type J: nn.Module
     """
-    def __init__(self, net:nn.Module):
+    def __init__(self, energy, J):
         super().__init__()
-        self.net = net
+        self.energy = energy
+        self.J = J
+
+    def forward(self, x: Tensor):
+        with torch.set_grad_enabled(True):
+            self.n = x.shape[1] // 2
+            x = x.requires_grad_(True)
+            dHdx = torch.autograd.grad(self.H(x).sum(), x, create_graph=True)[0]
+            dHdx = torch.einsum('ijk, ij -> ik', self._skew(x), dHdx)
+        return dHdx
+
+    def _generate_skew(self, x):
+        M = self.J(x).reshape(-1, *x.shape[1:])
+        return (M - M.transpose(0, 2, 1)) / 2
+
+class GNF(nn.Module):
+    """Gradient Neural Flows version of SNFs: https://arxiv.org/abs/2003.08063
+    :param energy: function parametrizing the energy.
+    :type energy: nn.Module
+    """
+    def __init__(self, energy:nn.Module):
+        super().__init__()
+        self.energy = energy
 
     def forward(self, x):
         with torch.set_grad_enabled(True):
-            bs, n = x.shape[0], x.shape[1] // 2
             x = x.requires_grad_(True)
-            eps = self.net(x).sum()
-            out = - grad(eps, x, allow_unused=False, create_graph=True)[0]
+            eps = self.energy(x).sum()
+            out = -torch.autograd.grad(eps, x, allow_unused=False, create_graph=True)[0]
         return out
 
 

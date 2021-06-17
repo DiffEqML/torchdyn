@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchdyn import DataControl, Augmenter
+from torchdyn.nn import DataControl, Augmenter
 import pytorch_lightning as pl
 from torchdyn.datasets import ToyDataset
 from torch.utils.data import TensorDataset, DataLoader
@@ -52,15 +52,14 @@ class TestLearner(pl.LightningModule):
         x, y = batch
         y_hat = self.model(x)
         loss = nn.CrossEntropyLoss()(y_hat, y)
-        logs = {'train_loss': loss}
-        return {'loss': loss, 'log': logs}
-
+        self.log('train_loss', loss)
+        return {'loss': loss}
+        
     def configure_optimizers(self):
         return torch.optim.Adam(self.model.parameters(), lr=0.005)
 
     def train_dataloader(self):
         return self.trainloader
-
 
 @pytest.fixture()
 def testlearner():

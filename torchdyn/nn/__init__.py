@@ -9,3 +9,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from torchdyn.nn.galerkin import GalLayer, GalLinear, GalConv2d, Fourier, Polynomial, Chebychev, VanillaRBF, MultiquadRBF, GaussianRBF
+from torchdyn.nn.node_layers import Augmenter, DepthCat, DataControl
+
+
+__all__ =   ['Augmenter', 'DepthCat', 'DataControl',
+            'GalLinear', 'GalConv2d', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF',
+            'Fourier', 'Polynomial', 'Chebychev']
