@@ -30,7 +30,9 @@ f = nn.Sequential(nn.Conv2d(1, 32, 3),
 
 nde = NeuralODE(f)
 ```
-And you're good to train. Feel free to combine the `NeuralODE` class with any `PyTorch` modules to build derivative models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. We offer way more than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
+And you're good to train. Feel free to combine the `NeuralODE` class with any `PyTorch` modules to build derivative models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
+
+Contribute to the library with your benchmark and model variants! No need to reinvent the wheel :)
 
 ## Installation
 
@@ -51,8 +53,7 @@ And you're good to train. Feel free to combine the `NeuralODE` class with any `P
 `python setup.py install`
 
 ## Documentation
-Check our `wiki` for a full description of available features.
-https://torchdyn.readthedocs.io/
+Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of available features.
 
 ## Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. Central to the `torchdyn` approach are continuous and implicit neural networks, where layer *depth* is taken to an infinite limit. 
