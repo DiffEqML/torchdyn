@@ -47,7 +47,6 @@ def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
-			#print(ckpt_counter, t_eval[ckpt_counter], t+dt)
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
 				# save old dt and raise "checkpoint" flag
 				dt_old, ckpt_flag = dt, True
@@ -84,7 +83,7 @@ def fixed_odeint(f, x: TensorType["batch", "dim1"], t_span: TensorType["t_len"],
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
 	steps = 1
-	while steps <= len(t_span):
+	while steps <= len(t_span) - 1:
 		_, _, x = solver.step(f, x, t, dt)
 		sol.append(x)
 		t = t + dt

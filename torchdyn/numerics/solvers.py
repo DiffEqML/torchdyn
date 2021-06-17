@@ -35,7 +35,6 @@ class Euler(SolverTemplate):
         super().__init__(order=1)
         self.dtype = dtype
         self.stepping_class = stepping_class='fixed'
-        c, a, bsol, berr = self.tableau
 
     def step(self, f, x, t, dt, k1=None):
         if k1 == None: k1 = f(t, x)
@@ -113,14 +112,69 @@ class ImplicitEuler(SolverTemplate):
         raise NotImplementedError
 
 
-class MSZero(SolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
+class MShootingSolverTemplate(nn.Module):
+    def __init__(self, maxiter, coarse_method='euler', fine_method='rk4'):
+        super().__init__()
+        self.coarse_method, self.fine_method = coarse_method, fine_method
+
+    def root_solve(self, f, x, t_span, B):
+        pass
+
+class MSDirect(MShootingSolverTemplate):
+    """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
+    def __init__(self, vf, t_span, maxiter,
+                 coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
+        super().__init__(vf=vf, t_span=t_span, coarse_method=coarse_method, fine_method=fine_method,
+                         maxiter=maxiter, backward_sensitivity=backward_sensitivity,
+                         func_forward='direct', *args, **kwargs)
+
+    def _forward_autograd(self, z, B):
+        i = 0
+        while i <= self.maxiter:
+            i += 1
+            B_fine, V_fine = self.forward_sensitivity(B[i-1:], self.sub_t_span,
+                                                      method=self.fine_method,
+                                                      rtol=self.fine_rtol,
+                                                      atol=self.fine_atol)
+            B_fine, V_fine = B_fine[-1], V_fine[-1]
+
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i-1]
+            for m in range(i, self._n_sub):
+                B_in = B_fine[m-i] + torch.einsum('bij, bj -> bi', V_fine[m-i], B_in - B[m-1])
+                B_out[m] = B_in
+            B = B_out
+        return B
 
 
-class MSDirect(SolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
+class MSZero(MShootingSolverTemplate):
+    """Multiple Shooting parareal solver"""
+    def __init__(self, vf, t_span, maxiter,
+                 coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
+        super().__init__(vf=vf, t_span=t_span, coarse_method=coarse_method, fine_method=fine_method,
+                         maxiter=maxiter, backward_sensitivity=backward_sensitivity,
+                         func_forward='zero', *args, **kwargs)
+
+    def _forward_autograd(self, z, B):
+        i = 0
+        while i < self.maxiter:
+            i += 1
+            B_coarse = odeint(self.vf, B[i-1:], self.sub_t_span, method=self.coarse_method,
+                              rtol=self.coarse_rtol, atol=self.coarse_atol)[-1]
+            B_fine = odeint(self.vf, B[i-1:], self.sub_t_span, method=self.fine_method,
+                            rtol=self.fine_rtol, atol=self.fine_atol)[-1]
+
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i-1]
+            for m in range(i, self._n_sub):
+                B_in = odeint(self.vf, B_in, self.sub_t_span, method=self.coarse_method,
+                              rtol=self.coarse_rtol, atol=self.coarse_atol)[-1]
+                B_in = B_in - B_coarse[m-i] + B_fine[m-i]
+                B_out[m] = B_in
+            B = B_out
+        return B
 
     
 SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
