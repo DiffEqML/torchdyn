@@ -174,6 +174,7 @@ def plot_2D_state_space(trajectory, yn, n_lines):
     ax.set_ylabel(r"$h_1$")
     ax.set_title("Flows in the state-space")
 
+
 def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
     colors = ['orange', 'blue']
     fig = plt.figure(figsize=(6,3))
@@ -189,6 +190,7 @@ def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
     ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+
 
 def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
     x = torch.linspace(trajectory[:,:,0].min(), trajectory[:,:,0].max(), N)
@@ -212,6 +214,7 @@ def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
     ax.set_xlabel(r"$h_0$")
     ax.set_ylabel(r"$h_1$")
     ax.set_title("Learned Vector Field")
+
 
 def plot_3D_dataset(X, yn):
     colors = ['orange', 'blue']
