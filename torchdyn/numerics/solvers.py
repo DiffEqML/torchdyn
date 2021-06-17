@@ -1,4 +1,10 @@
-"Contains ODE solvers. The stateful design allows users to modify or tweak Tableaus during training"
+"""
+    Contains ODE solvers, both sequential as well as time-parallel multiple shooting methods necessary for multiple-shoting layers[1]. 
+    The stateful design allows users to modify or tweak each Tableau during training, ensuring compatibility with hybrid methods such as Hypersolvers [2]
+    [1]: Massaroli S., Poli M. et al "Differentiable Multiple Shooting Layers." 
+    [2]: Poli M., Massaroli S. et al "Hypersolvers: Toward fast continuous-depth models." NeurIPS 2020
+"""
+
 import torch
 import torch.nn as nn
 from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5

@@ -2,7 +2,6 @@ from typing import List, Union, Callable
 import torch
 from torch import Tensor
 import torch.nn as nn
-from torchtyping import TensorType
 
 from torchdyn.numerics.solvers import str_to_solver
 from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
@@ -78,7 +77,7 @@ def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
 
 
 # TODO: update dt
-def fixed_odeint(f, x: TensorType["batch", "dim1"], t_span: TensorType["t_len"], solver):
+def fixed_odeint(f, x, t_span, solver):
 	"Solves IVPs with same `t_span`, using fixed-step methods"
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
@@ -93,8 +92,7 @@ def fixed_odeint(f, x: TensorType["batch", "dim1"], t_span: TensorType["t_len"],
 
 
 # TODO: update dt
-def shifted_fixed_odeint(f, x: TensorType["n_segments", "batch", "dim1"],
-						t_span: TensorType["n_segments", "t_len"], solver):
+def shifted_fixed_odeint(f, x, t_span: solver):
 	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
 	have equal step sizes and number of solution points"""
 	t, T = t_span[..., 0], t_span[..., -1]
@@ -114,7 +112,7 @@ def shifted_fixed_odeint(f, x: TensorType["n_segments", "batch", "dim1"],
 
 
 
-def jagged_fixed_odeint(f, x: TensorType["n_segments", "batch", "dim1"],
+def jagged_fixed_odeint(f, x,
 						t_span: List, solver):
 	"""
 	Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. Each sub-IVP can vary in number
