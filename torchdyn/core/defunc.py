@@ -106,3 +106,4 @@ class SDEFunc(nn.Module):
             if hasattr(module, 's'):
                 module.s = s
         return self.g_func(x)
+        
