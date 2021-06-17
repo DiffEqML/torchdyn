@@ -187,7 +187,18 @@ SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKu
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
 
+MS_SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
+               'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
+               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+
+
 def str_to_solver(solver_name, dtype=torch.float32):
     "Transforms string specifying desired solver into an instance of the Solver class."
     solver = SOLVER_DICT[solver_name]
     return solver(dtype)
+
+
+def str_to_ms_solver(solver_name, dtype=torch.float32):
+    "Returns MSSolver class corresponding to a given string."
+    solver = MS_SOLVER_DICT[solver_name]
+    return solver
