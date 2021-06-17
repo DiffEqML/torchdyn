@@ -15,4 +15,5 @@ from torchdyn.nn.node_layers import Augmenter, DepthCat, DataControl
 
 
 __all__ =   ['Augmenter', 'DepthCat', 'DataControl',
-            'GalLinear', 'GalConv2d']
+            'GalLinear', 'GalConv2d', 'VanillaRBF', 'MultiquadRBF', 'GaussianRBF',
+            'Fourier', 'Polynomial', 'Chebychev']
