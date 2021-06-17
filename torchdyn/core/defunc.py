@@ -51,29 +51,29 @@ class DEFunc(nn.Module):
         self.m, self.nfe,  = model, 0.
         self.order, self.intloss, self.sensitivity = order, None, None
 
-    def forward(self, s, x):
+    def forward(self, t, x):
         self.nfe += 1
-        # set `s` depth-variable to DepthCat modules
+        # set `t` depth-variable to DepthCat modules
         for _, module in self.m.named_modules():
-            if hasattr(module, 's'):
-                module.s = s
+            if hasattr(module, 't'):
+                module.t = t
 
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]
             dlds = self.intloss(s, x_dyn)
             if len(dlds.shape) == 1: dlds = dlds[:, None]
-            if self.order > 1: x_dyn = self.horder_forward(s, x_dyn)
+            if self.order > 1: x_dyn = self.horder_forward(t, x_dyn)
             else: x_dyn = self.m(x_dyn)
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
 
         # regular forward
         else:
-            if self.order > 1: x = self.horder_forward(s, x)
+            if self.order > 1: x = self.horder_forward(t, x)
             else: x = self.m(x)
             return x
 
-    def horder_forward(self, s, x):
+    def horder_forward(self, t, x):
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
@@ -89,21 +89,20 @@ class SDEFunc(nn.Module):
         self.f_func, self.g_func = f, g
         self.nfe = 0
 
-    def forward(self, s, x):
+    def forward(self, t, x):
         pass
     
-    def f(self, s, x):
+    def f(self, t, x):
         """Drift."""
         self.nfe += 1
         for _, module in self.f_func.named_modules():
-            if hasattr(module, 's'):
-                module.s = s
+            if hasattr(module, 't'):
+                module.t = t
         return self.f_func(x)
     
-    def g(self, s, x):
+    def g(self, t, x):
         """Diffusion"""
         for _, module in self.g_func.named_modules():
-            if hasattr(module, 's'):
-                module.s = s
+            if hasattr(module, 't'):
+                module.t = t
         return self.g_func(x)
-        

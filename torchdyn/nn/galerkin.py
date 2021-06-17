@@ -217,11 +217,10 @@ class GalLinear(GalLayer):
         self.reset_parameters()  
                 
     def forward(self, input):
-        # For the moment, GalLayers rely on DepthCat to access the `s` variable. A better design would free the user
-        # of having to introduce DepthCat(1) every time a GalLayer is used
-        s = input[-1,-1]
+        # For the moment, GalLayers rely on DepthCat to access the `t` variable. 
+        t = input[-1,-1]
         input = input[:,:-1]
-        w = self.calculate_weights(s)
+        w = self.calculate_weights(t)
         self.weight = w[0:self.in_features*self.out_features].reshape(self.out_features, self.in_features)
         self.bias = w[self.in_features*self.out_features:(self.in_features+1)*self.out_features].reshape(self.out_features)
         return torch.nn.functional.linear(input, self.weight, self.bias)
@@ -265,9 +264,9 @@ class GalConv2d(GalLayer):
         self.reset_parameters()
         
     def forward(self, input):
-        s = input[-1,-1,0,0]
+        t = input[-1,-1,0,0]
         input = input[:,:-1]
-        w = self.calculate_weights(s)
+        w = self.calculate_weights(t)
         n = self.oc*self.ic*self.ks*self.ks
         self.weight = w[0:n].reshape(self.oc, self.ic, self.ks, self.ks)
         self.bias = w[n:].reshape(self.oc)
