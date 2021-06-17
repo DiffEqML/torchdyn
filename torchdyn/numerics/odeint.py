@@ -42,10 +42,8 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
 	raise NotImplementedError
 
 
-# TODO (extension): optionally give to the user the ability to return
-# the solution evaluated at all points -- can be useful to determine
-# stiff regions.
-# TODO (qol): interpolation option
+
+# TODO (qol): interpolation option instead of checkpoint
 def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
 	t_eval = t_span[1:]
 	t = t_span[:1]

@@ -1,7 +1,7 @@
 from inspect import getfullargspec
 import torch
 from torch.autograd import Function, grad
-from torchcde import NaturalCubicSpline, natural_cubic_spline_coeffs
+from torchcde import NaturalCubicSpline, natural_cubic_coeffs
 from torchdyn.numerics.odeint import backward_adjoint_odeint, odeint
 
 
@@ -93,9 +93,9 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
             λT_nel, μT_nel = λT.numel(), μT.numel()
             xT_shape, λT_shape, μT_shape = xT.shape, λT.shape, μT.shape
             A = torch.cat([λT.flatten(), μT.flatten()])
-
-            spline_coeffs = natural_cubic_spline_coeffs(t_sol.to(sol), sol.permute(1, 0, 2).detach())
-            x_spline = NaturalCubicSpline(spline_coeffs)
+            print(t_sol.shape, sol.shape)
+            spline_coeffs = natural_cubic_coeffs(t=t_sol.to(sol), x=sol.permute(1, 0, 2).detach())
+            x_spline = NaturalCubicSpline(t_sol, spline_coeffs)
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
