@@ -73,12 +73,13 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
 
 #TODO: introduce `t_span` grad as above
+#TODO: introduce option to interpolate on all solution points evaluated
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, 
                                 solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x, t_span, t_eval=[]):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol)
+        def forward(ctx, vf_params, x, t_span):
+            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=True)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
