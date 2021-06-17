@@ -1,11 +1,14 @@
-# from inspect import getfullargspec
-# import torch
-# import torch.nn as nn
-# from typing import List
-# from .sensitivity import *
-# from .utils import WrapFunc
-# from .odeint import odeint
-# from .sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
+from inspect import getfullargspec
+import torch
+import torch.nn as nn
+from typing import List
+
+from torchdyn.core.defunc import DEFuncBase
+
+from .sensitivity import *
+from .utils import WrapFunc
+from .odeint import odeint
+from .sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
 
 class ODEProblem:
     pass

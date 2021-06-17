@@ -14,6 +14,24 @@ import torch
 import torch.nn as nn
 
 
+class DEFuncBase(nn.Module):
+    """Base differential equation vector field wrapper.
+
+    :param model: neural network parametrizing the vector field
+    :type model: nn.Module
+    :param order: order of the differential equation
+    :type order: int
+   """
+    def __init__(self, vector_field):
+        super().__init__(self)
+        self.nfe = 0.
+        self.vf = vector_field
+
+    def forward(self, t, x):
+        self.nfe += 1
+        return self.vector_field(x)
+
+
 class DEFunc(nn.Module):
     """Differential Equation Function wrapper. Handles auxiliary tasks for NeuralDEs: time ("depth") concatenation,
     higher order dynamics and forward propagated integral losses.
