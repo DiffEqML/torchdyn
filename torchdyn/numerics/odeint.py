@@ -12,7 +12,8 @@ from torchdyn.numerics.solvers import str_to_solver
 from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
-def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, verbose:bool=False):
+def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
+		   verbose:bool=False, return_all_eval:bool=False):
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: print("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -34,7 +35,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed': 
 			return fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
-			return adaptive_odeint(f_, x, t_span, solver, atol, rtol)
+			return adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
 
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
@@ -45,7 +46,7 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
 # the solution evaluated at all points -- can be useful to determine
 # stiff regions.
 # TODO (qol): interpolation option
-def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
+def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
 	t_eval = t_span[1:]
 	t = t_span[:1]
 	ckpt_counter, ckpt_flag = 0, False
@@ -70,7 +71,10 @@ def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
 		accept_step = error_ratio <= 1
 		if accept_step:
 			t, x = t + dt, x_new
-			if t == t_eval[ckpt_counter]:
+			# we check if the user wants all evaluated solution points, not only those
+			# corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
+			# is called for interpolated adjoints
+			if t == t_eval[ckpt_counter] or return_all_eval:
 				sol.append(x_new)
 				eval_times.append(t)
 				ckpt_counter += 1	

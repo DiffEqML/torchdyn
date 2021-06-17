@@ -42,7 +42,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
                                     allow_unused=True, retain_graph=False))
 
-                    #TODO: expand and improve edge-case checks
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                     if dt == None: dt = torch.zeros(1).to(t)
@@ -53,7 +52,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
             dLdt = torch.zeros(len(t_sol)).to(xT)
             dLdt[-1] = λtT
             for i in range(len(t_sol) - 1, 0, -1):
-                #print(-t_sol[i - 1:i + 1].flip(0))
                 t_adj_sol, A = odeint(adjoint_dynamics, A, t_sol[i - 1:i + 1].flip(0), 
                                       solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint)
                 # prepare adjoint state for next interval
@@ -76,24 +74,18 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
 
 #TODO: introduce `t_span` grad as above
-def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol):
+def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, 
+                                solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x0, t_span, t_eval=[]):
-            t_sol, sol = odeint(f=vf, x=x0, t_span=t_span, t_eval=t_eval, solver=solver)
-            # 
-            # create dense solution
-            spline_coeffs = natural_cubic_spline_coeffs(t_sol.to(sol), sol.permute(1, 0, 2).detach())
-            x_spline = NaturalCubicSpline(t_span, spline_coeffs)
-
-            ctx.save_for_backward(sol, t_sol, t_span)
-
-            # 
+        def forward(ctx, vf_params, x, t_span, t_eval=[]):
+            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol)
+            ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
         @staticmethod
         def backward(ctx, *grad_output):
-            sol, t_sol, t_span = ctx.saved_tensors
+            sol, t_span, t_sol = ctx.saved_tensors
             vf_params = torch.cat([p.contiguous().flatten() for p in vf.parameters()])
 
             # initialize adjoint state
@@ -102,7 +94,8 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol):
             xT_shape, λT_shape, μT_shape = xT.shape, λT.shape, μT.shape
             A = torch.cat([λT.flatten(), μT.flatten()])
 
-
+            spline_coeffs = natural_cubic_spline_coeffs(t_sol.to(sol), sol.permute(1, 0, 2).detach())
+            x_spline = NaturalCubicSpline(spline_coeffs)
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
@@ -118,9 +111,8 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol):
 
             # solve the adjoint equation
             n_elements = (λT_nel, μT_nel)
-            for i in range(len(t_sol) - 1, 0, -1):
-                t_adj_sol, A = backward_adjoint_odeint(adjoint_dynamics, A, -t_sol[i - 1:i + 1].flip(0),
-                                              n_elements, solver, t_eval=[], atol=atol, rtol=rtol)
+            for i in range(len(t_span) - 1, 0, -1):
+                t_adj_sol, A = odeint(adjoint_dynamics, A, t_span[i - 1:i + 1].flip(0), solver, atol=atol, rtol=rtol)
                 # prepare adjoint state for next interval
                 A = torch.cat([A[-1, :λT_nel], A[-1, -μT_nel:]])
                 A[:λT_nel] += grad_output[-1][i - 1].flatten()

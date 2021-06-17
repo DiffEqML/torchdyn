@@ -1,3 +1,7 @@
+"""
+    Contains various utilities for `odeint` and numerical methods. Various norms, step size initialization, event callbacks for hybrid systems, vmapped matrix-Jacobian products and some
+    additional goodies.
+"""
 import attr
 import torch
 import torch.nn as nn
@@ -12,8 +16,10 @@ def make_norm(state):
         return max(norm(y), norm(adj_y))
     return norm_
 
+
 def norm(tensor):
     return tensor.pow(2).mean().sqrt()
+
 
 def init_step(f, f0, x0, t0, order, atol, rtol):
     scale = atol + torch.abs(x0) * rtol
@@ -60,20 +66,13 @@ def adapt_step(dt, error_ratio, safety, min_factor, max_factor, order):
 #     return sol_eval
 
 
-class WrapFunc(nn.Module):
-    def __init__(self, f):
-        super().__init__()
-        self.f = f
-    def forward(self, t, x):
-        return self.f(x)
-
-
 class EventState:
     def __init__(self, evid):
         self.evid = evid
 
     def __ne__(self, other):
         return sum([a_ != b_ for a_, b_ in zip(self.evid, other.evid)])
+
 
 
 @attr.s
@@ -86,6 +85,7 @@ class EventCallback(nn.Module):
 
     def jump_map(self, t, x):
         raise NotImplementedError
+
 
 
 @attr.s
@@ -102,3 +102,4 @@ class StochasticEventCallback(nn.Module):
 
     def jump_map(self, t, x):
         raise NotImplementedError
+        
