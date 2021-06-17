@@ -16,6 +16,7 @@ torchsde = { git = "https://github.com/google-research/torchsde.git" }
 torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }
 sklearn = "*"
 pytorch-lightning = "*"
+torchvision = "*"
 scipy = "*"
 matplotlib = "*"
 ipykernel = "*"
