@@ -43,20 +43,20 @@ class Augmenter(nn.Module):
 
 
 class DepthCat(nn.Module):
-    """Depth variable `s` concatenation module. Allows for easy concatenation of `s` each call of the numerical solver, at specified nn of the DEFunc.
+    """Depth variable `t` concatenation module. Allows for easy concatenation of `t` each call of the numerical solver, at specified nn of the DEFunc.
 
-    :param idx_cat: index of the datasets dimension to concatenate `s` to.
+    :param idx_cat: index of the datasets dimension to concatenate `t` to.
     :type idx_cat: int
     """
     def __init__(self, idx_cat=1):
         super().__init__()
-        self.idx_cat = idx_cat ; self.s = None
+        self.idx_cat, self.t = idx_cat, None
 
     def forward(self, x):
-        s_shape = list(x.shape);
+        s_shape = list(x.shape)
         s_shape[self.idx_cat] = 1
-        self.s = self.s * torch.ones(s_shape).to(x)
-        return torch.cat([x, self.s], self.idx_cat).to(x)
+        self.t = self.t * torch.ones(s_shape).to(x)
+        return torch.cat([x, self.t], self.idx_cat).to(x)
 
 
 class DataControl(nn.Module):
