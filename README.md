@@ -1,14 +1,14 @@
 # torchdyn
 
 <p align="center">
-<img src="media/logo.png" width="150" height="150">
+<img src="media/logo_small.png" width="150" height="150">
 </p>
 <div align="center">
 
 ## A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 ![license](https://img.shields.io/badge/license-Apache%202.0-red.svg?)
-![CI](https://img.shields.io/github/workflow/status/DiffEqML/torchdyn/OS-coverage?label=CI%20testing)
+![CI](https://github.com/DiffEqML/torchdyn/actions/workflows/os-coverage.yml/badge.svg)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://join.slack.com/t/diffeqml/shared_invite/zt-gq3jjj5x-LuHSB4m4gc9MsnvoF1UB6A)
 [![codecov](https://codecov.io/gh/DiffEqML/torchdyn/branch/master/graph/badge.svg)](https://codecov.io/gh/DiffEqML/torchdyn)
 [![Docs](https://img.shields.io/badge/docs-passing-green.svg?)](https://torchdyn.readthedocs.io/)
