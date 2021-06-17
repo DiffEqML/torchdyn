@@ -3,6 +3,15 @@ import torch
 import torch.nn as nn
 from torch.distributions import Exponential
 
+
+def make_norm(state):
+    state_size = state.numel()
+    def norm_(aug_state):
+        y = aug_state[1:1 + state_size]
+        adj_y = aug_state[1 + state_size:1 + 2 * state_size]
+        return max(norm(y), norm(adj_y))
+    return norm_
+
 def norm(tensor):
     return tensor.pow(2).mean().sqrt()
 

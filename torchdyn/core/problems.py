@@ -86,7 +86,6 @@ class MultipleShootingProblem(nn.Module):
         if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
             self.odefunc = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, atol, rtol).apply
         elif self.sensalg == 'interpolated_adjoint':
-            print('pippo')
             self.odefunc = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, atol, rtol).apply
         else:
             def odefunc(vf_params, x0, t_span, t_eval=[]):

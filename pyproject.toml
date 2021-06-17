@@ -13,6 +13,7 @@ python = "^3.8"
 torch = "^1.8.1"
 torchdiffeq = "*"
 torchsde = { git = "https://github.com/google-research/torchsde.git" }
+torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }
 sklearn = "*"
 pytorch-lightning = "*"
 scipy = "*"

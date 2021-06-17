@@ -21,17 +21,6 @@ from torchdyn.core.defunc import DEFunc, SDEFunc
 from torchdyn.core.utils import SCIPY_SOLVERS
 import warnings
 
-def rms_norm(tensor):
-    return tensor.pow(2).mean().sqrt()
-
-def make_norm(state):
-    state_size = state.numel()
-    def norm(aug_state):
-        y = aug_state[1:1 + state_size]
-        adj_y = aug_state[1 + state_size:1 + 2 * state_size]
-        return max(rms_norm(y), rms_norm(adj_y))
-    return norm
-
 
 class NeuralDETemplate(pl.LightningModule):
     """General Neural DE template"""
@@ -96,7 +85,7 @@ class NeuralODE(NeuralDETemplate):
         self.nfe = self.defunc.nfe
         self.intloss = intloss
         self.u, self.controlled = None, False # datasets-control
-        if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss);
+        if sensitivity=='adjoint': self.adjoint = Adjoint(self.defunc, intloss)
 
         self._solver_checks(solver, sensitivity)
 
