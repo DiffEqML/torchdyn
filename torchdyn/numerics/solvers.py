@@ -1,5 +1,5 @@
 """
-    Contains ODE solvers, both sequential as well as time-parallel multiple shooting methods necessary for multiple-shoting layers[1]. 
+    Contains ODE solvers, both sequential as well as time-parallel multiple shooting methods necessary for multiple-shoting layers [1]. 
     The stateful design allows users to modify or tweak each Tableau during training, ensuring compatibility with hybrid methods such as Hypersolvers [2]
     [1]: Massaroli S., Poli M. et al "Differentiable Multiple Shooting Layers." 
     [2]: Poli M., Massaroli S. et al "Hypersolvers: Toward fast continuous-depth models." NeurIPS 2020
@@ -33,7 +33,6 @@ class SolverTemplate(nn.Module):
 
     def step(self, f, x, t, dt, k1=None):
         pass
-
 
 
 class Euler(SolverTemplate):
@@ -126,6 +125,7 @@ class MShootingSolverTemplate(nn.Module):
     def root_solve(self, f, x, t_span, B):
         pass
 
+
 class MSDirect(MShootingSolverTemplate):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
     def __init__(self, vf, t_span, maxiter,
@@ -134,7 +134,7 @@ class MSDirect(MShootingSolverTemplate):
                          maxiter=maxiter, backward_sensitivity=backward_sensitivity,
                          func_forward='direct', *args, **kwargs)
 
-    def _forward_autograd(self, z, B):
+    def root_solve(self, f, x, t_span, B):
         i = 0
         while i <= self.maxiter:
             i += 1
@@ -162,7 +162,7 @@ class MSZero(MShootingSolverTemplate):
                          maxiter=maxiter, backward_sensitivity=backward_sensitivity,
                          func_forward='zero', *args, **kwargs)
 
-    def _forward_autograd(self, z, B):
+    def root_solve(self, f, x, t_span, B):
         i = 0
         while i < self.maxiter:
             i += 1
