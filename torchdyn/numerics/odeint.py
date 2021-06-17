@@ -4,18 +4,20 @@
 """
 
 from typing import List, Union, Callable
+from warnings import warn
+
 import torch
 from torch import Tensor
 import torch.nn as nn
 
-from torchdyn.numerics.solvers import str_to_solver
+from torchdyn.numerics.solvers import str_to_solver, str_to_ms_solver
 from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
 		   verbose:bool=False, return_all_eval:bool=False):
 	if t_span[1] < t_span[0]: # time is reversed
-		if verbose: print("You are integrating on a reversed time domain, adjusting the vector field automatically")
+		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
 		t_span = -t_span
 	else: f_ = f
@@ -38,9 +40,15 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 			return adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
 
 
-def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
-	raise NotImplementedError
 
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
+					 fine_steps=4, B_initialization='manual', maxiter=100):
+		coarse_solver, fine_solver = str_to_ms_solver(solver)
+		# initialize solver
+		solver = solver()
+
+		B = solver.root_solve(f, x, t_span, B)
+		return B, t_span
 
 
 # TODO (qol): interpolation option instead of checkpoint
