@@ -11,9 +11,36 @@ class SolverTemplate(nn.Module):
         self.min_factor = torch.tensor([min_factor])
         self.max_factor = torch.tensor([max_factor])
         self.safety = torch.tensor([safety])
+        self.tableau = None
 
-    def step(self, x):
+    def sync_device_dtype(self, x, t_span):
+        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
+        device = x.device
+        if self.tableau is not None:
+            c, a, bsol, berr = self.tableau
+            self.tableau = c.to(x), [a.to(x) for a in a], bsol.to(x), berr.to(x)
+        t_span = t_span.to(device)
+        self.safety = self.safety.to(device)
+        self.min_factor = self.min_factor.to(device)
+        self.max_factor = self.max_factor.to(device)     
+        return x, t_span
+
+    def step(self, f, x, t, dt, k1=None):
         pass
+
+
+
+class Euler(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=1)
+        self.dtype = dtype
+        self.stepping_class = stepping_class='fixed'
+        c, a, bsol, berr = self.tableau
+
+    def step(self, f, x, t, dt, k1=None):
+        if k1 == None: k1 = f(t, x)
+        x_sol = x + dt * k1
+        return None, None, x_sol
 
 
 class RungeKutta4(SolverTemplate):
@@ -21,11 +48,10 @@ class RungeKutta4(SolverTemplate):
         super().__init__(order=4)
         self.dtype = dtype
         self.stepping_class = stepping_class='fixed'
-        self.c, self.a, self.bsol, self.berr = construct_rk4(self.dtype)
+        self.tableau = construct_rk4(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x)
-
+        c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * (a[0] * k1))
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
@@ -39,11 +65,10 @@ class DormandPrince45(SolverTemplate):
         super().__init__(order=6)
         self.dtype = dtype
         self.stepping_class = 'adaptive'
-        self.c, self.a, self.bsol, self.berr = construct_dopri5(self.dtype)
+        self.tableau = construct_dopri5(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x), self.berr.to(device)
-
+        c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
 
         k2 = f(t + c[0] * dt, x + dt * a[0] * k1)
@@ -67,11 +92,10 @@ class Tsitouras45(SolverTemplate):
         super().__init__(order=6)
         self.dtype = dtype
         self.stepping_class = 'adaptive'
-        self.c, self.a, self.bsol, self.berr = construct_tsit5(self.dtype)
+        self.tableau = construct_tsit5(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.c.to(x), [a.to(x) for a in self.a], self.bsol.to(x), self.berr.to(device)
-
+        c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0][0] * k1)
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
@@ -82,3 +106,28 @@ class Tsitouras45(SolverTemplate):
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4 + bsol[4] * k5 + bsol[5] * k6)
         x_err = x + dt * (berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7)
         return k7, x_sol, x_err
+
+
+class ImplicitEuler(SolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
+
+
+class MSZero(SolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
+
+
+class MSDirect(SolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
+
+    
+SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
+               'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
+               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+
+def str_to_solver(solver_name, dtype=torch.float32):
+    "Transforms string specifying desired solver into an instance of the Solver class."
+    solver = SOLVER_DICT[solver_name]
+    return solver(dtype)

@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torchdyn.numerics.solvers import RungeKutta4, Tsitouras45
+from torchdyn.numerics.solvers import Euler, RungeKutta4, Tsitouras45, DormandPrince45
+from torchdyn.numerics.odeint import odeint
 
 
-__all__ =   ['RungeKutta4', 'Tsitouras45']
+__all__ =   ['odeint', 'Euler', 'RungeKutta4', 'DormandPrince45', 'Tsitouras45']

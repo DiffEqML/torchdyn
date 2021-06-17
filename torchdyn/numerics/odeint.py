@@ -1,115 +1,95 @@
-from typing import List
+from typing import List, Union, Callable
 import torch
+from torch import Tensor
+import torch.nn as nn
 from torchtyping import TensorType
 
-from torchdyn.numerics.constants import *
-from torchdyn.functional.utils import norm, init_step, adapt_step, EventState
+from torchdyn.numerics.solvers import str_to_solver
+from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
-# TODO: merge t_eval with t_span for clarity
-def odeint(f, x, t_span, solver, t_eval=[], atol=1e-3, rtol=1e-3):
+def odeint(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3):
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+	if type(solver) == str:
+		solver = str_to_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
-	# preprocessing steps
-	if type(t_span) == List:
-		print("Jagged parallel IVPs not compatible with adjoint")
-		return jagged_fixed_odeint(f, x, t_span, solver)
-
-	# `Tensor' t_span integration types
-	else:
-		t_shape = t_span.shape
-		if stepping_class == 'fixed' and len(t_shape) == 1:
-			return fixed_odeint(f, x, t_span, solver)
-		elif stepping_class == 'fixed':
-			# ensure compatibility with backsolve is preserved here
-			return shifted_fixed_odeint(f, x, t_span, solver)
-		else:
-			return adaptive_odeint(f, x, t_span, solver, t_eval, atol, rtol)
+	# access parallel integration routines with different t_spans for each sample in `x`.
+	if len(t_span.shape) > 1:
+		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
+	# odeint routine with a single t_span for all samples
+	elif len(t_span.shape) == 1:
+		if stepping_class == 'fixed': 
+			return fixed_odeint(f, x, t_span, solver) 
+		elif stepping_class == 'adaptive':
+			return adaptive_odeint(f, x, t_span, solver, atol, rtol)
 
 
-# TODO: ensure compat with float32
-def adaptive_odeint(f, x, t_span, solver, t_eval=[], atol=1e-3, rtol=1e-3):
-	x_shape = x.shape
-	dtype = x.dtype
-	device = x.device
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
+	raise NotImplementedError
 
-	ckpt_counter = 0
-	ckpt_flag = False
-	t = t_span[:1].to(device)
 
-	solver.a = [a_.to(device) for a_ in solver.a]
-	solver.c = [c_.to(device) for c_ in solver.c]
-	solver.bsol = [bsol_.to(device) for bsol_ in solver.bsol]
-	if solver.berr is not None: solver.berr = [berr_.to(device) for berr_ in solver.berr]
-	solver.safety = solver.safety.to(device)
-	solver.min_factor = solver.min_factor.to(device)
-	solver.max_factor = solver.max_factor.to(device)
-
+# TODO (extension): optionally give to the user the ability to return
+# the solution evaluated at all points -- can be useful to determine
+# stiff regions.
+# TODO (qol): interpolation option
+def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
+	t_eval = t_span[1:]
+	t = t_span[:1]
+	ckpt_counter, ckpt_flag = 0, False
 	################## initial step size setting ################
 	k1 = f(t, x)
 	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
-
-	#### init solution & time vector ####
-	eval_times = [t]
-	sol = [x]
+	eval_times, sol = [t], [x]
 	while t < t_span[-1]:
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
+			#print(ckpt_counter, t_eval[ckpt_counter], t+dt)
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
 				# save old dt and raise "checkpoint" flag
 				dt_old, ckpt_flag = dt, True
-				dt = t_eval[ckpt_counter] - t
-				ckpt_counter += 1
-
-
-		#print(t, flush=True, end='\r')
-
+				dt = t_eval[ckpt_counter] - t				
 		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
-
 		################# compute error #############################
 		error = x_new - x_app
 		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
 		error_ratio = norm(error / error_tol)
 		accept_step = error_ratio <= 1
 		if accept_step:
-			t = t + dt
-			x = x_new
-			sol.append(x)
-			eval_times.append(t)
+			t, x = t + dt, x_new
+			if t == t_eval[ckpt_counter]:
+				sol.append(x_new)
+				eval_times.append(t)
+				ckpt_counter += 1	
 			k1 = f_new
-
 		################ stepsize control ###########################
-		# reset "dt" in case of ceckpoint
+		# reset "dt" in case of checkpoint
 		if ckpt_flag:
 			dt = dt_old - dt
 			ckpt_flag = False
-
 		dt = adapt_step(dt, error_ratio,
 						solver.safety,
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
-
 	return torch.cat(eval_times), torch.stack(sol)
 
 
 # TODO: update dt
 def fixed_odeint(f, x: TensorType["batch", "dim1"], t_span: TensorType["t_len"], solver):
-	"Solves a single IVP with fixed-step methods"
-	t, T = t_span[..., 0], t_span[..., -1]
-	dt = t_span[..., 1] - t
+	"Solves IVPs with same `t_span`, using fixed-step methods"
+	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
-
 	steps = 1
-	while steps <= len(t_span) - 1:
+	while steps <= len(t_span):
 		_, _, x = solver.step(f, x, t, dt)
 		sol.append(x)
 		t = t + dt
 		dt = t_span[steps] - t
 		steps += 1
-
 	return t_span, torch.stack(sol)
 
 
@@ -295,7 +275,6 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 
 			while niters < max_iters and event_tol < dt_inner:
 				with torch.no_grad():
-
 					dt_inner = dt_inner / 2
 					f_new, x_, _ = solver.step(f, x_inner, t_inner, dt_inner, k1=k1)
 
