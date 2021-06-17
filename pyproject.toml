@@ -20,6 +20,7 @@ torchvision = "*"
 scipy = "*"
 matplotlib = "*"
 ipykernel = "*"
+ipywidgets = "*"
 poethepoet = "^0.10.0"
 
 [tool.poetry.dev-dependencies]

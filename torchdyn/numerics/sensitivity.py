@@ -33,7 +33,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
             A = torch.cat([xT.flatten(), λT_flat, μT.flatten(), λtT[None]])
 
             def adjoint_dynamics(t, A):
-                t = t.abs()
                 x, λ, μ = A[:xT_nel], A[xT_nel:xT_nel+λT_nel], A[-μT_nel-1:-1]
                 x, λ, μ = x.reshape(xT.shape), λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):
@@ -68,7 +67,7 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
             λ, μ = A[xT_nel:xT_nel + λT_nel], A[-μT_nel-1:-1]
             λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
             λ_tspan = torch.stack([dLdt[0], dLdt[-1]])
-            return (μ, λ, λ_tspan, None, None, None, None)
+            return (μ, λ, λ_tspan, None, None)
 
     return _ODEProblemFunc
 
@@ -93,20 +92,21 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
             λT_nel, μT_nel = λT.numel(), μT.numel()
             xT_shape, λT_shape, μT_shape = xT.shape, λT.shape, μT.shape
             A = torch.cat([λT.flatten(), μT.flatten()])
-            print(t_sol.shape, sol.shape)
-            spline_coeffs = natural_cubic_coeffs(t=t_sol.to(sol), x=sol.permute(1, 0, 2).detach())
-            x_spline = NaturalCubicSpline(t_sol, spline_coeffs)
+            spline_coeffs = natural_cubic_coeffs(x=sol.permute(1, 0, 2).detach(), t=t_sol)
+            x_spline = NaturalCubicSpline(coeffs=spline_coeffs, t=t_sol)
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
-                x = x_spline.evaluate(t).requires_grad_(True)
+                x = x_spline.evaluate(t)[:,0] 
+                x, t = x.requires_grad_(True), t.requires_grad_(True)
                 λ, μ = A[:λT_nel], A[-μT_nel:]
                 λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):
                     dx = vf(t, x)
-                    dλ = grad(dx, x, -λ, allow_unused=True, retain_graph=True)[0]
-                    dμ = tuple(grad(dx, tuple(vf.parameters()), -λ, allow_unused=True, retain_graph=False))
-                    dμ = torch.cat([el.flatten() for el in dμ], dim=-1)
+                    dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
+                                        allow_unused=True, retain_graph=False))
+                    dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
+                                    for el in dμ], dim=-1)
                 return torch.cat([dλ.flatten(), dμ.flatten()])
 
             # solve the adjoint equation
