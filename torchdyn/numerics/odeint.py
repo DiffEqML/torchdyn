@@ -1,3 +1,8 @@
+"""
+	Functional API of ODE integration routines, with specialized functions for different options
+	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
+"""
+
 from typing import List, Union, Callable
 import torch
 from torch import Tensor
@@ -7,7 +12,14 @@ from torchdyn.numerics.solvers import str_to_solver
 from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
-def odeint(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3):
+def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, verbose:bool=False):
+	if t_span[1] < t_span[0]: # time is reversed
+		if verbose: print("You are integrating on a reversed time domain, adjusting the vector field automatically")
+		f_ = lambda t, x: -f(-t, x)
+		t_span = -t_span
+	else: f_ = f
+
+	if type(t_span) == list: t_span = torch.cat(t_span)
 	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
 	if type(solver) == str:
 		solver = str_to_solver(solver, x.dtype)
@@ -20,9 +32,9 @@ def odeint(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], at
 	# odeint routine with a single t_span for all samples
 	elif len(t_span.shape) == 1:
 		if stepping_class == 'fixed': 
-			return fixed_odeint(f, x, t_span, solver) 
+			return fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
-			return adaptive_odeint(f, x, t_span, solver, atol, rtol)
+			return adaptive_odeint(f_, x, t_span, solver, atol, rtol)
 
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor):
@@ -73,6 +85,8 @@ def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4):
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
+		# TODO: insert safety mechanism for small or large steps
+		# dt = max(dt, torch.tensor(1e-5).to(dt))
 	return torch.cat(eval_times), torch.stack(sol)
 
 
@@ -92,7 +106,7 @@ def fixed_odeint(f, x, t_span, solver):
 
 
 # TODO: update dt
-def shifted_fixed_odeint(f, x, t_span: solver):
+def shifted_fixed_odeint(f, x, t_span):
 	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
 	have equal step sizes and number of solution points"""
 	t, T = t_span[..., 0], t_span[..., -1]
@@ -162,8 +176,15 @@ def jagged_adaptive_odeint():
 
 # mostly similar as odeint above, with semi-norm and a wrapper for `f` as lambda t, x: -f(-t, x)
 # since we assume to be calling this on backward time domains only
-def backward_adjoint_odeint(f, x, t_span, n_elements, solver, t_eval=[], atol=1e-3, rtol=1e-3):
+def backward_adjoint_odeint(f, x, t_span, solver, atol=1e-3, rtol=1e-3, n_elements=None):
 	"""Modified odeint for efficient backsolve of adjoint systems. Stepsize control uses error on (x, λ), ignoring μ"""
+	if type(t_span) == list: t_span = torch.cat(t_span)
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+	if type(solver) == str:
+		solver = str_to_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	stepping_class = solver.stepping_class
+
 	x_shape, dtype, device = x.shape, x.dtype, x.device
 	if len(n_elements) == 3: x_nel, λ_nel, μ_nel = n_elements  # backsolve adjoint
 	else: λ_nel, μ_nel = n_elements  # interpolated adjoint
@@ -171,16 +192,8 @@ def backward_adjoint_odeint(f, x, t_span, n_elements, solver, t_eval=[], atol=1e
 	f_ = lambda t, x: -f(-t, x)
 
 	ckpt_counter = 0
+	t_eval = t_span[1:]
 	t = t_span[:1]
-
-	solver.a = [a_.to(device) for a_ in solver.a]
-	solver.c = [c_.to(device) for c_ in solver.c]
-	solver.bsol = [bsol_.to(device) for bsol_ in solver.bsol]
-	solver.berr = [berr_.to(device) for berr_ in solver.berr]
-	solver.safety = solver.safety.to(device)
-	solver.min_factor = solver.min_factor.to(device)
-	solver.max_factor = solver.max_factor.to(device)
-
 	################## initial step size setting ################
 	k1 = f_(t, x)
 	dt = init_step(f_, k1, x, t, solver.order, atol, rtol)
@@ -190,6 +203,7 @@ def backward_adjoint_odeint(f, x, t_span, n_elements, solver, t_eval=[], atol=1e
 	sol = [x]
 
 	while t < t_span[-1]:
+		
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
@@ -216,6 +230,7 @@ def backward_adjoint_odeint(f, x, t_span, n_elements, solver, t_eval=[], atol=1e
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
+		
 
 	return torch.cat(eval_times), torch.stack(sol)
 

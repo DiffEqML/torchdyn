@@ -22,14 +22,19 @@ class DEFuncBase(nn.Module):
     :param order: order of the differential equation
     :type order: int
    """
-    def __init__(self, vector_field):
-        super().__init__(self)
+    def __init__(self, vector_field, has_time_arg=True):
+        super().__init__()
         self.nfe = 0.
         self.vf = vector_field
+        # flag if vector field has `t` in call signature
+        # permits upstream compatibility with a wider selection of vector fields
+        # including lambda functions 
+        self.has_time_arg = has_time_arg 
 
     def forward(self, t, x):
         self.nfe += 1
-        return self.vector_field(x)
+        if self.has_time_arg: return self.vf(t, x)
+        else: return self.vf(x)
 
 
 class DEFunc(nn.Module):
