@@ -1,7 +1,0 @@
-numpy
-scipy
-matplotlib
-torch
-torchdiffeq
-pytorch_lightning
-scikit-learn

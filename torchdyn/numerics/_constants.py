@@ -12,7 +12,8 @@ def construct_rk4(dtype):
         torch.tensor([0., 1 / 2], dtype=dtype),
         torch.tensor([0., 0., 1], dtype=dtype)]
     bsol = torch.tensor([1 / 6, 1 / 3, 1 / 3, 1 / 6], dtype=dtype)
-    return (c, a, bsol, None)
+    berr = torch.tensor([0.]) # for improved compatibility with utilities of other solvers, not technically true
+    return (c, a, bsol, berr)
 
 
 def construct_dopri5(dtype):
