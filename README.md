@@ -83,6 +83,8 @@ To set up your dev environment, run `poetry install`. In example, `poetry run py
 `poetry` does not currently offer a way to select `torch` wheels based on desired `cuda` and `OS`, and will install a version without GPU support. For CUDA `torch` wheels,
 run `poetry run poe force_cuda11`, or add your version to `pyproject.toml`.
 
+If you wish to run `jupyter` notebooks within your newly created poetry environments, use `poetry run ipython kernel install --user --name=torchdyn` and switch the notebook kernel.
+
 
 **Choosing what to work on:** There is always [ongoing work](https://github.com/DiffEqML/torchdyn/issues) on new features, tests and tutorials. Contributing to any of the above is extremely valuable to us. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details.
 
