@@ -12,6 +12,14 @@ from torchdyn.numerics._constants import construct_rk4, construct_dopri5, constr
 
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
+        """[summary]
+
+        Args:
+            order ([type]): [description]
+            min_factor (float, optional): [description]. Defaults to 0.2.
+            max_factor ([type], optional): [description]. Defaults to 10..
+            safety (float, optional): [description]. Defaults to 0.9.
+        """
         super().__init__()
         self.order = order
         self.min_factor = torch.tensor([min_factor])
@@ -39,7 +47,7 @@ class Euler(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=1)
         self.dtype = dtype
-        self.stepping_class = stepping_class='fixed'
+        self.stepping_class = 'fixed'
 
     def step(self, f, x, t, dt, k1=None):
         if k1 == None: k1 = f(t, x)
@@ -51,7 +59,7 @@ class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=4)
         self.dtype = dtype
-        self.stepping_class = stepping_class='fixed'
+        self.stepping_class = 'fixed'
         self.tableau = construct_rk4(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
@@ -62,6 +70,50 @@ class RungeKutta4(SolverTemplate):
         k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3))
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
         return k3, None, x_sol
+
+
+class AsynchronousLeapfrog(SolverTemplate):
+    def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
+        super().__init__(order=4)
+        self.dtype = dtype
+        self.channel_index = channel_index
+        self.stepping_class = stepping_class
+        self.const = 1
+        self.tableau = construct_rk4(self.dtype)  
+        # an additional overhead, necessary to preserve a certain degree of sanity 
+        # in the implementation and to avoid API bloating.
+        self.x_shape = None 
+
+
+    def step(self, f, xv, t, dt, k1=None):
+        half_state_dim = xv.shape[0] // 2
+        x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
+        x1 = x + 0.5 * dt * v
+        vt1 = f(t + 0.5 * dt, x1)
+        v1 = 2 * self.const * (vt1 - v) + v
+        x2 = x1 + 0.5 * dt * v1 
+        if self.stepping_class == 'adaptive':
+            print('wtf')
+            print(v1.shape, v.shape)
+            berr = v1 * dt / 2. - v * dt / 2.
+        else:
+            berr = None
+        return None, berr, torch.cat([x2, v1])
+
+
+    # def flat_step(self, f, xv, t, dt, k1=None):
+    #     half_state_dim = xv.shape[0] // 2
+    #     x, v = xv[:half_state_dim], xv[half_state_dim:]
+    #     x1 = x + 0.5 * dt * v
+    #     vt1 = f(t + 0.5 * dt, x1.reshape(self.x_shape)).flatten()
+    #     v1 = 2 * self.const * (vt1 - v) + v
+    #     x2 = x1 + 0.5 * dt * v1 
+    #     if self.stepping_class == 'adaptive':
+    #         print(v1.shape, v.shape)
+    #         berr = v1 * dt / 2. - v * dt / 2.
+    #     else:
+    #         berr = None
+    #     return None, berr, torch.cat([x2, v1])
 
 
 class DormandPrince45(SolverTemplate):
@@ -113,6 +165,15 @@ class Tsitouras45(SolverTemplate):
 
 
 class ImplicitEuler(SolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
+
+
+class ODE23s(SolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
+
+class HyperEuler(SolverTemplate):
     def __init__(self):
         raise NotImplementedError
 
@@ -185,7 +246,8 @@ class MSZero(MShootingSolverTemplate):
     
 SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
-               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
+               'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 MS_SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,

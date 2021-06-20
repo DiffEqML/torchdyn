@@ -29,6 +29,9 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
+	# TODO (qol) state augmentation for symplectic methods 
+	###########
+
 	# access parallel integration routines with different t_spans for each sample in `x`.
 	if len(t_span.shape) > 1:
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
@@ -58,6 +61,7 @@ def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=
 	ckpt_counter, ckpt_flag = 0, False
 	################## initial step size setting ################
 	k1 = f(t, x)
+	print(k1.shape, x.shape)
 	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 	eval_times, sol = [t], [x]
 	while t < t_span[-1]:
