@@ -69,12 +69,12 @@ class RungeKutta4(SolverTemplate):
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
         k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3))
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
-        return k3, None, x_sol
+        return None, None, x_sol
 
 
 class AsynchronousLeapfrog(SolverTemplate):
     def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
-        super().__init__(order=4)
+        super().__init__(order=2)
         self.dtype = dtype
         self.channel_index = channel_index
         self.stepping_class = stepping_class
@@ -86,19 +86,19 @@ class AsynchronousLeapfrog(SolverTemplate):
 
 
     def step(self, f, xv, t, dt, k1=None):
-        half_state_dim = xv.shape[0] // 2
+        half_state_dim = xv.shape[-1] // 2
         x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
+        if k1 == None: k1 = f(t, x)
         x1 = x + 0.5 * dt * v
         vt1 = f(t + 0.5 * dt, x1)
         v1 = 2 * self.const * (vt1 - v) + v
         x2 = x1 + 0.5 * dt * v1 
+        x_sol = torch.cat([x2, v1], -1)
         if self.stepping_class == 'adaptive':
-            print('wtf')
-            print(v1.shape, v.shape)
-            berr = v1 * dt / 2. - v * dt / 2.
+            xv_err = torch.cat([torch.zeros_like(x), v], -1)
         else:
-            berr = None
-        return None, berr, torch.cat([x2, v1])
+            xv_err = None
+        return None, xv_err, x_sol 
 
 
     # def flat_step(self, f, xv, t, dt, k1=None):

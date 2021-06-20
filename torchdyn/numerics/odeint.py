@@ -37,11 +37,13 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed': 
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
-			return _adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
+			t = t_span[0]
+			k1 = f(t, x)
+			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
 # TODO (qol) state augmentation for symplectic methods 
-###########
 def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
 		   verbose:bool=False, return_all_eval:bool=False):
 	if t_span[1] < t_span[0]: # time is reversed
@@ -49,19 +51,21 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		f_ = lambda t, x: -f(-t, x)
 		t_span = -t_span
 	else: f_ = f
-
 	if type(t_span) == list: t_span = torch.cat(t_span)
+
 	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
-
-
 	if type(solver) == str:
 		solver = str_to_solver(solver, x.dtype)
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
-	# we need to check the order
-	if not hasattr(f, 'order') and isinstance(solver, AsynchronousLeapfrog): 
-		warn('Please write down your vector field as a separable first order symplectic system: v = f(t, x)')
+	# additional bookkeeping for symplectic solvers
+	if not hasattr(f, 'order'):
+		raise RuntimeError('The system order should be specified as an attribute `order` of `vector_field`')
+	if isinstance(solver, AsynchronousLeapfrog) and f.order == 2: 
+		raise RuntimeError('ALF solver should be given a vector field specified as a first-order symplectic system: v = f(t, x)')
+	solver.x_shape = x.shape[-1] // 2
+
 	# access parallel integration routines with different t_spans for each sample in `x`.
 	if len(t_span.shape) > 1:
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
@@ -70,8 +74,16 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		if stepping_class == 'fixed': 
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
-			return _adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
-		
+			t = t_span[0]
+			if f.order == 1: 
+				pos = x[..., : solver.x_shape]
+				k1 = f(t, pos)
+				dt = init_step(f, k1, pos, t, solver.order, atol, rtol)
+			else:
+				 k1 = f(t, x)
+				 dt = init_step(f, k1, x, t, solver.order, atol, rtol)	
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
+
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 					 fine_steps=4, B_initialization='manual', maxiter=100):
@@ -195,15 +207,35 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 
 
 # TODO (qol): interpolation option instead of checkpoint
-def _adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
+	"""
+	
+	Notes:
+	(1) We check if the user wants all evaluated solution points, not only those
+	corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
+	is called for interpolated adjoints
+
+	Args:
+		f ([type]): [description]
+		k1 ([type]): [description]
+		x ([type]): [description]
+		dt ([type]): [description]
+		t_span ([type]): [description]
+		solver ([type]): [description]
+		atol ([type], optional): [description]. Defaults to 1e-4.
+		rtol ([type], optional): [description]. Defaults to 1e-4.
+		return_all_eval (bool, optional): [description]. Defaults to False.
+
+	Returns:
+		[type]: [description]
+	
+	"""
 	t_eval = t_span[1:]
 	t = t_span[:1]
-	ckpt_counter, ckpt_flag = 0, False
-	################## initial step size setting ################
-	k1 = f(t, x)
-	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
+	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
 	while t < t_span[-1]:
+		print(t)
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
@@ -215,19 +247,18 @@ def _adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval
 		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
 		error = x_new - x_app
+		
 		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
 		error_ratio = norm(error / error_tol)
 		accept_step = error_ratio <= 1
+		print(error_ratio)
 		if accept_step:
 			t, x = t + dt, x_new
-			# we check if the user wants all evaluated solution points, not only those
-			# corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
-			# is called for interpolated adjoints
-			if t == t_eval[ckpt_counter] or return_all_eval:
+			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
 				sol.append(x_new)
 				eval_times.append(t)
 				ckpt_counter += 1	
-			k1 = f_new
+			k1 = f_new 
 		################ stepsize control ###########################
 		# reset "dt" in case of checkpoint
 		if ckpt_flag:
@@ -243,9 +274,18 @@ def _adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-# TODO: update dt
 def _fixed_odeint(f, x, t_span, solver):
-	"Solves IVPs with same `t_span`, using fixed-step methods"
+	"""Solves IVPs with same `t_span`, using fixed-step methods
+
+	Args:
+		f ([type]): [description]
+		x ([type]): [description]
+		t_span ([type]): [description]
+		solver ([type]): [description]
+
+	Returns:
+		[type]: [description]
+	"""
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
 	steps = 1

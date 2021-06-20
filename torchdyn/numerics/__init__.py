@@ -11,8 +11,9 @@
 # limitations under the License.
 
 from torchdyn.numerics.solvers import Euler, RungeKutta4, Tsitouras45, DormandPrince45, AsynchronousLeapfrog
+from torchdyn.numerics.hypersolvers import HyperEuler
 from torchdyn.numerics.odeint import odeint, odeint_symplectic
 
 
 __all__ =   ['odeint', 'odeint_symplectic', 'Euler', 'RungeKutta4', 'DormandPrince45', 'Tsitouras45',
-            'AsynchronousLeapfrog']
+            'AsynchronousLeapfrog', 'HyperEuler']

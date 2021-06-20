@@ -23,7 +23,6 @@ def norm(tensor):
 
 def init_step(f, f0, x0, t0, order, atol, rtol):
     scale = atol + torch.abs(x0) * rtol
-    print(scale.shape, f0.shape, x0.shape)
     d0, d1 = norm(x0 / scale), norm(f0 / scale)
 
     if d0 < 1e-5 or d1 < 1e-5:
