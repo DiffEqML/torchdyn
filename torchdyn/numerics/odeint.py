@@ -2,7 +2,7 @@
 	Functional API of ODE integration routines, with specialized functions for different options
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
-
+from inspect import getargspec
 from typing import List, Union, Callable
 from warnings import warn
 
@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from torchdyn.numerics.solvers import str_to_solver, str_to_ms_solver
+from torchdyn.numerics.solvers import AsynchronousLeapfrog, str_to_solver, str_to_ms_solver
 from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
@@ -29,20 +29,49 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
-	# TODO (qol) state augmentation for symplectic methods 
-	###########
-
 	# access parallel integration routines with different t_spans for each sample in `x`.
 	if len(t_span.shape) > 1:
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
 	# odeint routine with a single t_span for all samples
 	elif len(t_span.shape) == 1:
 		if stepping_class == 'fixed': 
-			return fixed_odeint(f_, x, t_span, solver) 
+			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
-			return adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
+			return _adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
 
 
+# TODO (qol) state augmentation for symplectic methods 
+###########
+def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
+		   verbose:bool=False, return_all_eval:bool=False):
+	if t_span[1] < t_span[0]: # time is reversed
+		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
+		f_ = lambda t, x: -f(-t, x)
+		t_span = -t_span
+	else: f_ = f
+
+	if type(t_span) == list: t_span = torch.cat(t_span)
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+
+
+	if type(solver) == str:
+		solver = str_to_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	stepping_class = solver.stepping_class
+
+	# we need to check the order
+	if not hasattr(f, 'order') and isinstance(solver, AsynchronousLeapfrog): 
+		warn('Please write down your vector field as a separable first order symplectic system: v = f(t, x)')
+	# access parallel integration routines with different t_spans for each sample in `x`.
+	if len(t_span.shape) > 1:
+		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
+	# odeint routine with a single t_span for all samples
+	elif len(t_span.shape) == 1:
+		if stepping_class == 'fixed': 
+			return _fixed_odeint(f_, x, t_span, solver) 
+		elif stepping_class == 'adaptive':
+			return _adaptive_odeint(f_, x, t_span, solver, atol, rtol, return_all_eval)
+		
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 					 fine_steps=4, B_initialization='manual', maxiter=100):
@@ -52,201 +81,6 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 
 		B = solver.root_solve(f, x, t_span, B)
 		return B, t_span
-
-
-# TODO (qol): interpolation option instead of checkpoint
-def adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
-	t_eval = t_span[1:]
-	t = t_span[:1]
-	ckpt_counter, ckpt_flag = 0, False
-	################## initial step size setting ################
-	k1 = f(t, x)
-	print(k1.shape, x.shape)
-	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
-	eval_times, sol = [t], [x]
-	while t < t_span[-1]:
-		############### checkpointing ###############################
-		if t + dt > t_span[-1]:
-			dt = t_span[-1] - t
-		if t_eval is not None:
-			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				# save old dt and raise "checkpoint" flag
-				dt_old, ckpt_flag = dt, True
-				dt = t_eval[ckpt_counter] - t				
-		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
-		################# compute error #############################
-		error = x_new - x_app
-		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-		error_ratio = norm(error / error_tol)
-		accept_step = error_ratio <= 1
-		if accept_step:
-			t, x = t + dt, x_new
-			# we check if the user wants all evaluated solution points, not only those
-			# corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
-			# is called for interpolated adjoints
-			if t == t_eval[ckpt_counter] or return_all_eval:
-				sol.append(x_new)
-				eval_times.append(t)
-				ckpt_counter += 1	
-			k1 = f_new
-		################ stepsize control ###########################
-		# reset "dt" in case of checkpoint
-		if ckpt_flag:
-			dt = dt_old - dt
-			ckpt_flag = False
-		dt = adapt_step(dt, error_ratio,
-						solver.safety,
-						solver.min_factor,
-						solver.max_factor,
-						solver.order)
-		# TODO: insert safety mechanism for small or large steps
-		# dt = max(dt, torch.tensor(1e-5).to(dt))
-	return torch.cat(eval_times), torch.stack(sol)
-
-
-# TODO: update dt
-def fixed_odeint(f, x, t_span, solver):
-	"Solves IVPs with same `t_span`, using fixed-step methods"
-	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
-	sol = [x]
-	steps = 1
-	while steps <= len(t_span) - 1:
-		_, _, x = solver.step(f, x, t, dt)
-		sol.append(x)
-		t = t + dt
-		dt = t_span[steps] - t
-		steps += 1
-	return t_span, torch.stack(sol)
-
-
-# TODO: update dt
-def shifted_fixed_odeint(f, x, t_span):
-	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
-	have equal step sizes and number of solution points"""
-	t, T = t_span[..., 0], t_span[..., -1]
-	dt = t_span[..., 1] - t
-	sol, k1 = [], f(t, x)
-
-	not_converged = ~((t - T).abs() <= 1e-6).bool()
-	while not_converged.any():
-		x[:, ~not_converged] = torch.zeros_like(x[:, ~not_converged])
-		k1, _, x = solver.step(f, x, t, dt[..., None], k1=k1)  # dt will be broadcasted on dim1
-		sol.append(x)
-		t = t + dt
-		not_converged = ~((t - T).abs() <= 1e-6).bool()
-	# stacking is only possible since the number of steps in each of the ``n_segments''
-	# is assumed to be the same. Otherwise require jagged tensors or a []
-	return torch.stack(sol)
-
-
-
-def jagged_fixed_odeint(f, x,
-						t_span: List, solver):
-	"""
-	Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. Each sub-IVP can vary in number
-    of solution steps and step sizes
-
-	Args:
-		f:
-		x:
-		t_span:
-		solver:
-
-	Returns:
-		A list of `len(t_span)' containing solutions of each IVP computed in parallel.
-	"""
-	t, T = [t_sub[0] for t_sub in t_span], [t_sub[-1] for t_sub in t_span]
-	t, T = torch.stack(t), torch.stack(T)
-
-	dt = torch.stack([t_[1] - t0 for t_, t0 in zip(t_span, t)])
-	sol = [[x_] for x_ in x]
-	not_converged = ~((t - T).abs() <= 1e-6).bool()
-	steps = 0
-	while not_converged.any():
-		_, _, x = solver.step(f, x, t, dt[..., None, None])  # dt will be to x dims
-
-		for n, sol_ in enumerate(sol):
-			sol_.append(x[n])
-		t = t + dt
-		not_converged = ~((t - T).abs() <= 1e-6).bool()
-
-		steps += 1
-		dt = []
-		for t_, tcur in zip(t_span, t):
-			if steps > len(t_) - 1:
-				dt.append(torch.zeros_like(tcur))  # subproblem already solved
-			else:
-				dt.append(t_[steps] - tcur)
-
-		dt = torch.stack(dt)
-	# prune solutions to remove noop steps
-	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
-	return [torch.stack(sol_, 0) for sol_ in sol]
-
-
-def jagged_adaptive_odeint():
-	raise NotImplementedError("Adaptive-step version of ``jagged_fixed_odeint''")
-
-
-# mostly similar as odeint above, with semi-norm and a wrapper for `f` as lambda t, x: -f(-t, x)
-# since we assume to be calling this on backward time domains only
-def backward_adjoint_odeint(f, x, t_span, solver, atol=1e-3, rtol=1e-3, n_elements=None):
-	"""Modified odeint for efficient backsolve of adjoint systems. Stepsize control uses error on (x, λ), ignoring μ"""
-	if type(t_span) == list: t_span = torch.cat(t_span)
-	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
-	if type(solver) == str:
-		solver = str_to_solver(solver, x.dtype)
-	x, t_span = solver.sync_device_dtype(x, t_span)
-	stepping_class = solver.stepping_class
-
-	x_shape, dtype, device = x.shape, x.dtype, x.device
-	if len(n_elements) == 3: x_nel, λ_nel, μ_nel = n_elements  # backsolve adjoint
-	else: λ_nel, μ_nel = n_elements  # interpolated adjoint
-	# since time is reversed, flip f
-	f_ = lambda t, x: -f(-t, x)
-
-	ckpt_counter = 0
-	t_eval = t_span[1:]
-	t = t_span[:1]
-	################## initial step size setting ################
-	k1 = f_(t, x)
-	dt = init_step(f_, k1, x, t, solver.order, atol, rtol)
-
-	#### init solution & time vector ####
-	eval_times = [t]
-	sol = [x]
-
-	while t < t_span[-1]:
-		
-		############### checkpointing ###############################
-		if t + dt > t_span[-1]:
-			dt = t_span[-1] - t
-		if t_eval is not None:
-			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				dt = t_eval[ckpt_counter] - t
-				ckpt_counter += 1
-		f_new, x_new, x_app = solver.step(f_, x, t, dt, k1=k1)
-		################# compute error #############################
-		error = x_new[:-μ_nel] - x_app[:-μ_nel]
-		error_tol = atol + rtol * torch.max(x[:-μ_nel].abs(), x_new[:-μ_nel].abs())
-		error_ratio = norm(error / error_tol)
-		accept_step = error_ratio <= 1
-		if accept_step:
-			t = t + dt
-			x = x_new
-			sol.append(x)
-			eval_times.append(t)
-			k1 = f_new
-
-		################ stepsize control ###########################
-		dt = adapt_step(dt, error_ratio,
-						solver.safety,
-						solver.min_factor,
-						solver.max_factor,
-						solver.order)
-		
-
-	return torch.cat(eval_times), torch.stack(sol)
 
 
 # TODO: check why for some tols `min(....)` becomes empty in internal event finder
@@ -358,3 +192,132 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 							solver.order)
 
 	return torch.cat(eval_times), torch.stack(sol)
+
+
+# TODO (qol): interpolation option instead of checkpoint
+def _adaptive_odeint(f, x, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
+	t_eval = t_span[1:]
+	t = t_span[:1]
+	ckpt_counter, ckpt_flag = 0, False
+	################## initial step size setting ################
+	k1 = f(t, x)
+	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
+	eval_times, sol = [t], [x]
+	while t < t_span[-1]:
+		############### checkpointing ###############################
+		if t + dt > t_span[-1]:
+			dt = t_span[-1] - t
+		if t_eval is not None:
+			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+				# save old dt and raise "checkpoint" flag
+				dt_old, ckpt_flag = dt, True
+				dt = t_eval[ckpt_counter] - t				
+		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
+		################# compute error #############################
+		error = x_new - x_app
+		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
+		error_ratio = norm(error / error_tol)
+		accept_step = error_ratio <= 1
+		if accept_step:
+			t, x = t + dt, x_new
+			# we check if the user wants all evaluated solution points, not only those
+			# corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
+			# is called for interpolated adjoints
+			if t == t_eval[ckpt_counter] or return_all_eval:
+				sol.append(x_new)
+				eval_times.append(t)
+				ckpt_counter += 1	
+			k1 = f_new
+		################ stepsize control ###########################
+		# reset "dt" in case of checkpoint
+		if ckpt_flag:
+			dt = dt_old - dt
+			ckpt_flag = False
+		dt = adapt_step(dt, error_ratio,
+						solver.safety,
+						solver.min_factor,
+						solver.max_factor,
+						solver.order)
+		# TODO: insert safety mechanism for small or large steps
+		# dt = max(dt, torch.tensor(1e-5).to(dt))
+	return torch.cat(eval_times), torch.stack(sol)
+
+
+# TODO: update dt
+def _fixed_odeint(f, x, t_span, solver):
+	"Solves IVPs with same `t_span`, using fixed-step methods"
+	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
+	sol = [x]
+	steps = 1
+	while steps <= len(t_span) - 1:
+		_, _, x = solver.step(f, x, t, dt)
+		sol.append(x)
+		t = t + dt
+		dt = t_span[steps] - t
+		steps += 1
+	return t_span, torch.stack(sol)
+
+
+# TODO: update dt
+def _shifted_fixed_odeint(f, x, t_span):
+	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
+	have equal step sizes and number of solution points"""
+	t, T = t_span[..., 0], t_span[..., -1]
+	dt = t_span[..., 1] - t
+	sol, k1 = [], f(t, x)
+
+	not_converged = ~((t - T).abs() <= 1e-6).bool()
+	while not_converged.any():
+		x[:, ~not_converged] = torch.zeros_like(x[:, ~not_converged])
+		k1, _, x = solver.step(f, x, t, dt[..., None], k1=k1)  # dt will be broadcasted on dim1
+		sol.append(x)
+		t = t + dt
+		not_converged = ~((t - T).abs() <= 1e-6).bool()
+	# stacking is only possible since the number of steps in each of the ``n_segments''
+	# is assumed to be the same. Otherwise require jagged tensors or a []
+	return torch.stack(sol)
+
+
+
+def _jagged_fixed_odeint(f, x,
+						t_span: List, solver):
+	"""
+	Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. Each sub-IVP can vary in number
+    of solution steps and step sizes
+
+	Args:
+		f:
+		x:
+		t_span:
+		solver:
+
+	Returns:
+		A list of `len(t_span)' containing solutions of each IVP computed in parallel.
+	"""
+	t, T = [t_sub[0] for t_sub in t_span], [t_sub[-1] for t_sub in t_span]
+	t, T = torch.stack(t), torch.stack(T)
+
+	dt = torch.stack([t_[1] - t0 for t_, t0 in zip(t_span, t)])
+	sol = [[x_] for x_ in x]
+	not_converged = ~((t - T).abs() <= 1e-6).bool()
+	steps = 0
+	while not_converged.any():
+		_, _, x = solver.step(f, x, t, dt[..., None, None])  # dt will be to x dims
+
+		for n, sol_ in enumerate(sol):
+			sol_.append(x[n])
+		t = t + dt
+		not_converged = ~((t - T).abs() <= 1e-6).bool()
+
+		steps += 1
+		dt = []
+		for t_, tcur in zip(t_span, t):
+			if steps > len(t_) - 1:
+				dt.append(torch.zeros_like(tcur))  # subproblem already solved
+			else:
+				dt.append(t_[steps] - tcur)
+
+		dt = torch.stack(dt)
+	# prune solutions to remove noop steps
+	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
+	return [torch.stack(sol_, 0) for sol_ in sol]
