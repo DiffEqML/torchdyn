@@ -108,9 +108,9 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
         norm = mpl.colors.Normalize(e.min(),e.max())
         plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap='coolwarm'),
              label='Approximation Error', orientation='horizontal')
-        ax.set_xlabel(r"$s$ [depth]");
-        ax.set_ylabel(r"$u$");
-        ax.set_zlabel(r"$h(s)$");
+        ax.set_xlabel(r"$s$ [depth]")
+        ax.set_ylabel(r"$u$")
+        ax.set_zlabel(r"$h(s)$")
         # make the panes transparent
         ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
         ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
@@ -151,8 +151,8 @@ def plot_2D_depth_trajectory(s_span, trajectory, yn, n_lines):
     ax0 = fig.add_subplot(121)
     ax1 = fig.add_subplot(122)
     for i in range(n_lines):
-        ax0.plot(s_span, trajectory[:,i,0], color=color[int(yn[i])], alpha=.1);
-        ax1.plot(s_span, trajectory[:,i,1], color=color[int(yn[i])], alpha=.1);
+        ax0.plot(s_span, trajectory[:,i,0], color=color[int(yn[i])], alpha=.1)
+        ax1.plot(s_span, trajectory[:,i,1], color=color[int(yn[i])], alpha=.1)
 
     ax0.set_xlabel(r"$s$ [Depth]")
     ax0.set_ylabel(r"$h_0(s)$")
