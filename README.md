@@ -40,17 +40,12 @@ Contribute to the library with your benchmark and model variants! No need to rei
 
 `pip install torchdyn`
 
-* NOTE: temporarily requires additional manual installation of `torchsde`: 
-
-`pip install git+https://github.com/google-research/torchsde.git`
 
 **Bleeding-edge** version:
 
-`git clone https://github.com/DiffEqML/torchdyn.git`
+`git clone https://github.com/DiffEqML/torchdyn.git && cd torchdyn && python setup.py install`
 
-`cd torchdyn`
-
-`python setup.py install`
+Don't forget to install in your environment of choice if necessary. We offer an automated method for setting up your `torchdyn` environment designed specifically for contributors or those planning to tinker with the internals. Check `Contributing` below for more details.
 
 ## Documentation
 Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of available features.

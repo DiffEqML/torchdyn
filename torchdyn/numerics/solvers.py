@@ -101,21 +101,6 @@ class AsynchronousLeapfrog(SolverTemplate):
         return None, xv_err, x_sol 
 
 
-    # def flat_step(self, f, xv, t, dt, k1=None):
-    #     half_state_dim = xv.shape[0] // 2
-    #     x, v = xv[:half_state_dim], xv[half_state_dim:]
-    #     x1 = x + 0.5 * dt * v
-    #     vt1 = f(t + 0.5 * dt, x1.reshape(self.x_shape)).flatten()
-    #     v1 = 2 * self.const * (vt1 - v) + v
-    #     x2 = x1 + 0.5 * dt * v1 
-    #     if self.stepping_class == 'adaptive':
-    #         print(v1.shape, v.shape)
-    #         berr = v1 * dt / 2. - v * dt / 2.
-    #     else:
-    #         berr = None
-    #     return None, berr, torch.cat([x2, v1])
-
-
 class DormandPrince45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=6)
@@ -143,6 +128,7 @@ class DormandPrince45(SolverTemplate):
         return k7, x_sol, x_err
 
 
+
 class Tsitouras45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=6)
@@ -167,12 +153,6 @@ class Tsitouras45(SolverTemplate):
 class ImplicitEuler(SolverTemplate):
     def __init__(self):
         raise NotImplementedError
-
-
-class ODE23s(SolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
-
 
 
 
