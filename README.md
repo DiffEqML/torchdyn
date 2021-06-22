@@ -36,10 +36,12 @@ Contribute to the library with your benchmark and model variants! No need to rei
 
 ## Installation
 
+
 **Stable** release:
 
 `pip install torchdyn`
 
+We note that `PyPI` currently does not allow non-packaged dependencies. You will have to install `torchsde` and `torchcde` separately, or build a virtual environment with poetry following the steps outlined in `Contributing`
 
 **Bleeding-edge** version:
 
