@@ -7,7 +7,7 @@
 
 ## A PyTorch based library for all things **neural differential equations**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
-![license](https://img.shields.io/badge/license-Apache%202.0-red.svg?)
+![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?)
 ![CI](https://github.com/DiffEqML/torchdyn/actions/workflows/os-coverage.yml/badge.svg)
 [![Slack](https://img.shields.io/badge/slack-chat-blue.svg?logo=slack)](https://join.slack.com/t/diffeqml/shared_invite/zt-gq3jjj5x-LuHSB4m4gc9MsnvoF1UB6A)
 [![codecov](https://codecov.io/gh/DiffEqML/torchdyn/branch/master/graph/badge.svg)](https://codecov.io/gh/DiffEqML/torchdyn)
@@ -40,17 +40,12 @@ Contribute to the library with your benchmark and model variants! No need to rei
 
 `pip install torchdyn`
 
-* NOTE: temporarily requires additional manual installation of `torchsde`: 
-
-`pip install git+https://github.com/google-research/torchsde.git`
 
 **Bleeding-edge** version:
 
-`git clone https://github.com/DiffEqML/torchdyn.git`
+`git clone https://github.com/DiffEqML/torchdyn.git && cd torchdyn && python setup.py install`
 
-`cd torchdyn`
-
-`python setup.py install`
+Don't forget to install in your environment of choice if necessary. We offer an automated method for setting up your `torchdyn` environment designed specifically for contributors or those planning to tinker with the internals. Check `Contributing` below for more details.
 
 ## Documentation
 Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of available features.
@@ -64,7 +59,7 @@ Interest in the blend of differential equations, deep learning and dynamical sys
 </p>
 
 
-By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately establish neural differential equations and implicit models into an effective tool for control, system identification and general machine learning tasks. W
+By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately establish neural differential equations and implicit models into an effective tool for control, system identification and general machine learning tasks.
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[7](https://www.dgl.ai/)]. For a complete list of references, check `pyproject.toml`. We offer a complete suite of ODE solvers and sensitivity methods, extending the functionality offered by `torchdiffeq` [[1](https://arxiv.org/abs/1806.07366)]. We have light dependencies on `torchsde` [[7](https://arxiv.org/abs/2001.01328)] and `torchcde` [[8](https://arxiv.org/abs/2005.08926)].

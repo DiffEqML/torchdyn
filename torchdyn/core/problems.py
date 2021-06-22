@@ -11,8 +11,24 @@ from torchdyn.numerics.odeint import odeint, str_to_solver
 
 
 class ODEProblem(nn.Module):
-    def __init__(self, vector_field, solver:Union[str, nn.Module], atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
+    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
                  solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, seminorm:bool=False):
+        """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
+
+        Args:
+            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+                                       In the second case, the Callable is automatically wrapped for consistency
+            solver (Union[str, nn.Module]): [description]
+            order (int, optional): [description]. Defaults to 1.
+            atol (float, optional): [description]. Defaults to 1e-4.
+            rtol (float, optional): [description]. Defaults to 1e-4.
+            sensitivity (str, optional): [description]. Defaults to 'autograd'.
+            solver_adjoint (Union[str, nn.Module, None], optional): [description]. Defaults to None.
+            atol_adjoint (float, optional): [description]. Defaults to 1e-6.
+            rtol_adjoint (float, optional): [description]. Defaults to 1e-6.
+            seminorm (bool, optional): Indicates whether the a seminorm should be used for error estimation during adjoint backsolves. Defaults to False.
+        
+        """
         super().__init__()
         # instantiate solver at initialization
         if type(solver) == str: 
@@ -38,7 +54,7 @@ class ODEProblem(nn.Module):
                 vector_field = DEFuncBase(vector_field, has_time_arg=False)   
             else: vector_field = DEFuncBase(vector_field, has_time_arg=True) 
 
-        self.vf, self.sensalg = vector_field, sensitivity
+        self.vf, self.order, self.sensalg = vector_field, order, sensitivity
         if len(tuple(self.vf.parameters())) > 0:
             self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
         else:
@@ -69,6 +85,16 @@ class ODEProblem(nn.Module):
 
 class MultipleShootingProblem(nn.Module):
     def __init__(self, solver:str, vector_field, sensalg='autograd'):
+        """[summary]
+
+        Args:
+            solver (str): [description]
+            vector_field ([type]): [description]
+            sensalg (str, optional): [description]. Defaults to 'autograd'.
+
+        Returns:
+            [type]: [description]
+        """
         super().__init__()
         #
         self.solver
@@ -98,3 +124,4 @@ class MultipleShootingProblem(nn.Module):
         x0, t_span = prep_input(x0, t_span)
         t_eval, sol = self.odefunc(self.vf_params, x0, t_span, t_eval)
         return t_eval, sol
+        

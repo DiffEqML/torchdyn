@@ -12,6 +12,14 @@ from torchdyn.numerics._constants import construct_rk4, construct_dopri5, constr
 
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
+        """[summary]
+
+        Args:
+            order ([type]): [description]
+            min_factor (float, optional): [description]. Defaults to 0.2.
+            max_factor ([type], optional): [description]. Defaults to 10..
+            safety (float, optional): [description]. Defaults to 0.9.
+        """
         super().__init__()
         self.order = order
         self.min_factor = torch.tensor([min_factor])
@@ -39,7 +47,7 @@ class Euler(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=1)
         self.dtype = dtype
-        self.stepping_class = stepping_class='fixed'
+        self.stepping_class = 'fixed'
 
     def step(self, f, x, t, dt, k1=None):
         if k1 == None: k1 = f(t, x)
@@ -51,7 +59,7 @@ class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=4)
         self.dtype = dtype
-        self.stepping_class = stepping_class='fixed'
+        self.stepping_class = 'fixed'
         self.tableau = construct_rk4(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
@@ -61,7 +69,36 @@ class RungeKutta4(SolverTemplate):
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
         k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3))
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
-        return k3, None, x_sol
+        return None, None, x_sol
+
+
+class AsynchronousLeapfrog(SolverTemplate):
+    def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.channel_index = channel_index
+        self.stepping_class = stepping_class
+        self.const = 1
+        self.tableau = construct_rk4(self.dtype)  
+        # an additional overhead, necessary to preserve a certain degree of sanity 
+        # in the implementation and to avoid API bloating.
+        self.x_shape = None 
+
+
+    def step(self, f, xv, t, dt, k1=None):
+        half_state_dim = xv.shape[-1] // 2
+        x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
+        if k1 == None: k1 = f(t, x)
+        x1 = x + 0.5 * dt * v
+        vt1 = f(t + 0.5 * dt, x1)
+        v1 = 2 * self.const * (vt1 - v) + v
+        x2 = x1 + 0.5 * dt * v1 
+        x_sol = torch.cat([x2, v1], -1)
+        if self.stepping_class == 'adaptive':
+            xv_err = torch.cat([torch.zeros_like(x), v], -1)
+        else:
+            xv_err = None
+        return None, xv_err, x_sol 
 
 
 class DormandPrince45(SolverTemplate):
@@ -91,6 +128,7 @@ class DormandPrince45(SolverTemplate):
         return k7, x_sol, x_err
 
 
+
 class Tsitouras45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=6)
@@ -115,6 +153,7 @@ class Tsitouras45(SolverTemplate):
 class ImplicitEuler(SolverTemplate):
     def __init__(self):
         raise NotImplementedError
+
 
 
 class MShootingSolverTemplate(nn.Module):
@@ -185,7 +224,8 @@ class MSZero(MShootingSolverTemplate):
     
 SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
-               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
+               'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 MS_SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,

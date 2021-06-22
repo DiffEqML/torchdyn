@@ -174,10 +174,10 @@ class GalLayer(nn.Module):
     def reset_parameters(self):
         torch.nn.init.zeros_(self.coeffs)
         
-    def calculate_weights(self, s):
-        "Expands `s` following the chosen eigenbasis"
+    def calculate_weights(self, t):
+        "Expands `t` following the chosen eigenbasis"
         n_range = torch.linspace(0, self.deg, self.deg).to(self.coeffs.device)
-        basis = self.expfunc(n_range, s*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
+        basis = self.expfunc(n_range, t*self.dilation.to(self.coeffs.device) + self.shift.to(self.coeffs.device))
         B = []  
         for i in range(self.n_eig):
             Bin = torch.eye(self.deg).to(self.coeffs.device)
