@@ -30,7 +30,7 @@ jobs:
         poetry build
 
     - name: Publish distribution 📦 to PyPI
-      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
+      #if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
       run: >-
         poetry config pypi-token.pypi ${{ secrets.pypi_token }}
         poetry publish
