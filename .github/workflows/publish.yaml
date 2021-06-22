@@ -1,6 +1,5 @@
-name: PyPI Release
+name: PyPI Release with Poetry
 
-# https://help.github.com/en/actions/reference/events-that-trigger-workflows
 on:
   # Trigger the workflow on push or pull request,
   push:
@@ -10,7 +9,6 @@ on:
     types:
       - created
       - edited
-# based on https://github.com/pypa/gh-action-pypi-publish
 
 jobs:
   build:
@@ -26,19 +24,13 @@ jobs:
         python -m pip install --user --upgrade setuptools wheel
     - name: Build
       run: >-
-        python setup.py sdist bdist_wheel
-
-#     - name: Publish to Test PyPI
-#       if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
-#       uses: pypa/gh-action-pypi-publish@master
-#       with:
-#         user: __token__
-#         password: ${{ secrets.test_pypi_password }}
-#         repository_url: https://test.pypi.org/legacy/
+        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python - 
+        source $HOME/.poetry/env
+        poetry lock
+        poetry build
 
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
-      uses: pypa/gh-action-pypi-publish@master
-      with:
-        user: __token__
-        password: ${{ secrets.pypi_password }}
+      run: >-
+        poetry config pypi-token.pypi ${{ secrets.pypi_token }}
+        poetry publish
