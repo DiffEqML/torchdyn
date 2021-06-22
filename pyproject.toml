@@ -12,8 +12,6 @@ packages = [
 python = "^3.8"
 torch = "^1.8.1"
 torchdiffeq = "*"
-torchsde = { git = "https://github.com/google-research/torchsde.git" }
-torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }
 sklearn = "*"
 pytorch-lightning = "*"
 torchvision = "*"
@@ -28,6 +26,8 @@ pytest = "*"
 pytest-cov = "*"
 papermill = "*"
 poethepoet = "^0.10.0"
+torchsde = { git = "https://github.com/google-research/torchsde.git" }
+torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }
 
 [tool.poe.tasks]
 force-cuda11 = "python -m pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchaudio===0.9.0 -f https://download.pytorch.org/whl/torch_stable.html"
