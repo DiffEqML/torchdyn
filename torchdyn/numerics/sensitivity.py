@@ -2,7 +2,7 @@ from inspect import getfullargspec
 import torch
 from torch.autograd import Function, grad
 from torchcde import NaturalCubicSpline, natural_cubic_coeffs
-from torchdyn.numerics.odeint import backward_adjoint_odeint, odeint
+from torchdyn.numerics.odeint import odeint
 
 
 # TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`

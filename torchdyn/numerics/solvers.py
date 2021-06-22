@@ -173,9 +173,7 @@ class ODE23s(SolverTemplate):
     def __init__(self):
         raise NotImplementedError
 
-class HyperEuler(SolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
+
 
 
 class MShootingSolverTemplate(nn.Module):

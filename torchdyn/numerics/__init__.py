@@ -17,3 +17,4 @@ from torchdyn.numerics.odeint import odeint, odeint_symplectic
 
 __all__ =   ['odeint', 'odeint_symplectic', 'Euler', 'RungeKutta4', 'DormandPrince45', 'Tsitouras45',
             'AsynchronousLeapfrog', 'HyperEuler']
+            

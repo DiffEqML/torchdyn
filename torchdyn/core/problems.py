@@ -11,7 +11,7 @@ from torchdyn.numerics.odeint import odeint, str_to_solver
 
 
 class ODEProblem(nn.Module):
-    def __init__(self, vector_field, order:int=1, solver:Union[str, nn.Module], atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
+    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
                  solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, seminorm:bool=False):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 

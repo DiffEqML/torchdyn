@@ -235,7 +235,6 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
 	while t < t_span[-1]:
-		print(t)
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
@@ -251,7 +250,6 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
 		error_ratio = norm(error / error_tol)
 		accept_step = error_ratio <= 1
-		print(error_ratio)
 		if accept_step:
 			t, x = t + dt, x_new
 			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
