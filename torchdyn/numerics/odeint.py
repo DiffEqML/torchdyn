@@ -85,8 +85,9 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
-def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=4, maxiter=100):
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
 		solver = str_to_ms_solver(solver)
+		x, t_span = solver.sync_device_dtype(x, t_span)
 		# first-guess B0 of shooting parameters
 		if B0 is None: 
 			_, B0 = odeint(f, x, t_span, solver.coarse_method)

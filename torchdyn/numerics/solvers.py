@@ -8,7 +8,7 @@
 import torch
 import torch.nn as nn
 from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
-#from torchdyn.numerics.odeint import odeint, _fixed_odeint
+
 
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
@@ -63,7 +63,7 @@ class RungeKutta4(SolverTemplate):
         self.tableau = construct_rk4(self.dtype)
 
     def step(self, f, x, t, dt, k1=None):
-        c, a, bsol, berr = self.tableau
+        c, a, bsol, _ = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * (a[0] * k1))
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
@@ -209,7 +209,7 @@ class MSZero(MShootingSolverTemplate):
 
     # TODO (qol): extend to time-variant ODEs by using shifted_odeint
     def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
-        dt, n_subinterv = t_span[1] - t_span[0], len(t_span) - 1
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span)
         sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
         i = 0
         while i <= maxiter:
