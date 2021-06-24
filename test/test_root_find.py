@@ -13,5 +13,5 @@ def test_root_iteration(method, func, seq):
     root, log = root_find(func, z0,
                          alpha=1, search_method='armijo',
                          f_tol=1e-3, f_rtol=1e-3, x_tol=1e-2, x_rtol=1e-2,
-                         maxiters=1000, method=method, seq=seq)
+                         maxiters=1000, method=method)
     assert (func(root) <= 1e-2).all()
