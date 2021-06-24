@@ -164,7 +164,6 @@ class MShootingSolverTemplate(nn.Module):
 
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
-        device = x.device
         x, t_span = self.coarse_method.sync_device_dtype(x, t_span)
         x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
         return x, t_span
@@ -199,8 +198,13 @@ class MSDirect(MShootingSolverTemplate):
 
 
 class MSZero(MShootingSolverTemplate):
-    """Multiple Shooting parareal solver"""
     def __init__(self, coarse_method='euler', fine_method='rk4'):
+        """Multiple shooting solver using Parareal updates (zero-order approximation of the Jacobian)
+
+        Args:
+            coarse_method (str, optional): [description]. Defaults to 'euler'.
+            fine_method (str, optional): [description]. Defaults to 'rk4'.
+        """
         super().__init__(coarse_method, fine_method)
 
     # TODO (qol): extend to time-variant ODEs by using shifted_odeint
@@ -208,9 +212,9 @@ class MSZero(MShootingSolverTemplate):
         dt, n_subinterv = t_span[1] - t_span[0], len(t_span) - 1
         sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
         i = 0
-        while i < maxiter:
+        while i <= maxiter:
             i += 1
-            B_coarse =odeint_func(f, B[i-1:], sub_t_span, solver=self.coarse_method)[1][-1]
+            B_coarse = odeint_func(f, B[i-1:], sub_t_span, solver=self.coarse_method)[1][-1]
             B_fine = odeint_func(f, B[i-1:], sub_t_span, solver=self.fine_method)[1][-1]
             B_out = torch.zeros_like(B)
             B_out[:i] = B[:i]
