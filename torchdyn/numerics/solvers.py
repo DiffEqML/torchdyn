@@ -178,23 +178,9 @@ class MSDirect(MShootingSolverTemplate):
         super().__init__(coarse_method, fine_method)
 
     def root_solve(self, f, x, t_span, B):
-        i = 0
-        while i <= self.maxiter:
-            i += 1
-            B_fine, V_fine = self.forward_sensitivity(B[i-1:], self.sub_t_span,
-                                                      method=self.fine_method,
-                                                      rtol=self.fine_rtol,
-                                                      atol=self.fine_atol)
-            B_fine, V_fine = B_fine[-1], V_fine[-1]
-
-            B_out = torch.zeros_like(B)
-            B_out[:i] = B[:i]
-            B_in = B[i-1]
-            for m in range(i, self._n_sub):
-                B_in = B_fine[m-i] + torch.einsum('bij, bj -> bi', V_fine[m-i], B_in - B[m-1])
-                B_out[m] = B_in
-            B = B_out
-        return B
+        raise NotImplementedError("Waiting for `functorch` to be merged in the stable version of Pytorch"
+                                  "we need their vjp for efficient implementation of forward sensitivity"
+                                  "Refer to DiffEqML/diffeqml-research/multiple-shooting-layers for a manual implementation")
 
 
 class MSZero(MShootingSolverTemplate):
