@@ -168,33 +168,19 @@ class MShootingSolverTemplate(nn.Module):
         x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
         return x, t_span
 
-    def root_solve(self, f, x, t_span, B):
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
         pass
 
 
-class MSDirect(MShootingSolverTemplate):
+class MSForward(MShootingSolverTemplate):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         super().__init__(coarse_method, fine_method)
 
     def root_solve(self, f, x, t_span, B):
-        i = 0
-        while i <= self.maxiter:
-            i += 1
-            B_fine, V_fine = self.forward_sensitivity(B[i-1:], self.sub_t_span,
-                                                      method=self.fine_method,
-                                                      rtol=self.fine_rtol,
-                                                      atol=self.fine_atol)
-            B_fine, V_fine = B_fine[-1], V_fine[-1]
-
-            B_out = torch.zeros_like(B)
-            B_out[:i] = B[:i]
-            B_in = B[i-1]
-            for m in range(i, self._n_sub):
-                B_in = B_fine[m-i] + torch.einsum('bij, bj -> bi', V_fine[m-i], B_in - B[m-1])
-                B_out[m] = B_in
-            B = B_out
-        return B
+        raise NotImplementedError("Waiting for `functorch` to be merged in the stable version of Pytorch"
+                                  "we need their vjp for efficient implementation of forward sensitivity"
+                                  "Refer to DiffEqML/diffeqml-research/multiple-shooting-layers for a manual implementation")
 
 
 class MSZero(MShootingSolverTemplate):
@@ -227,7 +213,7 @@ class MSZero(MShootingSolverTemplate):
         return B
 
 
-class MSRoot(MShootingSolverTemplate):
+class MSBackward(MShootingSolverTemplate):
     """Neural Multiple Shooting (nMS) layer solved via quasi-newton"""
     def __init__(self, vf, t_span, maxiter,
                  coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
@@ -235,12 +221,12 @@ class MSRoot(MShootingSolverTemplate):
                          maxiter=maxiter, backward_sensitivity=backward_sensitivity,
                          func_forward='newton', *args, **kwargs)
 
-    def _forward_autograd(self, z, B):
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
         i = 0
         B = B.requires_grad_(True)
         while i <= self.maxiter:
             i += 1
-            B_fine = odeint(self.vf, B, self.sub_t_span, method=self.fine_method,
+            B_fine = odeint_func(self.vf, B, self.sub_t_span, method=self.fine_method,
                             rtol=self.fine_rtol, atol=self.fine_atol)[-1]
 
             B_out = torch.zeros_like(B)
@@ -262,7 +248,8 @@ SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKu
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
-MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero}
+MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
+                  'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward}
 
 
 def str_to_solver(solver_name, dtype=torch.float32):
