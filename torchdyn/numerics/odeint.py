@@ -85,14 +85,16 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
-def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
-					 fine_steps=4, B_initialization='manual', maxiter=100):
-		coarse_solver, fine_solver = str_to_ms_solver(solver)
-		# initialize solver
-		solver = solver()
-
-		B = solver.root_solve(f, x, t_span, B)
-		return B, t_span
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=4, maxiter=100):
+		solver = str_to_ms_solver(solver)
+		# first-guess B0 of shooting parameters
+		if B0 is None: 
+			_, B0 = odeint(f, x, t_span, solver.coarse_method)
+		# determine which odeint to apply to MS solver
+		odeint_func = _fixed_odeint
+		###
+		B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
+		return t_span, B
 
 
 # TODO: check why for some tols `min(....)` becomes empty in internal event finder
@@ -267,8 +269,7 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
-		# TODO: insert safety mechanism for small or large steps
-		# dt = max(dt, torch.tensor(1e-5).to(dt))
+		# TODO: insert safety mechanism for num. steps (max)
 	return torch.cat(eval_times), torch.stack(sol)
 
 
@@ -291,7 +292,7 @@ def _fixed_odeint(f, x, t_span, solver):
 		_, _, x = solver.step(f, x, t, dt)
 		sol.append(x)
 		t = t + dt
-		dt = t_span[steps] - t
+		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
 	return t_span, torch.stack(sol)
 

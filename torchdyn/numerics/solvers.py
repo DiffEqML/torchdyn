@@ -8,7 +8,7 @@
 import torch
 import torch.nn as nn
 from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
-
+#from torchdyn.numerics.odeint import odeint, _fixed_odeint
 
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
@@ -157,9 +157,17 @@ class ImplicitEuler(SolverTemplate):
 
 
 class MShootingSolverTemplate(nn.Module):
-    def __init__(self, maxiter, coarse_method='euler', fine_method='rk4'):
+    def __init__(self, coarse_method, fine_method):
         super().__init__()
-        self.coarse_method, self.fine_method = coarse_method, fine_method
+        if type(coarse_method) == str: self.coarse_method = str_to_solver(coarse_method)
+        if type(fine_method) == str: self.fine_method = str_to_solver(fine_method)
+
+    def sync_device_dtype(self, x, t_span):
+        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
+        device = x.device
+        x, t_span = self.coarse_method.sync_device_dtype(x, t_span)
+        x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
+        return x, t_span
 
     def root_solve(self, f, x, t_span, B):
         pass
@@ -167,11 +175,8 @@ class MShootingSolverTemplate(nn.Module):
 
 class MSDirect(MShootingSolverTemplate):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
-    def __init__(self, vf, t_span, maxiter,
-                 coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
-        super().__init__(vf=vf, t_span=t_span, coarse_method=coarse_method, fine_method=fine_method,
-                         maxiter=maxiter, backward_sensitivity=backward_sensitivity,
-                         func_forward='direct', *args, **kwargs)
+    def __init__(self, coarse_method='euler', fine_method='rk4'):
+        super().__init__(coarse_method, fine_method)
 
     def root_solve(self, f, x, t_span, B):
         i = 0
@@ -195,41 +200,65 @@ class MSDirect(MShootingSolverTemplate):
 
 class MSZero(MShootingSolverTemplate):
     """Multiple Shooting parareal solver"""
+    def __init__(self, coarse_method='euler', fine_method='rk4'):
+        super().__init__(coarse_method, fine_method)
+
+    # TODO (qol): extend to time-variant ODEs by using shifted_odeint
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span) - 1
+        sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
+        i = 0
+        while i < maxiter:
+            i += 1
+            B_coarse =odeint_func(f, B[i-1:], sub_t_span, solver=self.coarse_method)[1][-1]
+            B_fine = odeint_func(f, B[i-1:], sub_t_span, solver=self.fine_method)[1][-1]
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i-1]
+            for m in range(i, n_subinterv):
+                B_in = odeint_func(f, B_in, sub_t_span, solver=self.coarse_method)[1][-1]
+                B_in = B_in - B_coarse[m-i] + B_fine[m-i]
+                B_out[m] = B_in
+            B = B_out
+        return B
+
+
+class MSRoot(MShootingSolverTemplate):
+    """Neural Multiple Shooting (nMS) layer solved via quasi-newton"""
     def __init__(self, vf, t_span, maxiter,
                  coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
         super().__init__(vf=vf, t_span=t_span, coarse_method=coarse_method, fine_method=fine_method,
                          maxiter=maxiter, backward_sensitivity=backward_sensitivity,
-                         func_forward='zero', *args, **kwargs)
+                         func_forward='newton', *args, **kwargs)
 
-    def root_solve(self, f, x, t_span, B):
+    def _forward_autograd(self, z, B):
         i = 0
-        while i < self.maxiter:
+        B = B.requires_grad_(True)
+        while i <= self.maxiter:
             i += 1
-            B_coarse = odeint(self.vf, B[i-1:], self.sub_t_span, method=self.coarse_method,
-                              rtol=self.coarse_rtol, atol=self.coarse_atol)[-1]
-            B_fine = odeint(self.vf, B[i-1:], self.sub_t_span, method=self.fine_method,
+            B_fine = odeint(self.vf, B, self.sub_t_span, method=self.fine_method,
                             rtol=self.fine_rtol, atol=self.fine_atol)[-1]
 
             B_out = torch.zeros_like(B)
             B_out[:i] = B[:i]
             B_in = B[i-1]
             for m in range(i, self._n_sub):
-                B_in = odeint(self.vf, B_in, self.sub_t_span, method=self.coarse_method,
-                              rtol=self.coarse_rtol, atol=self.coarse_atol)[-1]
-                B_in = B_in - B_coarse[m-i] + B_fine[m-i]
+                # instead of jvps here the full jacobian can be computed and the vector products
+                # which involve `B_in` can be performed. Trading memory ++ for speed ++
+                J_blk = torch.autograd.grad(B_fine[m-1], B, B_in - B[m-1], retain_graph=True)[0][m-1]
+                B_in = B_fine[m-1] + J_blk
                 B_out[m] = B_in
+            del B # manually free graph
             B = B_out
         return B
 
-    
+
 SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
-MS_SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
-               'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
-               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero}
 
 
 def str_to_solver(solver_name, dtype=torch.float32):
@@ -241,4 +270,4 @@ def str_to_solver(solver_name, dtype=torch.float32):
 def str_to_ms_solver(solver_name, dtype=torch.float32):
     "Returns MSSolver class corresponding to a given string."
     solver = MS_SOLVER_DICT[solver_name]
-    return solver
+    return solver()

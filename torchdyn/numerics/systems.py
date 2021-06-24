@@ -4,6 +4,19 @@ import torch.distributions
 from torch.distributions import Uniform
 
 
+class Lorenz(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.p = nn.Linear(1,1)
+    
+    def forward(self, t, x):
+        x1, x2, x3 = x[...,:1], x[...,1:2], x[...,2:]
+        dx1 = 10 * (x2 - x1)
+        dx2 = x1 * (28 - x3) - x2
+        dx3 = x1 * x2 - 8/3 * x3
+        return torch.cat([dx1, dx2, dx3], -1)
+
+        
 class ODEProblem2(nn.Module):
     def __init__(self):
         super().__init__()
