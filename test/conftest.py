@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torchdyn.nn import DataControl, Augmenter
 import pytorch_lightning as pl
-from torchdyn.datasets import ToyDataset
+#from torchdyn.datasets import ToyDataset
 from torch.utils.data import TensorDataset, DataLoader
 import pytest
 

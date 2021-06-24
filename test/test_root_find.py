@@ -5,10 +5,8 @@ from .conftest import *
 
 @pytest.mark.parametrize('func', [quad, cubic, ackley])
 @pytest.mark.parametrize('method', ['broyden'])
-@pytest.mark.parametrize('seq', ['True', 'False'])
-def test_root_iteration(method, func, seq):
-    if seq: z0 = 0.1 * torch.randn(2, 4, 2)
-    else: z0 = 0.1 * torch.randn(4, 2)
+def test_root_iteration(method, func):
+    z0 = 0.1 * torch.randn(4, 2)
 
     root, log = root_find(func, z0,
                          alpha=1, search_method='armijo',
