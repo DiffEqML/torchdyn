@@ -2,6 +2,7 @@ import torch
 from torch import einsum
 from torch import norm
 import numpy as np
+from .utils import RootLogger
 
 ############################
 ### ROOT FINDING SOLVERS ###
@@ -16,7 +17,7 @@ class Broyden:
     def __init__(self):
         pass
 
-    def step(self, g, z0, J_inv, geval_old, alpha=1, seq=False, **kwargs):
+    def step(self, g, z0, J_inv, geval_old, alpha=1, **kwargs):
         dz = einsum('...o,...io->...i', geval_old, J_inv)
         z = z0 - alpha * dz
         geval = g(z)
@@ -72,7 +73,7 @@ class Newton():
     type = 'Quasi-Newton'
 
     @staticmethod
-    def step(g, geval_old, z0, J_inv, alpha=1, seq=False, **kwargs):
+    def step(g, geval_old, z0, J_inv, alpha=1, **kwargs):
         raise NotImplementedError
 
 class Chord():
@@ -80,10 +81,13 @@ class Chord():
     type = 'Quasi-Newton'
 
     @staticmethod
-    def step(g, geval_old, z0, J_inv, alpha=1, seq=False, **kwargs):
+    def step(g, geval_old, z0, J_inv, alpha=1, **kwargs):
         raise NotImplementedError
-#########################
+
+
+##############################
 ### LINE SEARCH ALGORITHMS ###
+##############################
 def _safe_norm(v):
     if not torch.isfinite(v).all():
         return np.inf
@@ -225,47 +229,41 @@ class TerminationCondition(object):
 
         return 0
 
-import torch
-from ..vmap_utils import *
-from .termination import TerminationCondition
-from .iteration import Chord, Newton, Broyden, BroydenBad, BroydenFull, BFGS
-from .search import *
+#################
+### ROOT FIND ###
+#################
 
 SEARCH_METHODS = {'naive': NaiveSearch, 'armijo': LineSearchArmijo}
-METHODS = {'newton': Newton, 'chord': Chord,
-           'broyden_fast': BroydenBad, 'broyden': BroydenFull(),
-           'bfgs': BFGS}
+ROOT_SOLVER_DICT = {'broyden_fast': BroydenBad, 'broyden': BroydenFull(), 'newton': Newton, 'chord': Chord}
 
 RETURN_CODES = {1: 'convergence',
                 2: 'total condition'}
 
+def batch_jacobian(func, x):
+    "Batch Jacobian for 2D inputs of dimensions `bs, dims`"
+    return torch.stack([jacobian(func, el) for el in x], 0)
 
 def root_find(g, z, alpha=0.1, f_tol=1e-2, f_rtol=1e-1, x_tol=1e-2, x_rtol=1, maxiters=100,
-              method='newton', search_method='naive', seq=False, verbose=True):
-    assert method in METHODS, f'{method} not supported'
+              method='broyden', search_method='naive', verbose=True):
+    assert method in ROOT_SOLVER_DICT, f'{method} not supported'
+    assert search_method in SEARCH_METHODS, f'{search_method} not supported'
 
     tc = TerminationCondition(f_tol=f_tol, f_rtol=f_rtol, x_tol=x_tol, x_rtol=x_rtol)
     logger = RootLogger()
-    solver = METHODS[method]
+    solver = ROOT_SOLVER_DICT[method]
 
     # first evaluation of g(z)
     geval = g(z)
 
     # initialize inverse jacobian J^-1g(z)
-    if seq:
-        J = double_batch_jacobian(g, z)
-        J_inv = double_batch_pinverse(J)
-        dz = torch.einsum('...io, ...o -> ...i', J_inv, geval)
-    else:
-        J_inv = batch_jacobian(g, z).pinverse()
-
+    J_inv = batch_jacobian(g, z).pinverse()
 
     iteration = 0
     while iteration <= maxiters:
         iteration += 1
 
         # solver step
-        z, dz, geval, J_inv = solver.step(g=g, z0=z, J_inv=J_inv, geval_old=geval, alpha=alpha, seq=seq)
+        z, dz, geval, J_inv = solver.step(g=g, z0=z, J_inv=J_inv, geval_old=geval, alpha=alpha)
 
         # line search subroutines
         line_searcher = SEARCH_METHODS[search_method](g, geval, dz, z)
