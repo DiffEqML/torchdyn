@@ -102,3 +102,20 @@ class StochasticEventCallback(nn.Module):
     def jump_map(self, t, x):
         raise NotImplementedError
         
+class RootLogger(object):
+    def __init__(self):
+        self.data = {'geval': [], 'z': [], 'dz': [], 'iteration': [], 'alpha': [], 'phi': []}
+
+    def log(self, logged_data):
+        self.data.update(**logged_data)
+
+    def permanent_log(self, logged_data):
+        for key in self.data.keys():
+            self.data.update({key: list(self.data[key] + logged_data[key])})
+
+
+class WrapFunc(nn.Module):
+    def __init__(self, f):
+        super().__init__()
+        self.f = f
+    def forward(self, t, x): return self.f(x)

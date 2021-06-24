@@ -1,7 +1,5 @@
 import pytest
-import sys; sys.path.append('..')
-from src.systems import *
-from src.root.solve import root_find
+from torchdyn.numerics.root import *
 from .conftest import *
 
 
