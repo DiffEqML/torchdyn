@@ -92,6 +92,7 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 		if B0 is None: 
 			_, B0 = odeint(f, x, t_span, solver.coarse_method)
 		# determine which odeint to apply to MS solver
+		# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
 		odeint_func = _fixed_odeint
 		###
 		B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
