@@ -214,25 +214,28 @@ class MSZero(MShootingSolverTemplate):
 
 
 class MSBackward(MShootingSolverTemplate):
-    """Neural Multiple Shooting (nMS) layer solved via quasi-newton"""
-    def __init__(self, vf, t_span, maxiter,
-                 coarse_method='euler', fine_method='rk4', backward_sensitivity='adjoint', *args, **kwargs):
-        super().__init__(vf=vf, t_span=t_span, coarse_method=coarse_method, fine_method=fine_method,
-                         maxiter=maxiter, backward_sensitivity=backward_sensitivity,
-                         func_forward='newton', *args, **kwargs)
+    def __init__(self, coarse_method='euler', fine_method='rk4'):
+        """Multiple shooting solver using discrete adjoints for the Jacobian
+
+        Args:
+            coarse_method (str, optional): [description]. Defaults to 'euler'.
+            fine_method (str, optional): [description]. Defaults to 'rk4'.
+        """
+        super().__init__(coarse_method, fine_method)
 
     def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span)
+        sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
         i = 0
         B = B.requires_grad_(True)
-        while i <= self.maxiter:
+        while i <= maxiter:
+            print(i)
             i += 1
-            B_fine = odeint_func(self.vf, B, self.sub_t_span, method=self.fine_method,
-                            rtol=self.fine_rtol, atol=self.fine_atol)[-1]
-
+            B_fine = odeint_func(f, B[i-1:], sub_t_span, solver=self.fine_method)[1][-1]
             B_out = torch.zeros_like(B)
             B_out[:i] = B[:i]
             B_in = B[i-1]
-            for m in range(i, self._n_sub):
+            for m in range(i, n_subinterv):
                 # instead of jvps here the full jacobian can be computed and the vector products
                 # which involve `B_in` can be performed. Trading memory ++ for speed ++
                 J_blk = torch.autograd.grad(B_fine[m-1], B, B_in - B[m-1], retain_graph=True)[0][m-1]

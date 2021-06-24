@@ -45,7 +45,7 @@ class ODEProblem(nn.Module):
             if 't' not in getfullargspec(vector_field.forward).args:
                 print("Your vector field callable (nn.Module) should have both time `t` and state `x` as arguments, "
                     "we've wrapped it for you.")
-                vector_field = DEFuncBase(vector_field)
+                vector_field = DEFuncBase(vector_field, has_time_arg=False)
         else: 
             # argspec for lambda functions needs to be done on the function itself
             if 't' not in getfullargspec(vector_field).args:
