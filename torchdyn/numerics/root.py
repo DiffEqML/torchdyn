@@ -235,7 +235,7 @@ class TerminationCondition(object):
 #################
 
 SEARCH_METHODS = {'naive': NaiveSearch, 'armijo': LineSearchArmijo}
-ROOT_SOLVER_DICT = {'broyden_fast': BroydenBad, 'broyden': BroydenFull(), 'newton': Newton, 'chord': Chord}
+ROOT_SOLVER_DICT = {'broyden_fast': BroydenBad(), 'broyden': BroydenFull(), 'newton': Newton, 'chord': Chord}
 
 RETURN_CODES = {1: 'convergence',
                 2: 'total condition'}
