@@ -44,11 +44,8 @@ def init_step(f, f0, x0, t0, order, atol, rtol):
 
 @torch.no_grad()
 def adapt_step(dt, error_ratio, safety, min_factor, max_factor, order):
-    if error_ratio == 0:
-        return dt * max_factor
-    if error_ratio < 1:
-        min_factor = torch.ones((), dtype=dt.dtype, device=dt.device)
-    error_ratio = error_ratio.type_as(dt)
+    if error_ratio == 0: return dt * max_factor
+    if error_ratio < 1: min_factor = torch.ones_like(dt)
     exponent = torch.tensor(order, dtype=dt.dtype, device=dt.device).reciprocal()
     factor = torch.min(max_factor, torch.max(safety / error_ratio ** exponent, min_factor))
     return dt * factor
