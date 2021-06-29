@@ -279,13 +279,40 @@ class MSBackward(MShootingSolverTemplate):
 
 
 class ParallelImplicitEuler(MShootingSolverTemplate):
-    def __init__(self, coarse_method='euler', fine_method=None):
+    def __init__(self, coarse_method='euler', fine_method='euler'):
         """Parallel Implicit Eurler Method
         """
         super().__init__(coarse_method, fine_method)
+        self.solver = torch.optim.LBFGS
+        self.max_iters = 200
+        self.lr = 0.1
 
+    def sync_device_dtype(self, x, t_span):
+        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
+        return x, t_span
+
+    @staticmethod
+    def _residual(f, B, t_span):
+        dt = t_span[1:] - t_span[:-1]
+        F = f(0., B[1:])
+        return torch.sum((B[1:] - B[:-1] - dt[:, None, None] * F) ** 2)
+
+    # TODO (qol): extend to time-variant ODEs by model parallelization
     def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
-        raise NotImplementedError
+        B = B.clone()
+        B = nn.Parameter(data=B)
+        solver = self.solver([B], lr=1, max_iter=self.max_iters, max_eval=10 * self.max_iters,
+                             tolerance_grad=1.e-12, tolerance_change=1.e-12, history_size=100,
+                             line_search_fn='strong_wolfe')
+
+        def closure():
+            solver.zero_grad()
+            residual = ParallelImplicitEuler._residual(f, B, t_span)
+            B.grad, = torch.autograd.grad(residual, B, only_inputs=True, allow_unused=False)
+            return residual
+
+        solver.step(closure)
+        return B
 
 
 SOLVER_DICT = {'euler': Euler,
@@ -297,7 +324,8 @@ SOLVER_DICT = {'euler': Euler,
 
 
 MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
-                  'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward}
+                  'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward,
+                  'ieuler': ParallelImplicitEuler, 'parallel-implicit-euler': ParallelImplicitEuler}
 
 
 def str_to_solver(solver_name, dtype=torch.float32):
