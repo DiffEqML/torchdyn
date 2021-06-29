@@ -236,12 +236,12 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 		[type]: [description]
 	
 	"""
-	#use_interp = True
-	#print(use_interp)
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
 	while t < T:
+		print(dt)
+		#print(t, dt, T)
 		if t + dt > T: 
 			dt = T - t
 		############### checkpointing ###############################
