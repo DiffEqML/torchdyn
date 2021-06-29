@@ -64,8 +64,9 @@ class BroydenBad(Broyden):
 
     def update_jacobian(self, Δg, Δz, J_inv, **kwargs):
         num = Δz - torch.einsum('...io, ...o -> ...i', J_inv, Δg)
-        den = torch.norm(Δg, p=2, dim=-1, keepdim=True)**2
-        ΔJ_inv = torch.einsum('...i, ...o -> ...io', num, Δg) / den[..., None, :]
+        den = torch.sum(Δg**2, dim=1, keepdim=True) #torch.norm(Δg, p=2, dim=-1, keepdim=True)**2
+        print(Δg)
+        ΔJ_inv = torch.einsum('...i, o... -> ...io', num, Δg.T) / den[..., None]
         J_inv = J_inv + ΔJ_inv
         return J_inv
 
@@ -234,7 +235,7 @@ class TerminationCondition(object):
 ### ROOT FIND ###
 #################
 
-SEARCH_METHODS = {'naive': NaiveSearch, 'armijo': LineSearchArmijo}
+SEARCH_METHODS = {'naive': NaiveSearch, 'armijo': LineSearchArmijo, 'none': None}
 ROOT_SOLVER_DICT = {'broyden_fast': BroydenBad(), 'broyden': BroydenFull(), 'newton': Newton, 'chord': Chord}
 
 RETURN_CODES = {1: 'convergence',
@@ -267,8 +268,9 @@ def root_find(g, z, alpha=0.1, f_tol=1e-2, f_rtol=1e-1, x_tol=1e-2, x_rtol=1, ma
         z, dz, geval, J_inv = solver.step(g=g, z0=z, J_inv=J_inv, geval_old=geval, alpha=alpha)
 
         # line search subroutines
-        line_searcher = SEARCH_METHODS[search_method](g, geval, dz, z)
-        alpha, phi = line_searcher.search()
+        if SEARCH_METHODS[search_method] is not None:
+            line_searcher = SEARCH_METHODS[search_method](g, geval, dz, z)
+            alpha, phi = line_searcher.search()
 
         # logging
         if verbose and logger:
