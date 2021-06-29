@@ -36,10 +36,11 @@ class BroydenFull(Broyden):
 
     def __init__(self):
         super().__init__()
+        self.ε = 1e-6
 
     def update_jacobian(self, Δg, Δz, J_inv, **kwargs):
         num = Δz - einsum('...io, ...o -> ...i', J_inv, Δg)
-        den = einsum('...i, ...io, ...o -> ...', Δz, J_inv, Δg)
+        den = einsum('...i, ...io, ...o -> ...', Δz, J_inv, Δg) + self.ε
         prod = einsum('...i, ...io -> ...o', Δz, J_inv)
         ΔJ_inv = einsum('...i, ...o -> ...io', num / den[..., None], prod)
         J_inv = J_inv + ΔJ_inv
@@ -61,11 +62,11 @@ class BroydenBad(Broyden):
 
     def __init__(self):
         super().__init__()
+        self.Δg_tol = 1e-6
 
     def update_jacobian(self, Δg, Δz, J_inv, **kwargs):
         num = Δz - torch.einsum('...io, ...o -> ...i', J_inv, Δg)
-        den = torch.sum(Δg**2, dim=1, keepdim=True) #torch.norm(Δg, p=2, dim=-1, keepdim=True)**2
-        print(Δg)
+        den = torch.sum(Δg**2, dim=1, keepdim=True) + self.Δg_tol
         ΔJ_inv = torch.einsum('...i, o... -> ...io', num, Δg.T) / den[..., None]
         J_inv = J_inv + ΔJ_inv
         return J_inv
