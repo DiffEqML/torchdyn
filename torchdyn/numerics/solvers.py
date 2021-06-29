@@ -149,11 +149,32 @@ class Tsitouras45(SolverTemplate):
         x_err = x + dt * (berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7)
         return k7, x_sol, x_err
 
-
 class ImplicitEuler(SolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=1)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
+        self.n_iters = 200
+        self.f_tol = 1e-12
+        self.lr = 0.1
 
+    @staticmethod
+    def _residual(f, x, t, dt, x_sol):
+        f_sol = f(t, x_sol)
+        return torch.sum((x_sol - x - dt*f_sol)**2)
+
+    def step(self, f, x, t, dt, k1=None):
+        x_sol = x.clone()
+        x_sol = nn.Parameter(data=x_sol)
+        opt = torch.optim.Adam((x_sol,), self.lr)
+        for i in range(self.n_iters):
+            residual = ImplicitEuler._residual(f, x, t, dt, x_sol)
+            if residual < self.f_tol:
+                break
+            residual.backward()
+            opt.step()
+            opt.zero_grad()
+        return None, None, x_sol
 
 
 class MShootingSolverTemplate(nn.Module):
@@ -246,9 +267,11 @@ class MSBackward(MShootingSolverTemplate):
         return B
 
 
-SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
+SOLVER_DICT = {'euler': Euler,
+               'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
+               'ieuler': ImplicitEuler, 'implicit_euler': ImplicitEuler,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 

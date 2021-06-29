@@ -80,8 +80,8 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 				k1 = f(t, pos)
 				dt = init_step(f, k1, pos, t, solver.order, atol, rtol)
 			else:
-				 k1 = f(t, x)
-				 dt = init_step(f, k1, x, t, solver.order, atol, rtol)	
+				k1 = f(t, x)
+				dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
