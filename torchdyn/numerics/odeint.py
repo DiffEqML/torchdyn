@@ -11,7 +11,7 @@ from torch import Tensor
 import torch.nn as nn
 
 from torchdyn.numerics.solvers import AsynchronousLeapfrog, str_to_solver, str_to_ms_solver
-from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
+from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
@@ -191,7 +191,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 			################# compute error #############################
 			error = x_new - x_app
 			error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-			error_ratio = norm(error / error_tol)
+			error_ratio = hairer_norm(error / error_tol)
 			accept_step = error_ratio <= 1
 
 			if accept_step:
@@ -257,10 +257,10 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 		################# compute error #############################
 		if seminorm[0] == True: state_dim = seminorm[1]
 		else: state_dim = len(x_new)
-		error = x_new[:state_dim] - x_app[:state_dim]
-		print(t, dt, error.abs().mean())
-		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-		error_ratio = norm(error / error_tol)
+		error = (x_new[:state_dim] - x_app[:state_dim]).abs()
+		print(t, dt, error.max(), x_new[0], x_app[0])
+		error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+		error_ratio = hairer_norm(error_scaled)
 		accept_step = error_ratio <= 1
 
 		if accept_step:

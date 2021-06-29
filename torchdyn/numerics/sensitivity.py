@@ -7,6 +7,7 @@ from torchdyn.numerics.odeint import odeint
 
 
 # TODO: optimize and make conditional gradient computations w.r.t end times
+# TODO: link `seminorm` arg from `ODEProblem`
 def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, 
                             solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
@@ -52,7 +53,8 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
             dLdt[-1] = λtT
             for i in range(len(t_sol) - 1, 0, -1):
                 t_adj_sol, A = odeint(adjoint_dynamics, A, t_sol[i - 1:i + 1].flip(0), 
-                                      solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint)
+                                      solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint,
+                                      seminorm=(True, xT_nel+λT_nel))
                 # prepare adjoint state for next interval
 
                 #TODO: reuse vf_eval for dLdt calculations
