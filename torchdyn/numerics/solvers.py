@@ -167,7 +167,6 @@ class ImplicitEuler(SolverTemplate):
         self.stepping_class = 'fixed'
         self.opt = torch.optim.LBFGS
         self.max_iters = 200
-        self.f_tol = 1e-12
         self.lr = 0.1
 
     @staticmethod
