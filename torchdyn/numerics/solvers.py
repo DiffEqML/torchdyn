@@ -167,7 +167,6 @@ class ImplicitEuler(SolverTemplate):
         self.stepping_class = 'fixed'
         self.opt = torch.optim.LBFGS
         self.max_iters = 200
-        self.lr = 0.1
 
     @staticmethod
     def _residual(f, x, t, dt, x_sol):
@@ -285,17 +284,18 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
         super().__init__(coarse_method, fine_method)
         self.solver = torch.optim.LBFGS
         self.max_iters = 200
-        self.lr = 0.1
 
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
         return x, t_span
 
     @staticmethod
-    def _residual(f, B, t_span):
+    def _residual(f, x, B, t_span):
         dt = t_span[1:] - t_span[:-1]
         F = f(0., B[1:])
-        return torch.sum((B[1:] - B[:-1] - dt[:, None, None] * F) ** 2)
+        residual = torch.sum((B[2:] - B[1:-1] - dt[1:, None, None] * F[1:]) ** 2)
+        residual += torch.sum((B[1] - x - dt[0] * F[0]) ** 2)
+        return residual
 
     # TODO (qol): extend to time-variant ODEs by model parallelization
     def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
@@ -307,7 +307,7 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
 
         def closure():
             solver.zero_grad()
-            residual = ParallelImplicitEuler._residual(f, B, t_span)
+            residual = ParallelImplicitEuler._residual(f, x, B, t_span)
             B.grad, = torch.autograd.grad(residual, B, only_inputs=True, allow_unused=False)
             return residual
 
