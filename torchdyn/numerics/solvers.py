@@ -165,7 +165,8 @@ class ImplicitEuler(SolverTemplate):
         super().__init__(order=1)
         self.dtype = dtype
         self.stepping_class = 'fixed'
-        self.n_iters = 200
+        self.opt = torch.optim.LBFGS
+        self.max_iters = 200
         self.f_tol = 1e-12
         self.lr = 0.1
 
@@ -177,14 +178,14 @@ class ImplicitEuler(SolverTemplate):
     def step(self, f, x, t, dt, k1=None):
         x_sol = x.clone()
         x_sol = nn.Parameter(data=x_sol)
-        opt = torch.optim.Adam((x_sol,), self.lr)
-        for i in range(self.n_iters):
-            residual = ImplicitEuler._residual(f, x, t, dt, x_sol)
-            if residual < self.f_tol:
-                break
-            residual.backward()
-            opt.step()
+        opt = self.opt([x_sol], lr=1, max_iter=self.max_iters, max_eval=10*self.max_iters,
+        tolerance_grad=1.e-12, tolerance_change=1.e-12, history_size=100, line_search_fn='strong_wolfe')
+        def closure():
             opt.zero_grad()
+            residual = ImplicitEuler._residual(f, x, t, dt, x_sol)
+            x_sol.grad, = torch.autograd.grad(residual, x_sol, only_inputs=True, allow_unused=False)
+            return residual
+        opt.step(closure)
         return None, None, x_sol
 
 
@@ -276,6 +277,16 @@ class MSBackward(MShootingSolverTemplate):
             del B # manually free graph
             B = B_out
         return B
+
+
+class ParallelImplicitEuler(MShootingSolverTemplate):
+    def __init__(self, coarse_method='euler', fine_method=None):
+        """Parallel Implicit Eurler Method
+        """
+        super().__init__(coarse_method, fine_method)
+
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
+        raise NotImplementedError
 
 
 SOLVER_DICT = {'euler': Euler,
