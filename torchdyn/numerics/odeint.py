@@ -3,7 +3,7 @@
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
 from inspect import getargspec
-from typing import List, Union, Callable
+from typing import List, Tuple, Union, Callable
 from warnings import warn
 
 import torch
@@ -15,7 +15,7 @@ from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   verbose:bool=False, use_interp:bool=False, return_all_eval:bool=False):
+		   verbose:bool=False, use_interp:bool=False, return_all_eval:bool=False, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -41,7 +41,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 			t = t_span[0]
 			k1 = f(t, x)
 			dt = init_step(f, k1, x, t.abs(), solver.order, atol, rtol)
-			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, use_interp, return_all_eval)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, use_interp, return_all_eval, seminorm)
 
 
 # TODO (qol) state augmentation for symplectic methods 
@@ -212,7 +212,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 
 
 #TODO (qol): interpolation option instead of checkpoint
-def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_interp=False, return_all_eval=False):
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_interp=False, return_all_eval=False, seminorm=(False, None)):
 	"""
 	
 	Notes:
@@ -236,6 +236,8 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 		[type]: [description]
 	
 	"""
+	#use_interp = True
+	#print(use_interp)
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
@@ -253,7 +255,10 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 
 		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
-		error = x_new - x_app
+		if seminorm[0] == True: state_dim = seminorm[1]
+		else: state_dim = len(x_new)
+		error = x_new[:state_dim] - x_app[:state_dim]
+		print(t, dt, error.abs().mean())
 		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
 		error_ratio = norm(error / error_tol)
 		accept_step = error_ratio <= 1
@@ -269,12 +274,12 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 					eval_times.append(t_eval[ckpt_counter][None])
 					ckpt_counter += 1
 			t, x = t + dt, x_new
+			k1 = f_new 
 			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
 				sol.append(x_new)
 				eval_times.append(t)
 				ckpt_counter += 1	
-			k1 = f_new 
-
+			
 		################ stepsize control ###########################
 		# reset "dt" in case of checkpoint without interp
 		if ckpt_flag:

@@ -32,15 +32,13 @@ def init_step(f, f0, x0, t0, order, atol, rtol):
 
     x_new = x0 + h0 * f0
     f_new = f(t0 + h0, x_new)
-
     d2 = norm((f_new - f0) / scale) / h0
-
     if d1 <= 1e-15 and d2 <= 1e-15:
         h1 = torch.max(torch.tensor(1e-6, dtype=x0.dtype, device=x0.device), h0 * 1e-3)
     else:
         h1 = (0.01 / max(d1, d2)) ** (1. / float(order + 1))
-
-    return torch.min(100 * h0, h1).to(t0)
+    dt = torch.min(100 * h0, h1).to(t0)
+    return dt
 
 
 @torch.no_grad()
