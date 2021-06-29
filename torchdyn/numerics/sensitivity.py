@@ -5,8 +5,7 @@ from torchcde import NaturalCubicSpline, natural_cubic_coeffs
 from torchdyn.numerics.odeint import odeint
 
 
-# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
-# use those to interpolate
+
 # TODO: optimize and make conditional gradient computations w.r.t end times
 def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, 
                             solver_adjoint, atol_adjoint, rtol_adjoint):
@@ -29,10 +28,11 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
             λT_flat = λT.flatten()
             λtT = λT_flat @ vf(t_sol[-1], xT).flatten()
-
+            # concatenate all states of adjoint system
             A = torch.cat([xT.flatten(), λT_flat, μT.flatten(), λtT[None]])
 
             def adjoint_dynamics(t, A):
+                if len(t.shape) > 0: t = t[0]
                 x, λ, μ = A[:xT_nel], A[xT_nel:xT_nel+λT_nel], A[-μT_nel-1:-1]
                 x, λ, μ = x.reshape(xT.shape), λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):
@@ -74,12 +74,14 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
 #TODO: introduce `t_span` grad as above
 #TODO: introduce option to interpolate on all solution points evaluated
+# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
+# use those to interpolate
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, 
                                 solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=True)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=False)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
@@ -98,7 +100,9 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
-                x = x_spline.evaluate(t)[:,0] 
+                print(t)
+                if len(t.shape) > 0: t = t[0]
+                x = x_spline.evaluate(t) 
                 x, t = x.requires_grad_(True), t.requires_grad_(True)
                 λ, μ = A[:λT_nel], A[-μT_nel:]
                 λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)

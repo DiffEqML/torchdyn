@@ -42,6 +42,12 @@ class SolverTemplate(nn.Module):
     def step(self, f, x, t, dt, k1=None):
         pass
 
+    def hermite_interp(self, t, t0, t1, f0, f1, x0, x1):
+        "Fits and evaluates Hermite interpolation, (6.7) in Hairer I."
+        dt = t1 - t0
+        theta = (t - t0) / (t1 - t0)
+        return (1-theta)*x0+theta*x1 + theta*(theta - 1)*((1-2*theta)*(x1-x0)+(theta-1)*dt*f0+theta*dt*f1)
+
 
 class Euler(SolverTemplate):
     def __init__(self, dtype=torch.float32):
@@ -103,6 +109,11 @@ class AsynchronousLeapfrog(SolverTemplate):
 
 class DormandPrince45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
+        """[summary]
+
+        Args:
+            dtype ([type], optional): [description]. Defaults to torch.float32.
+        """
         super().__init__(order=6)
         self.dtype = dtype
         self.stepping_class = 'adaptive'
@@ -250,6 +261,7 @@ SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKu
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
+
 
 MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
                   'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward}

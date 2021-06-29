@@ -15,7 +15,7 @@ from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   verbose:bool=False, return_all_eval:bool=False):
+		   verbose:bool=False, use_interp:bool=False, return_all_eval:bool=False):
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -37,10 +37,11 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed': 
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
+			
 			t = t_span[0]
 			k1 = f(t, x)
-			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
-			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
+			dt = init_step(f, k1, x, t.abs(), solver.order, atol, rtol)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, use_interp, return_all_eval)
 
 
 # TODO (qol) state augmentation for symplectic methods 
@@ -210,8 +211,8 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-# TODO (qol): interpolation option instead of checkpoint
-def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
+#TODO (qol): interpolation option instead of checkpoint
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_interp=False, return_all_eval=False):
 	"""
 	
 	Notes:
@@ -228,41 +229,54 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 		solver ([type]): [description]
 		atol ([type], optional): [description]. Defaults to 1e-4.
 		rtol ([type], optional): [description]. Defaults to 1e-4.
+		use_interp (bool, optional):
 		return_all_eval (bool, optional): [description]. Defaults to False.
 
 	Returns:
 		[type]: [description]
 	
 	"""
-	t_eval = t_span[1:]
-	t = t_span[:1]
+	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
-	while t < t_span[-1]:
+	while t < T:
+		if t + dt > T:
+			dt = T - t
 		############### checkpointing ###############################
-		if t + dt > t_span[-1]:
-			dt = t_span[-1] - t
 		if t_eval is not None:
+			# satisfy checkpointing by using interpolation scheme or resetting `dt`
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				# save old dt and raise "checkpoint" flag
-				dt_old, ckpt_flag = dt, True
-				dt = t_eval[ckpt_counter] - t				
+				if use_interp == False:	
+					# save old dt, raise "checkpoint" flag and repeat step
+					dt_old, ckpt_flag = dt, True
+					dt = t_eval[ckpt_counter] - t
+
 		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
 		error = x_new - x_app
-		
 		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
 		error_ratio = norm(error / error_tol)
 		accept_step = error_ratio <= 1
+
 		if accept_step:
+			############### checkpointing via interpolation ###############################
+			if t_eval is not None and use_interp == True:
+				while (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+					t0, t1 = t, t + dt
+					f0, f1, x0, x1 = k1, f_new, x, x_new
+					x_in = solver.hermite_interp(t_eval[ckpt_counter], t0, t1, f0, f1, x0, x1)
+					sol.append(x_in)
+					eval_times.append(t_eval[ckpt_counter][None])
+					ckpt_counter += 1
 			t, x = t + dt, x_new
 			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
 				sol.append(x_new)
 				eval_times.append(t)
 				ckpt_counter += 1	
 			k1 = f_new 
+
 		################ stepsize control ###########################
-		# reset "dt" in case of checkpoint
+		# reset "dt" in case of checkpoint without interp
 		if ckpt_flag:
 			dt = dt_old - dt
 			ckpt_flag = False
@@ -271,7 +285,6 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
-		# TODO: insert safety mechanism for num. steps (max)
 	return torch.cat(eval_times), torch.stack(sol)
 
 
@@ -362,3 +375,4 @@ def _jagged_fixed_odeint(f, x,
 	# prune solutions to remove noop steps
 	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
 	return [torch.stack(sol_, 0) for sol_ in sol]
+	

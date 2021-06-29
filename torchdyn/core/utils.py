@@ -14,11 +14,4 @@ import torch
 import torch.nn as nn
 
 
-SCIPY_SOLVERS = {
-    "scipy_LSODA": {'method':'scipy_solver', 'options':{'solver':'LSODA'}},
-    "scipy_RK45": {'method':'scipy_solver', 'options':{'solver':'RK45'}},
-    "scipy_RK23": {'method':'scipy_solver', 'options':{'solver':'RK23'}},
-    "scipy_DOP853": {'method':'scipy_solver', 'options':{'solver':'DOP853'}},
-    "scipy_BDF": {'method':'scipy_solver', 'options':{'solver':'BDF'}},
-    "scipy_Radau": {'method':'scipy_solver', 'options':{'solver':'Radau'}},
-}
+

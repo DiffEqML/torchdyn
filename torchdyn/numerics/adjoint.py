@@ -102,13 +102,3 @@ class Adjoint(nn.Module):
         return sol
 
 
-def find_f_params(module):
-    assert isinstance(module, nn.Module)
-    if getattr(module, '_is_replica', False):
-        def find_tensor_attributes(module):
-            tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v) and v.requires_grad]
-            return tuples
-        gen = module._named_members(get_members_fn=find_tensor_attributes)
-        return [param for _, param in gen]
-    else:
-        return list(module.parameters())

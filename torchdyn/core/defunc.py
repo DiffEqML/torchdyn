@@ -84,6 +84,13 @@ class DEFunc(nn.Module):
     
 class SDEFunc(nn.Module):
     def __init__(self, f, g, order=1):
+        """[summary]
+
+        Args:
+            f ([type]): [description]
+            g ([type]): [description]
+            order (int, optional): [description]. Defaults to 1.
+        """
         super().__init__()  
         self.order, self.intloss, self.sensitivity = order, None, None
         self.f_func, self.g_func = f, g

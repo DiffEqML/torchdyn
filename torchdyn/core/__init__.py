@@ -12,9 +12,9 @@
 
 from torchdyn.core.defunc import DEFunc
 from torchdyn.core.neuralde import NeuralODE, NeuralSDE
-from torchdyn.core.problems import ODEProblem
+from torchdyn.core.problems import ODEProblem, SDEProblem, MultipleShootingProblem
 
 # backward-compatibility (pre v0.2.0)
 NeuralDE = NeuralODE
 
-__all__ =   ['DEFunc', 'NeuralODE', 'NeuralDE', 'NeuralSDE', 'ODEProblem']
+__all__ =   ['DEFunc', 'NeuralODE', 'NeuralDE', 'NeuralSDE', 'ODEProblem', 'SDEProblem', 'MultipleShootingProblem']
