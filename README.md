@@ -74,7 +74,7 @@ By providing a centralized, easy-to-access collection of model templates, tutori
 ### Contribute
  `torchdyn` is designed to be a community effort: we welcome all contributions of tutorials, model variants, numerical methods and applications related to continuous and implicit deep learning. We do not have specific style requirements, though we subscribe to many of Jeremy Howard's [ideas](https://docs.fast.ai/dev/style.html).
 
-We use `poetry` to manage requirements, virtual python environment creation, and packaging. 
+We use `poetry` to manage requirements, virtual python environment creation, and packaging. To install `poetry`, refer to [the docs](https://python-poetry.org/docs/).
 To set up your dev environment, run `poetry install`. In example, `poetry run pytest` will then run all `torchdyn` tests inside your newly created env.
 
 `poetry` does not currently offer a way to select `torch` wheels based on desired `cuda` and `OS`, and will install a version without GPU support. For CUDA `torch` wheels,

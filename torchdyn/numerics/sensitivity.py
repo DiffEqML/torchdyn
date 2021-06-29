@@ -102,10 +102,9 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
-                print(t)
                 if len(t.shape) > 0: t = t[0]
-                x = x_spline.evaluate(t) 
-                x, t = x.requires_grad_(True), t.requires_grad_(True)
+                x = x_spline.evaluate(t).requires_grad_(True)
+                t = t.requires_grad_(True)
                 λ, μ = A[:λT_nel], A[-μT_nel:]
                 λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):

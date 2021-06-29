@@ -11,7 +11,7 @@ from torchdyn.numerics._constants import construct_rk4, construct_dopri5, constr
 
 
 class SolverTemplate(nn.Module):
-    def __init__(self, order, min_factor=0.2, max_factor=10., safety=0.9):
+    def __init__(self, order, min_factor=0.2, max_factor=2., safety=0.9):
         """[summary]
 
         Args:

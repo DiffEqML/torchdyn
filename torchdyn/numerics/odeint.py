@@ -237,13 +237,13 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 		[type]: [description]
 	
 	"""
-	#use_interp = True
-	#print(use_interp)
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
 	while t < T:
-		if t + dt > T:
+		print(dt)
+		#print(t, dt, T)
+		if t + dt > T: 
 			dt = T - t
 		############### checkpointing ###############################
 		if t_eval is not None:
@@ -256,11 +256,13 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 
 		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
-		if seminorm[0] == True: state_dim = seminorm[1]
-		else: state_dim = len(x_new)
-		error = (x_new[:state_dim] - x_app[:state_dim]).abs()
-		print(t, dt, error.max(), x_new[0], x_app[0])
-		error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+		if seminorm[0] == True: 
+			state_dim = seminorm[1]
+			error = x_new[:state_dim] - x_app[:state_dim]
+			error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+		else: 
+			error = x_new - x_app
+			error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
 		error_ratio = hairer_norm(error_scaled)
 		accept_step = error_ratio <= 1
 
@@ -274,18 +276,19 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, use_int
 					sol.append(x_in)
 					eval_times.append(t_eval[ckpt_counter][None])
 					ckpt_counter += 1
+			if t + dt == t_eval[ckpt_counter] or return_all_eval: # note (1)
+				sol.append(x_new)
+				eval_times.append(t + dt)
+				ckpt_counter += 1
 			t, x = t + dt, x_new
 			k1 = f_new 
-			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
-				sol.append(x_new)
-				eval_times.append(t)
-				ckpt_counter += 1	
-			
+
 		################ stepsize control ###########################
 		# reset "dt" in case of checkpoint without interp
 		if ckpt_flag:
 			dt = dt_old - dt
 			ckpt_flag = False
+			
 		dt = adapt_step(dt, error_ratio,
 						solver.safety,
 						solver.min_factor,
