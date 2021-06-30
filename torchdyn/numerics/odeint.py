@@ -109,17 +109,18 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
+	if type(solver) == str:
 		solver = str_to_ms_solver(solver)
-		x, t_span = solver.sync_device_dtype(x, t_span)
-		# first-guess B0 of shooting parameters
-		if B0 is None: 
-			_, B0 = odeint(f, x, t_span, solver.coarse_method)
-		# determine which odeint to apply to MS solver
-		# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
-		odeint_func = _fixed_odeint
-		###
-		B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
-		return t_span, B
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	# first-guess B0 of shooting parameters
+	if B0 is None:
+		_, B0 = odeint(f, x, t_span, solver.coarse_method)
+	# determine which odeint to apply to MS solver
+	# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
+	odeint_func = _fixed_odeint
+	###
+	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
+	return t_span, B
 
 
 # TODO: check why for some tols `min(....)` becomes empty in internal event finder
