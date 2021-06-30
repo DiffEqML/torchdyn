@@ -3,7 +3,7 @@ import torch
 from torch.autograd import Function, grad
 from torchcde import NaturalCubicSpline, natural_cubic_coeffs
 from torchdyn.numerics.odeint import odeint
-
+import torchdiffeq
 
 
 # TODO: optimize and make conditional gradient computations w.r.t end times
@@ -83,7 +83,7 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
     class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=False)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=True)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
@@ -118,6 +118,7 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
             # solve the adjoint equation
             n_elements = (λT_nel, μT_nel)
             for i in range(len(t_span) - 1, 0, -1):
+                #A = torchdiffeq.odeint(adjoint_dynamics, A, t_sol[i - 1:i + 1].flip(0), atol=atol_adjoint, rtol=rtol_adjoint)
                 t_adj_sol, A = odeint(adjoint_dynamics, A, t_span[i - 1:i + 1].flip(0), solver, atol=atol, rtol=rtol)
                 # prepare adjoint state for next interval
                 A = torch.cat([A[-1, :λT_nel], A[-1, -μT_nel:]])

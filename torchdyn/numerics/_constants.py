@@ -28,7 +28,7 @@ def construct_dopri5(dtype):
     ]
     bsol = torch.tensor([35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0], dtype=dtype)
     berr = torch.tensor([1951 / 21600, 0, 22642 / 50085, 451 / 720, -12231 / 42400, 649 / 6300, 1 / 60.], dtype=dtype)
-    return (c, a, bsol, berr)
+    return (c, a, bsol, bsol - berr)
 
 
 def construct_tsit5(dtype):
@@ -94,4 +94,4 @@ def construct_tsit5(dtype):
         1.866628418170587035753719399566211498666255505244122593996591602841258328965767580089,
         1 / 66.,
     ], dtype=dtype)
-    return (c, a, bsol, berr)
+    return (c, a, bsol, bsol - berr)
