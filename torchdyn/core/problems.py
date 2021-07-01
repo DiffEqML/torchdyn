@@ -39,7 +39,8 @@ class ODEProblem(nn.Module):
 
         self.solver, self.interpolator, self.atol, self.rtol = solver, interpolator, atol, rtol
         self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint = solver_adjoint, atol_adjoint, rtol_adjoint
-
+        self.integral_loss = integral_loss
+        
         # wrap vector field if `t, x` is not the call signature
         if issubclass(type(vector_field), nn.Module):
             if 't' not in getfullargspec(vector_field.forward).args:

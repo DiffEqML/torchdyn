@@ -58,10 +58,9 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Returns:
             [type]: [description]
         """
-        print('diocane')
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
-        if (not self.intloss is None) and self.sensitivity == 'autograd':
+        if (not self.integral_loss is None) and self.sensitivity == 'autograd':
             excess_dims += 1
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as datasets-control set to DataControl module
@@ -72,12 +71,12 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
 
             if hasattr(module, 'u'):
-                print('ciao')
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
         return x
 
     def forward(self, x:torch.Tensor, t_span:torch.Tensor):
+        x = self._prep_integration(x)
         return super().forward(x, t_span)
 
     def trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
