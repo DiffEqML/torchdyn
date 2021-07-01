@@ -32,13 +32,12 @@ class ODEProblem(nn.Module):
         """
         super().__init__()
         # instantiate solver at initialization
-        if type(solver) == str: 
-            solver = str_to_solver(solver)
+        if type(solver) == str: solver = str_to_solver(solver)
         if solver_adjoint is None:
             solver_adjoint = solver
         else: solver_adjoint = str_to_solver(solver_adjoint)
 
-        self.solver, self.atol, self.rtol = solver, atol, rtol
+        self.solver, self.interpolator, self.atol, self.rtol = solver, interpolator, atol, rtol
         self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint = solver_adjoint, atol_adjoint, rtol_adjoint
 
         # wrap vector field if `t, x` is not the call signature
@@ -66,21 +65,21 @@ class ODEProblem(nn.Module):
         # instantiates an underlying autograd.Function that overrides the backward pass with the intended version
         # sensitivity algorithm
         if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
-            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol,
+            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
                                                             solver_adjoint, atol_adjoint, rtol_adjoint).apply
         elif self.sensalg == 'interpolated_adjoint':
-            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol,
+            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
                                                                     solver_adjoint, atol_adjoint, rtol_adjoint).apply
 
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"
         if self.sensalg == 'autograd':
-            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol)
+            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator)
         else:
             return self.autograd_function(self.vf_params, x, t_span)
 
     def forward(self, x:Tensor, t_span:Tensor):
-        "For safety redirects to intented method `odeint`"
+        "For safety redirects to intended method `odeint`"
         return self.odeint(x, t_span)
 
 

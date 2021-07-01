@@ -13,20 +13,22 @@
 from typing import Callable, Union, List
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
+from torchdyn.numerics import odeint
+from torchdyn.core.defunc import DEFunc, SDEFunc
+
 import pytorch_lightning as pl
 import torch
 from torch import Tensor
 import torch.nn as nn
 import torchsde
 
-from torchdyn.core.defunc import DEFunc, SDEFunc
 import warnings
 
 
 class NeuralODE(ODEProblem, pl.LightningModule):
     def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
                  solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, 
-                 integral_loss:Union[Callable, None]=None, seminorm:bool=False):
+                 interpolator:Union[str, Callable, None]='4th', integral_loss:Union[Callable, None]=None, seminorm:bool=False):
         """Generic Neural Ordinary Differential Equation. 
 
         Args:
@@ -44,7 +46,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         """
         super().__init__(vector_field=DEFunc(vector_field, order), order=order, sensitivity=sensitivity, solver=solver,
                                        atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
-                                       seminorm=seminorm, integral_loss=integral_loss)
+                                       seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss)
         self.u, self.controlled = None, False # data-control conditioning
 
     def _prep_integration(self, x:torch.Tensor) -> Tensor:
@@ -56,21 +58,32 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Returns:
             [type]: [description]
         """
+        print('diocane')
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             excess_dims += 1
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as datasets-control set to DataControl module
-        for name, module in self.defunc.named_modules():
+        for name, module in self.vf.named_modules():
             if hasattr(module, 'trace_estimator'):
                 if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
             # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+
             if hasattr(module, 'u'):
+                print('ciao')
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
         return x
+
+    def forward(self, x:torch.Tensor, t_span:torch.Tensor):
+        return super().forward(x, t_span)
+
+    def trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
+        x = self._prep_integration(x)
+        sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
+        return sol
 
     def __repr__(self):
         npar = sum([p.numel() for p in self.vf.parameters()])

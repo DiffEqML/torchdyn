@@ -57,7 +57,6 @@ class DEFunc(nn.Module):
         for _, module in self.m.named_modules():
             if hasattr(module, 't'):
                 module.t = t
-
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
         if (not self.intloss is None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]

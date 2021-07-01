@@ -8,13 +8,13 @@ import torchdiffeq
 
 # TODO: optimize and make conditional gradient computations w.r.t end times
 # TODO: link `seminorm` arg from `ODEProblem`
-def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, 
+def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                             solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
         "Underlying autograd.Function. All ODEProblem forwards are the same, each backward various depending on the sensitivity algorithm"
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator)
             ctx.save_for_backward(sol, t_sol)
             return t_sol, sol
 
@@ -45,6 +45,7 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                     if dt == None: dt = torch.zeros(1).to(t)
+                    if len(t.shape) == 0: dt = dt.unsqueeze(0)
                 return torch.cat([dx.flatten(), dλ.flatten(), dμ.flatten(), dt])
 
             # solve the adjoint equation
@@ -78,12 +79,12 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 #TODO: introduce option to interpolate on all solution points evaluated
 # TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
 # use those to interpolate
-def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, 
+def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                                 solver_adjoint, atol_adjoint, rtol_adjoint):
     class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=True)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=True)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
@@ -118,7 +119,6 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
             # solve the adjoint equation
             n_elements = (λT_nel, μT_nel)
             for i in range(len(t_span) - 1, 0, -1):
-                #A = torchdiffeq.odeint(adjoint_dynamics, A, t_sol[i - 1:i + 1].flip(0), atol=atol_adjoint, rtol=rtol_adjoint)
                 t_adj_sol, A = odeint(adjoint_dynamics, A, t_span[i - 1:i + 1].flip(0), solver, atol=atol, rtol=rtol)
                 # prepare adjoint state for next interval
                 A = torch.cat([A[-1, :λT_nel], A[-1, -μT_nel:]])

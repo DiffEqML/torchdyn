@@ -5,13 +5,14 @@
     [2]: Poli M., Massaroli S. et al "Hypersolvers: Toward fast continuous-depth models." NeurIPS 2020
 """
 
+from typing import Tuple
 import torch
 import torch.nn as nn
 from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
 
 
 class SolverTemplate(nn.Module):
-    def __init__(self, order, min_factor=0.2, max_factor=2., safety=0.9):
+    def __init__(self, order, min_factor=0.2, max_factor=10, safety=0.9):
         """[summary]
 
         Args:
@@ -52,7 +53,7 @@ class Euler(SolverTemplate):
     def step(self, f, x, t, dt, k1=None):
         if k1 == None: k1 = f(t, x)
         x_sol = x + dt * k1
-        return None, None, x_sol
+        return None, x_sol, None
 
 
 class RungeKutta4(SolverTemplate):
@@ -69,7 +70,7 @@ class RungeKutta4(SolverTemplate):
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
         k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3))
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
-        return None, None, x_sol
+        return None, x_sol, None
 
 
 class AsynchronousLeapfrog(SolverTemplate):
@@ -98,7 +99,7 @@ class AsynchronousLeapfrog(SolverTemplate):
             xv_err = torch.cat([torch.zeros_like(x), v], -1)
         else:
             xv_err = None
-        return None, xv_err, x_sol 
+        return None, x_sol, xv_err
 
 
 class DormandPrince45(SolverTemplate):
@@ -113,22 +114,18 @@ class DormandPrince45(SolverTemplate):
         self.stepping_class = 'adaptive'
         self.tableau = construct_dopri5(self.dtype)
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None) -> Tuple:
         c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0] * k1)
         k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2))
         k4 = f(t + c[2] * dt, x + dt * a[2][0] * k1 + dt * a[2][1] * k2 + dt * a[2][2] * k3)
         k5 = f(t + c[3] * dt, x + dt * a[3][0] * k1 + dt * a[3][1] * k2 + dt * a[3][2] * k3 + dt * a[3][3] * k4)
-        k6 = f(t + c[4] * dt,
-               x + dt * a[4][0] * k1 + dt * a[4][1] * k2 + dt * a[4][2] * k3 + dt * a[4][3] * k4 + dt * a[4][
-                   4] * k5)
-        k7 = f(t + c[5] * dt,
-               x + dt * a[5][0] * k1 + dt * a[5][1] * k2 + dt * a[5][2] * k3 + dt * a[5][3] * k4 + dt * a[5][
-                   4] * k5 + dt * a[5][5] * k6)
+        k6 = f(t + c[4] * dt, x + dt * a[4][0] * k1 + dt * a[4][1] * k2 + dt * a[4][2] * k3 + dt * a[4][3] * k4 + dt * a[4][4] * k5)
+        k7 = f(t + c[5] * dt, x + dt * a[5][0] * k1 + dt * a[5][1] * k2 + dt * a[5][2] * k3 + dt * a[5][3] * k4 + dt * a[5][4] * k5 + dt * a[5][5] * k6)
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4 + bsol[4] * k5 + bsol[5] * k6)
         err = berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7
-        return k7, x_sol, err
+        return k7, x_sol, err, (k1, k2, k3, k4 ,k5, k6, k7)
 
 
 
@@ -139,7 +136,7 @@ class Tsitouras45(SolverTemplate):
         self.stepping_class = 'adaptive'
         self.tableau = construct_tsit5(self.dtype)
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None) -> Tuple:
         c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0][0] * k1)
@@ -150,7 +147,7 @@ class Tsitouras45(SolverTemplate):
         k7 = f(t + c[5] * dt, x + dt * a[5][0] * k1 + dt * a[5][1] * k2 + dt * a[5][2] * k3 + dt * a[5][3] * k4 + dt * a[5][4] * k5 + dt * a[5][5] * k6)
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4 + bsol[4] * k5 + bsol[5] * k6)
         err = berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7
-        return k7, x_sol, err
+        return k7, x_sol, err, (k1, k2, k3, k4 ,k5, k6, k7)
 
 
 class ImplicitEuler(SolverTemplate):
@@ -272,7 +269,7 @@ class MSBackward(MShootingSolverTemplate):
 
 class ParallelImplicitEuler(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='euler'):
-        """Parallel Implicit Eurler Method
+        """Parallel Implicit Euler Method
         """
         super().__init__(coarse_method, fine_method)
         self.solver = torch.optim.LBFGS
@@ -306,6 +303,20 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
 
         solver.step(closure)
         return B
+
+
+class SDESolverTemplate(SolverTemplate):
+    def __init__(self, order, min_factor=0.2, max_factor=2., safety=0.9):
+        super().__init__(order=order, min_factor=min_factor, max_factor=max_factor, safety=safety)
+        self.tableau = None
+
+    def step(self, f, x, t, dt, k1=None):
+        pass
+
+
+class EulerMaruyama(SDESolverTemplate):
+    def __init__(self):
+        raise NotImplementedError
 
 
 SOLVER_DICT = {'euler': Euler,

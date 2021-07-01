@@ -16,7 +16,7 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:bool=False, return_all_eval:bool=False, 
+		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
 		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""[summary]
 
@@ -52,6 +52,11 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
+	# instantiate the interpolator similar to the solver steps above
+	if type(interpolator) == str: 
+		interpolator = str_to_interp(interpolator, x.dtype)
+		x, t_span = interpolator.sync_device_dtype(x, t_span)
+
 	# access parallel integration routines with different t_spans for each sample in `x`.
 	if len(t_span.shape) > 1:
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
@@ -63,7 +68,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 			t = t_span[0]
 			k1 = f_(t, x)
 			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
-			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, t_stops, interpolator, return_all_eval, seminorm)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, interpolator, return_all_eval, seminorm)
 
 
 # TODO (qol) state augmentation for symplectic methods 
@@ -235,13 +240,14 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 
 
 
-def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, t_stops=None, use_interp=False, return_all_eval=False, seminorm=(False, None)):
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpolator=None, return_all_eval=False, seminorm=(False, None)):
 	"""
 	
 	Notes:
 	(1) We check if the user wants all evaluated solution points, not only those
 	corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
 	is called for interpolated adjoints
+
 
 	Args:
 		f ([type]): [description]
@@ -269,12 +275,12 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, t_stops
 		if t_eval is not None:
 			# satisfy checkpointing by using interpolation scheme or resetting `dt`
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				if use_interp == False:	
+				if interpolator == None:	
 					# save old dt, raise "checkpoint" flag and repeat step
 					dt_old, ckpt_flag = dt, True
 					dt = t_eval[ckpt_counter] - t
 
-		f_new, x_new, x_err = solver.step(f, x, t, dt, k1=k1)
+		f_new, x_new, x_err, stages = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
 		if seminorm[0] == True: 
 			state_dim = seminorm[1]
@@ -288,18 +294,23 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, t_stops
 
 		if accept_step:
 			############### checkpointing via interpolation ###############################
-			if t_eval is not None and use_interp == True:
+			if t_eval is not None and interpolator is not None:
+				coefs = None
 				while (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
 					t0, t1 = t, t + dt
+					x_mid = x + dt * sum([interpolator.bmid[i] * stages[i] for i in range(len(stages))])
 					f0, f1, x0, x1 = k1, f_new, x, x_new
-					x_in = solver.hermite_interp(t_eval[ckpt_counter], t0, t1, f0, f1, x0, x1)
+					if coefs == None: coefs = interpolator.fit(dt, f0, f1, x0, x1, x_mid)
+					x_in = interpolator.evaluate(coefs, t0, t1, t_eval[ckpt_counter])
 					sol.append(x_in)
 					eval_times.append(t_eval[ckpt_counter][None])
 					ckpt_counter += 1
+
 			if t + dt == t_eval[ckpt_counter] or return_all_eval: # note (1)
 				sol.append(x_new)
 				eval_times.append(t + dt)
-				ckpt_counter += 1
+				# we only increment the ckpt counter if the solution points corresponds to a time point in `t_span`
+				if t + dt == t_eval[ckpt_counter]: ckpt_counter += 1
 			t, x = t + dt, x_new
 			k1 = f_new 
 
@@ -333,7 +344,7 @@ def _fixed_odeint(f, x, t_span, solver):
 	sol = [x]
 	steps = 1
 	while steps <= len(t_span) - 1:
-		_, _, x = solver.step(f, x, t, dt)
+		_, x, _ = solver.step(f, x, t, dt)
 		sol.append(x)
 		t = t + dt
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t

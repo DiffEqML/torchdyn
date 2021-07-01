@@ -95,3 +95,15 @@ def construct_tsit5(dtype):
         1 / 66.,
     ], dtype=dtype)
     return (c, a, bsol, bsol - berr)
+
+
+########################
+# Interpolator coeff 
+########################
+
+def construct_4th(dtype):
+    bmid = torch.tensor([
+        0.10013431883002395, 0, 0.3918321794184259, -0.02982460176594817,
+        0.05893268337240795, -0.04497888809104361, 0.023904308236133973
+        ], dtype=dtype)
+    return bmid

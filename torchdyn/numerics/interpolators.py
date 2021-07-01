@@ -1,14 +1,28 @@
 """Contains several Interpolator classes"""
 
 import torch
-
+from torchdyn.numerics._constants import construct_4th
 class Interpolator:
     def __init__(self, order):
         self.order = order
-    def fit_interpolation():
+
+    def sync_device_dtype(self, x, t_span):
+        "Ensures `x`, `t_span`, `tableau` and other interpolator tensors are on the same device with compatible dtypes"
+        if self.bmid is not None: self.bmid = self.bmid.to(x) 
+        return x, t_span
+
+    def fit(self, f0, f1, x0, x1, t, dt, **kwargs):
         pass
+
     def evaluate(self, coefs, t0, t1, t):
-        pass
+        "Evaluates a generic interpolant given coefs between [t0, t1]."
+        theta = (t - t0) / (t1 - t0)
+        result = coefs[0] + theta * coefs[1] 
+        theta_power = theta
+        for coef in coefs[2:]:
+            theta_power = theta_power * theta
+            result += theta_power * coef
+        return result
 
 
 class Linear(Interpolator):
@@ -18,37 +32,30 @@ class Linear(Interpolator):
 
 class ThirdHermite(Interpolator):
     def __init__(self):
+        super().__init__(order=3)
         raise NotImplementedError
-    # def hermite_interp(self, t, t0, t1, f0, f1, x0, x1):
-    #     "Fits and evaluates Hermite interpolation, (6.7) in Hairer I."
-    #     dt = t1 - t0
-    #     theta = (t - t0) / (t1 - t0)
-    #     return (1-theta)*x0+theta*x1 + theta*(theta - 1)*((1-2*theta)*(x1-x0)+(theta-1)*dt*f0+theta*dt*f1)
 
 class FourthOrder(Interpolator):
-    def __init__(self):
+    def __init__(self, dtype):
+        """[summary]
+
+        Args:
+            dtype ([type]): [description]
+        """
         super().__init__(order=4)
+        self.bmid = construct_4th(dtype)
 
-    def fit_interpolation():
-        a = 2 * dt * (k4 - k1) - 8 * (x1 + x0) + 16 * x_mid
-        b = dt * (5 * k1 - 3 * k4) + 18 * x0 + 14 * x1 - 32 * x_mid
-        c = dt * (k4 - 4 * k1) - 11 * x0 - 5 * x1 + 16 * x_mid
-        d = dt * k1
-        e = x0
-        return [e, d, c, b, a]
+    def fit(self, dt, f0, f1, x0, x1, x_mid, **kwargs):
+        c1 = 2 * dt * (f1 - f0) - 8 * (x1 + x0) + 16 * x_mid
+        c2 = dt * (5 * f0 - 3 * f1) + 18 * x0 + 14 * x1 - 32 * x_mid
+        c3 = dt * (f1 - 4 * f0) - 11 * x0 - 5 * x1 + 16 * x_mid
+        c4 = dt * f0
+        c5 = x0
+        return [c5, c4, c3, c2, c1]
 
-    def evaluate(self, coefs, t0, t1, t):
-        x = (t - t0) / (t1 - t0)
-        x = x.to(coefs[0].dtype)
 
-        total = coefs[0] + x * coefs[1]
-        x_power = x
-        for coefficient in coefs[2:]:
-            x_power = x_power * x
-            total = total + x_power * coefficient
-        return total
 
-INTERP_DICT = {'4th': FourthOrder, 'hermite': ThirdHermite}
+INTERP_DICT = {'4th': FourthOrder}
 
 
 def str_to_interp(solver_name, dtype=torch.float32):
