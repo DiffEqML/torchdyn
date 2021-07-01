@@ -129,19 +129,42 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 
 
 # TODO: check why for some tols `min(....)` becomes empty in internal event finder
-def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3, rtol=1e-3, event_tol=1e-4,
-				  priority='jump'):
-	x_shape, dtype, device = x.shape, x.dtype, x.device
-	ckpt_counter = 0
-	t = t_span[:1]
-	jnum = 0
+def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
+				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
+	"""[summary]
 
+	Args:
+		f ([type]): [description]
+		x ([type]): [description]
+		t_span ([type]): [description]
+		j_span ([type]): [description]
+		solver ([type]): [description]
+		callbacks ([type]): [description]
+		t_eval (list, optional): [description]. Defaults to [].
+		atol ([type], optional): [description]. Defaults to 1e-3.
+		rtol ([type], optional): [description]. Defaults to 1e-3.
+		event_tol ([type], optional): [description]. Defaults to 1e-4.
+		priority (str, optional): [description]. Defaults to 'jump'.
+
+	Returns:
+		[type]: [description]
+	"""
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+	if type(solver) == str: solver = str_to_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	x_shape = x.shape
+	ckpt_counter, ckpt_flag, jnum = 0, False, 0
+	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
+	
 	###### initial jumps ###########
 	event_states = EventState([False for _ in range(len(callbacks))])
 
 	if priority == 'jump':
 		new_event_states = EventState([cb.check_event(t, x) for cb in callbacks])
 		triggered_events = event_states != new_event_states
+		# check if any event flag changed from `False` to `True` within last step
+		triggered_events = sum([(a_ != b_)  & (b_ == False)
+								for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 		if triggered_events > 0:
 			i = min([i for i, idx in enumerate(new_event_states.evid) if idx == True])
 			x = callbacks[i].jump_map(t, x)
@@ -152,26 +175,30 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 
 	#### init solution & time vector ####
-	eval_times = [t]
-	sol = [x]
+	eval_times, sol = [t], [x]
 
-	while t < t_span[-1] and jnum < j_span:
+	while t < T and jnum < j_span:
+		print(t, dt)
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+				dt_old, ckpt_flag = dt, True
 				dt = t_eval[ckpt_counter] - t
 				ckpt_counter += 1
 
-		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
+		################ step
+		f_new, x_new, x_err, _ = solver.step(f, x, t, dt, k1=k1)
 
 		################ callback and events ########################
 		new_event_states = EventState([cb.check_event(t + dt, x_new) for cb in callbacks])
-		triggered_events = event_states != new_event_states
+		triggered_events = sum([(a_ != b_)  & (b_ == False)
+								for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 
 		# if event close in on switching state in [t, t + Δt]
 		if triggered_events > 0:
+			dt_pre = dt
 			t_inner = t
 			dt_inner = dt
 			x_inner = x
@@ -181,7 +208,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 			while niters < max_iters and event_tol < dt_inner:
 				with torch.no_grad():
 					dt_inner = dt_inner / 2
-					f_new, x_, _ = solver.step(f, x_inner, t_inner, dt_inner, k1=k1)
+					f_new, x_, x_err, _ = solver.step(f, x_inner, t_inner, dt_inner, k1=k1)
 
 					new_event_states = EventState([cb.check_event(t_inner + dt_inner, x_)
 												   for cb in callbacks])
@@ -213,22 +240,31 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 
 			# reset k1
 			k1 = f_new
+			dt = dt_pre
 
 		else:
 
 			################# compute error #############################
-			error = x_new - x_app
-			error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-			error_ratio = hairer_norm(error / error_tol)
+			if seminorm[0] == True: 
+				state_dim = seminorm[1]
+				error = x_err[:state_dim]
+				error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+			else: 
+				error = x_err
+				error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
+			error_ratio = hairer_norm(error_scaled)
 			accept_step = error_ratio <= 1
 
 			if accept_step:
 				t = t + dt
-				x = x_new.float()
+				x = x_new
 				sol.append(x.reshape(x_shape))
 				eval_times.append(t.reshape(t.shape))
 				k1 = f_new
 
+			if ckpt_flag:
+				dt = dt_old - dt
+				ckpt_flag = False
 			################ stepsize control ###########################
 			dt = adapt_step(dt, error_ratio,
 							solver.safety,
@@ -237,7 +273,6 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 							solver.order)
 
 	return torch.cat(eval_times), torch.stack(sol)
-
 
 
 def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpolator=None, return_all_eval=False, seminorm=(False, None)):
