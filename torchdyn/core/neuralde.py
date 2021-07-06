@@ -26,9 +26,9 @@ import warnings
 
 
 class NeuralODE(ODEProblem, pl.LightningModule):
-    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
-                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, 
-                 interpolator:Union[str, Callable, None]='4th', integral_loss:Union[Callable, None]=None, seminorm:bool=False):
+    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd',
+                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, 
+                 interpolator:Union[str, Callable, None]=None, integral_loss:Union[Callable, None]=None, seminorm:bool=False):
         """Generic Neural Ordinary Differential Equation. 
 
         Args:

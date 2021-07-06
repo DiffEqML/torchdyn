@@ -107,3 +107,4 @@ def construct_4th(dtype):
         0.05893268337240795, -0.04497888809104361, 0.023904308236133973
         ], dtype=dtype)
     return bmid
+    

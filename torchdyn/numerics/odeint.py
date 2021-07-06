@@ -178,15 +178,18 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 	eval_times, sol = [t], [x]
 
 	while t < T and jnum < j_span:
-		print(t, dt)
+		
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
+			#print(ckpt_counter, len(t_eval), t+dt, t_eval[ckpt_counter])
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+				#print("GOING IN")
 				dt_old, ckpt_flag = dt, True
 				dt = t_eval[ckpt_counter] - t
 				ckpt_counter += 1
+		#print('t, dt', t, dt)
 
 		################ step
 		f_new, x_new, x_err, _ = solver.step(f, x, t, dt, k1=k1)
@@ -196,14 +199,12 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 		triggered_events = sum([(a_ != b_)  & (b_ == False)
 								for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 
-		# if event close in on switching state in [t, t + Δt]
+
+		# if event, close in on switching state in [t, t + Δt] via bisection
 		if triggered_events > 0:
-			dt_pre = dt
-			t_inner = t
-			dt_inner = dt
-			x_inner = x
-			niters = 0
-			max_iters = 100  # compute as function of tolerances
+			
+			dt_pre, t_inner, dt_inner, x_inner, niters = dt, t, dt, x, 0
+			max_iters = 100  # TODO (numerics): compute tol as function of tolerances
 
 			while niters < max_iters and event_tol < dt_inner:
 				with torch.no_grad():
@@ -212,17 +213,18 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 
 					new_event_states = EventState([cb.check_event(t_inner + dt_inner, x_)
 												   for cb in callbacks])
-					triggered_events = event_states != new_event_states
+					triggered_events = sum([(a_ != b_)  & (b_ == False)
+											for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 					niters = niters + 1
 
-				if triggered_events == 0:
+				if triggered_events == 0: # if no event, advance start point of bisection search
 					x_inner = x_
-					sol.append(x_inner.reshape(x_shape))
 					t_inner = t_inner + dt_inner
-					eval_times.append(t_inner.reshape(t.shape))
 					dt_inner = dt
 					k1 = f_new
-
+					# TODO (qol): optional save
+					#sol.append(x_inner.reshape(x_shape))
+					#eval_times.append(t_inner.reshape(t.shape))
 			x = x_inner
 			t = t_inner
 			i = min([i for i, x in enumerate(new_event_states.evid) if x == True])
@@ -239,11 +241,10 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 			eval_times.append(t.reshape(t.shape))
 
 			# reset k1
-			k1 = f_new
+			k1 = None
 			dt = dt_pre
 
 		else:
-
 			################# compute error #############################
 			if seminorm[0] == True: 
 				state_dim = seminorm[1]
@@ -252,6 +253,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 			else: 
 				error = x_err
 				error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
+			
 			error_ratio = hairer_norm(error_scaled)
 			accept_step = error_ratio <= 1
 
