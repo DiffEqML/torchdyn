@@ -75,9 +75,8 @@ def test_odeint_adjoint_intloss(stiffness, sensitivity):
 
     x = torch.randn(1024, 2, requires_grad=True)
 
-    # solve with autograd augmentation
-    node = NeuralODE(f, sensitivity='autograd', solver='dopri5', interpolator='4th', 
-                    atol=1e-4, rtol=1e-4, integral_loss=reg_term)
+    # solve with autograd augmentation, fixed-step solver for discrete-adj consistency
+    node = NeuralODE(f, sensitivity='autograd', solver='rk4', integral_loss=reg_term)
     x0 = torch.cat([torch.zeros(x.shape[0], 1), x], 1)
 
     t_eval, sol_torchdyn = node(x0, t_span)

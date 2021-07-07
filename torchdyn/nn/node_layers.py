@@ -53,9 +53,9 @@ class DepthCat(nn.Module):
         self.idx_cat, self.t = idx_cat, None
 
     def forward(self, x):
-        s_shape = list(x.shape)
-        s_shape[self.idx_cat] = 1
-        t = self.t * torch.ones(s_shape).to(x)
+        t_shape = list(x.shape)
+        t_shape[self.idx_cat] = 1
+        t = self.t * torch.ones(t_shape).to(x)
         return torch.cat([x, t], self.idx_cat).to(x)
 
 

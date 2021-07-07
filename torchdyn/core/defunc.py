@@ -15,21 +15,16 @@ import torch.nn as nn
 
 
 class DEFuncBase(nn.Module):
-    """Base differential equation vector field wrapper.
-
-    :param model: neural network parametrizing the vector field
-    :type model: nn.Module
-    :param order: order of the differential equation
-    :type order: int
-   """
     def __init__(self, vector_field, has_time_arg=True):
+        """Differential Equation Function base wrapper (x) -> (t, x)
+
+        Args:
+            vector_field ([type]): [description]
+            has_time_arg (bool, optional): flag if vector field has `t` in call signature permits upstream 
+                compatibility with a wider selection of vector fields including lambda functions . Defaults to True.
+        """
         super().__init__()
-        self.nfe = 0.
-        self.vf = vector_field
-        # flag if vector field has `t` in call signature
-        # permits upstream compatibility with a wider selection of vector fields
-        # including lambda functions 
-        self.has_time_arg = has_time_arg 
+        self.nfe, self.vf, self.has_time_arg = 0., vector_field, has_time_arg 
 
     def forward(self, t, x):
         self.nfe += 1
@@ -38,7 +33,7 @@ class DEFuncBase(nn.Module):
 
 
 class DEFunc(nn.Module):
-    """Differential Equation Function wrapper. Handles auxiliary tasks for NeuralDEs: time ("depth") concatenation,
+    """Differential Equation Function wrapper for Neural ODEs. Handles auxiliary tasks: time ("depth") concatenation,
     higher order dynamics and forward propagated integral losses.
 
     :param model: neural network parametrizing the vector field
@@ -50,6 +45,7 @@ class DEFunc(nn.Module):
         super().__init__()
         self.vf, self.nfe,  = model, 0.
         self.order, self.integral_loss, self.sensitivity = order, None, None
+        # identify whether vector field already has time arg
 
     def forward(self, t, x):
         self.nfe += 1

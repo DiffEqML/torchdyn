@@ -1,4 +1,3 @@
-from inspect import getfullargspec
 import torch
 from torch.autograd import Function
 from torch import Tensor
@@ -8,6 +7,7 @@ from typing import Callable, Union, List
 from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
 from torchdyn.numerics.odeint import odeint, str_to_solver
+from torchdyn.core.utils import standardize_vf_call_signature
 
 
 class ODEProblem(nn.Module):
@@ -42,18 +42,7 @@ class ODEProblem(nn.Module):
         self.sensitivity, self.integral_loss = sensitivity, integral_loss
         
         # wrap vector field if `t, x` is not the call signature
-        if issubclass(type(vector_field), nn.Module):
-            if 't' not in getfullargspec(vector_field.forward).args:
-                print("Your vector field callable (nn.Module) should have both time `t` and state `x` as arguments, "
-                    "we've wrapped it for you.")
-                vector_field = DEFuncBase(vector_field, has_time_arg=False)
-        else: 
-            # argspec for lambda functions needs to be done on the function itself
-            if 't' not in getfullargspec(vector_field).args:
-                print("Your vector field callable (lambda) should have both time `t` and state `x` as arguments, "
-                    "we've wrapped it for you.")
-                vector_field = DEFuncBase(vector_field, has_time_arg=False)   
-            else: vector_field = DEFuncBase(vector_field, has_time_arg=True) 
+        vector_field = standardize_vf_call_signature(vector_field)
 
         self.vf, self.order, self.sensalg = vector_field, order, sensitivity
         if len(tuple(self.vf.parameters())) > 0:

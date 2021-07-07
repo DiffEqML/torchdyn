@@ -14,7 +14,8 @@ from typing import Callable, Union, List
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
 from torchdyn.numerics import odeint
-from torchdyn.core.defunc import DEFunc, SDEFunc
+from torchdyn.core.defunc import DEFunc, DEFuncBase, SDEFunc
+from torchdyn.core.utils import standardize_vf_call_signature
 
 import pytorch_lightning as pl
 import torch
@@ -45,12 +46,11 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             integral_loss (Union[Callable, None], optional): [description]. Defaults to None.
             seminorm (bool, optional): [description]. Defaults to False.
         """
-        super().__init__(vector_field=vector_field, order=order, sensitivity=sensitivity, solver=solver,
-                                       atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
-                                       seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss)
+        super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
+                         solver=solver, atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
+                         seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss)
         self.u, self.controlled, self.t_span = None, False, None # data-control conditioning
         self.return_t_eval = return_t_eval
-        self.vf = DEFunc(self.vf, order)
         if integral_loss is not None: self.vf.integral_loss = integral_loss
         self.vf.sensitivity = sensitivity
 
@@ -85,8 +85,8 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         if self.return_t_eval: return t_eval, sol
         else: return sol
 
-    def trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
-        x = self._prep_integration(x)
+    def trajectory(self, x:torch.Tensor, t_span:Tensor):
+        x, t_span = self._prep_integration(x, t_span)
         sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
         return sol
 
