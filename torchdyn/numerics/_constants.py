@@ -102,6 +102,7 @@ def construct_tsit5(dtype):
 ########################
 
 def construct_4th(dtype):
+    "4th order interpolator for `dopri5`"
     bmid = torch.tensor([
         0.10013431883002395, 0, 0.3918321794184259, -0.02982460176594817,
         0.05893268337240795, -0.04497888809104361, 0.023904308236133973

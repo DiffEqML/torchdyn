@@ -48,28 +48,29 @@ class DEFunc(nn.Module):
    """
     def __init__(self, model, order=1):
         super().__init__()
-        self.m, self.nfe,  = model, 0.
-        self.order, self.intloss, self.sensitivity = order, None, None
+        self.vf, self.nfe,  = model, 0.
+        self.order, self.integral_loss, self.sensitivity = order, None, None
 
     def forward(self, t, x):
         self.nfe += 1
         # set `t` depth-variable to DepthCat modules
-        for _, module in self.m.named_modules():
+        for _, module in self.vf.named_modules():
             if hasattr(module, 't'):
                 module.t = t
+
         # if-else to handle autograd training with integral loss propagated in x[:, 0]
-        if (not self.intloss is None) and self.sensitivity == 'autograd':
+        if (self.integral_loss is not None) and self.sensitivity == 'autograd':
             x_dyn = x[:, 1:]
-            dlds = self.intloss(t, x_dyn)
+            dlds = self.integral_loss(t, x_dyn)
             if len(dlds.shape) == 1: dlds = dlds[:, None]
             if self.order > 1: x_dyn = self.horder_forward(t, x_dyn)
-            else: x_dyn = self.m(x_dyn)
+            else: x_dyn = self.vf(t, x_dyn)
             return torch.cat([dlds, x_dyn], 1).to(x_dyn)
 
         # regular forward
         else:
             if self.order > 1: x = self.horder_forward(t, x)
-            else: x = self.m(x)
+            else: x = self.vf(t, x)
             return x
 
     def horder_forward(self, t, x):
@@ -77,7 +78,7 @@ class DEFunc(nn.Module):
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
             x_new += [x[:, size_order*i:size_order*(i+1)]]
-        x_new += [self.m(x)]
+        x_new += [self.vf(t, x)]
         return torch.cat(x_new, 1).to(x)
 
     

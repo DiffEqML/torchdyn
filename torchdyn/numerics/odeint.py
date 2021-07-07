@@ -128,7 +128,7 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 	return t_span, B
 
 
-# TODO: check why for some tols `min(....)` becomes empty in internal event finder
+
 def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
 				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
 	"""[summary]

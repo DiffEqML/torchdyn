@@ -16,6 +16,17 @@ class Lorenz(nn.Module):
         dx3 = x1 * x2 - 8/3 * x3
         return torch.cat([dx1, dx2, dx3], -1)
 
+
+class VanDerPol(nn.Module):
+    def __init__(self, alpha=10):
+        super().__init__()
+        self.alpha = alpha
+        self.nfe = 0
+
+    def forward(self, t, x):
+        self.nfe += 1
+        x1, x2 = x[...,:1], x[...,1:2]
+        return torch.cat([x2, self.alpha * (1 - x1**2) * x2 - x1], -1)
         
 class ODEProblem2(nn.Module):
     def __init__(self):

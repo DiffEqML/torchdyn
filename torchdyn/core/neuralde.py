@@ -26,9 +26,10 @@ import warnings
 
 
 class NeuralODE(ODEProblem, pl.LightningModule):
-    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd',
+    def __init__(self, vector_field, solver:Union[str, nn.Module]='tsit5', order:int=1, atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd',
                  solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, 
-                 interpolator:Union[str, Callable, None]=None, integral_loss:Union[Callable, None]=None, seminorm:bool=False):
+                 interpolator:Union[str, Callable, None]=None, integral_loss:Union[Callable, None]=None, seminorm:bool=False,
+                 return_t_eval:bool=True):
         """Generic Neural Ordinary Differential Equation. 
 
         Args:
@@ -44,40 +45,45 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             integral_loss (Union[Callable, None], optional): [description]. Defaults to None.
             seminorm (bool, optional): [description]. Defaults to False.
         """
-        super().__init__(vector_field=DEFunc(vector_field, order), order=order, sensitivity=sensitivity, solver=solver,
+        super().__init__(vector_field=vector_field, order=order, sensitivity=sensitivity, solver=solver,
                                        atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
                                        seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss)
-        self.u, self.controlled = None, False # data-control conditioning
+        self.u, self.controlled, self.t_span = None, False, None # data-control conditioning
+        self.return_t_eval = return_t_eval
+        self.vf = DEFunc(self.vf, order)
+        if integral_loss is not None: self.vf.integral_loss = integral_loss
+        self.vf.sensitivity = sensitivity
 
-    def _prep_integration(self, x:torch.Tensor) -> Tensor:
-        """[summary]
+    def _prep_integration(self, x:Tensor, t_span:Tensor) -> Tensor:
+        "Performs generic checks before integration. Assigns data control inputs and augments state for CNFs"
 
-        Args:
-            x (torch.Tensor): [description]
+        # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
+        if t_span is None and self.t_span is None: t_span = torch.linspace(0, 1, 2)
+        elif t_span is None: t_span = self.t_span
 
-        Returns:
-            [type]: [description]
-        """
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
         if (not self.integral_loss is None) and self.sensitivity == 'autograd':
             excess_dims += 1
+
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as datasets-control set to DataControl module
         for name, module in self.vf.named_modules():
             if hasattr(module, 'trace_estimator'):
                 if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
-            # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
 
+            # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
             if hasattr(module, 'u'):
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
-        return x
+        return x, t_span
 
-    def forward(self, x:torch.Tensor, t_span:torch.Tensor):
-        x = self._prep_integration(x)
-        return super().forward(x, t_span)
+    def forward(self, x:Tensor, t_span:Tensor=None):
+        x, t_span = self._prep_integration(x, t_span)
+        t_eval, sol =  super().forward(x, t_span)
+        if self.return_t_eval: return t_eval, sol
+        else: return sol
 
     def trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
         x = self._prep_integration(x)

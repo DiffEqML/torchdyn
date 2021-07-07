@@ -9,9 +9,9 @@ import torchdiffeq
 # TODO: optimize and make conditional gradient computations w.r.t end times
 # TODO: link `seminorm` arg from `ODEProblem`
 def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
-                            solver_adjoint, atol_adjoint, rtol_adjoint):
+                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+    "Prepares definition of autograd.Function for adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
-        "Underlying autograd.Function. All ODEProblem forwards are the same, each backward various depending on the sensitivity algorithm"
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
             t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator)
@@ -42,11 +42,15 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
                                     allow_unused=True, retain_graph=False))
 
+                    if integral_loss:
+                        dg = torch.autograd.grad(integral_loss(t, x).sum(), x, allow_unused=True, retain_graph=True)[0]
+                        dλ = dλ - dg
+
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                     if dt == None: dt = torch.zeros(1).to(t)
                     if len(t.shape) == 0: dt = dt.unsqueeze(0)
-                return torch.cat([dx.flatten(), dλ.flatten(), dμ.flatten(), dt])
+                return torch.cat([dx.flatten(), dλ.flatten(), dμ.flatten(), dt.flatten()])
 
             # solve the adjoint equation
             n_elements = (xT_nel, λT_nel, μT_nel)
@@ -80,7 +84,8 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
 # TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
 # use those to interpolate
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
-                                solver_adjoint, atol_adjoint, rtol_adjoint):
+                                solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+    "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
@@ -112,6 +117,11 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
                     dx = vf(t, x)
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
                                         allow_unused=True, retain_graph=False))
+
+                    if integral_loss:
+                        dg = torch.autograd.grad(integral_loss(t, x).sum(), x, allow_unused=True, retain_graph=True)[0]
+                        dλ = dλ - dg
+
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                 return torch.cat([dλ.flatten(), dμ.flatten()])

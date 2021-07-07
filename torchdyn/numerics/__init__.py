@@ -13,8 +13,8 @@
 from torchdyn.numerics.solvers import Euler, RungeKutta4, Tsitouras45, DormandPrince45, AsynchronousLeapfrog, MSZero, MSBackward
 from torchdyn.numerics.hypersolvers import HyperEuler
 from torchdyn.numerics.odeint import odeint, odeint_symplectic, odeint_mshooting, odeint_hybrid
-from torchdyn.numerics.systems import Lorenz
+from torchdyn.numerics.systems import VanDerPol, Lorenz
 
 __all__ =   ['odeint', 'odeint_symplectic', 'Euler', 'RungeKutta4', 'DormandPrince45', 'Tsitouras45',
-            'AsynchronousLeapfrog', 'HyperEuler', 'MSZero', 'MSBackward', 'Lorenz']
+            'AsynchronousLeapfrog', 'HyperEuler', 'MSZero', 'MSBackward', 'Lorenz', 'VanDerPol']
             

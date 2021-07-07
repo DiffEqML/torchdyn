@@ -39,7 +39,7 @@ class ODEProblem(nn.Module):
 
         self.solver, self.interpolator, self.atol, self.rtol = solver, interpolator, atol, rtol
         self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint = solver_adjoint, atol_adjoint, rtol_adjoint
-        self.integral_loss = integral_loss
+        self.sensitivity, self.integral_loss = sensitivity, integral_loss
         
         # wrap vector field if `t, x` is not the call signature
         if issubclass(type(vector_field), nn.Module):
@@ -67,10 +67,10 @@ class ODEProblem(nn.Module):
         # sensitivity algorithm
         if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
             self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
-                                                            solver_adjoint, atol_adjoint, rtol_adjoint).apply
+                                                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
         elif self.sensalg == 'interpolated_adjoint':
             self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
-                                                                    solver_adjoint, atol_adjoint, rtol_adjoint).apply
+                                                                    solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
 
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"

@@ -40,17 +40,19 @@ def small_dc_mlp():
 
 
 class TestLearner(pl.LightningModule):
-    def __init__(self, model:nn.Module, trainloader):
+    def __init__(self, t_span, model:nn.Module, trainloader):
         super().__init__()
         self.trainloader = trainloader
         self.model = model
+        self.t_span = t_span
 
     def forward(self, x):
         return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.model(x)
+        t_eval, y_hat = self.model(x, self.t_span)
+        y_hat = y_hat[-1]
         loss = nn.CrossEntropyLoss()(y_hat, y)
         self.log('train_loss', loss)
         return {'loss': loss}
@@ -88,6 +90,8 @@ def moons_dataloader():
     train = data.TensorDataset(X_train, y_train)
     return X_train, data.DataLoader(train, batch_size=len(X), shuffle=False)
 
+
+############# General optimization test functions ####################
 def rosenbrock(x):
     "a=1, b=100"
     x, y = x[...,:1], x[...,1:]
