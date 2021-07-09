@@ -145,3 +145,6 @@ poetry.lock
 
 # idea
 .idea
+
+# locally run notebooks via papermill
+local_nbrun*

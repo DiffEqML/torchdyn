@@ -3,18 +3,18 @@ import torch
 from torch.autograd import Function, grad
 from torchcde import NaturalCubicSpline, natural_cubic_coeffs
 from torchdyn.numerics.odeint import odeint
+import torchdiffeq
 
 
-# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
-# use those to interpolate
 # TODO: optimize and make conditional gradient computations w.r.t end times
-def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, 
-                            solver_adjoint, atol_adjoint, rtol_adjoint):
+# TODO: link `seminorm` arg from `ODEProblem`
+def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
+                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+    "Prepares definition of autograd.Function for adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
-        "Underlying autograd.Function. All ODEProblem forwards are the same, each backward various depending on the sensitivity algorithm"
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator)
             ctx.save_for_backward(sol, t_sol)
             return t_sol, sol
 
@@ -29,10 +29,11 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
             λT_flat = λT.flatten()
             λtT = λT_flat @ vf(t_sol[-1], xT).flatten()
-
+            # concatenate all states of adjoint system
             A = torch.cat([xT.flatten(), λT_flat, μT.flatten(), λtT[None]])
 
             def adjoint_dynamics(t, A):
+                if len(t.shape) > 0: t = t[0]
                 x, λ, μ = A[:xT_nel], A[xT_nel:xT_nel+λT_nel], A[-μT_nel-1:-1]
                 x, λ, μ = x.reshape(xT.shape), λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):
@@ -41,10 +42,15 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
                                     allow_unused=True, retain_graph=False))
 
+                    if integral_loss:
+                        dg = torch.autograd.grad(integral_loss(t, x).sum(), x, allow_unused=True, retain_graph=True)[0]
+                        dλ = dλ - dg
+
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                     if dt == None: dt = torch.zeros(1).to(t)
-                return torch.cat([dx.flatten(), dλ.flatten(), dμ.flatten(), dt])
+                    if len(t.shape) == 0: dt = dt.unsqueeze(0)
+                return torch.cat([dx.flatten(), dλ.flatten(), dμ.flatten(), dt.flatten()])
 
             # solve the adjoint equation
             n_elements = (xT_nel, λT_nel, μT_nel)
@@ -52,7 +58,8 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
             dLdt[-1] = λtT
             for i in range(len(t_sol) - 1, 0, -1):
                 t_adj_sol, A = odeint(adjoint_dynamics, A, t_sol[i - 1:i + 1].flip(0), 
-                                      solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint)
+                                      solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint,
+                                      seminorm=(True, xT_nel+λT_nel))
                 # prepare adjoint state for next interval
 
                 #TODO: reuse vf_eval for dLdt calculations
@@ -74,12 +81,15 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol,
 
 #TODO: introduce `t_span` grad as above
 #TODO: introduce option to interpolate on all solution points evaluated
-def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, 
-                                solver_adjoint, atol_adjoint, rtol_adjoint):
+# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
+# use those to interpolate
+def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
+                                solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+    "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol, rtol, return_all_eval=True)
+            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=True)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
@@ -98,14 +108,20 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol,
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
-                x = x_spline.evaluate(t)[:,0] 
-                x, t = x.requires_grad_(True), t.requires_grad_(True)
+                if len(t.shape) > 0: t = t[0]
+                x = x_spline.evaluate(t).requires_grad_(True)
+                t = t.requires_grad_(True)
                 λ, μ = A[:λT_nel], A[-μT_nel:]
                 λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
                 with torch.set_grad_enabled(True):
                     dx = vf(t, x)
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
                                         allow_unused=True, retain_graph=False))
+
+                    if integral_loss:
+                        dg = torch.autograd.grad(integral_loss(t, x).sum(), x, allow_unused=True, retain_graph=True)[0]
+                        dλ = dλ - dg
+
                     dμ = torch.cat([el.flatten() if el is not None else torch.zeros(1) 
                                     for el in dμ], dim=-1)
                 return torch.cat([dλ.flatten(), dμ.flatten()])

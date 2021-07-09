@@ -3,7 +3,7 @@
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
 from inspect import getargspec
-from typing import List, Union, Callable
+from typing import List, Tuple, Union, Callable
 from warnings import warn
 
 import torch
@@ -11,11 +11,34 @@ from torch import Tensor
 import torch.nn as nn
 
 from torchdyn.numerics.solvers import AsynchronousLeapfrog, str_to_solver, str_to_ms_solver
-from torchdyn.numerics.utils import norm, init_step, adapt_step, EventState
+from torchdyn.numerics.interpolators import str_to_interp
+from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   verbose:bool=False, return_all_eval:bool=False):
+		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
+		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+	"""[summary]
+
+	Args:
+		f (Callable): [description]
+		x (Tensor): [description]
+		t_span (Union[List, Tensor]): [description]
+		solver (Union[str, nn.Module]): [description]
+		atol (float, optional): [description]. Defaults to 1e-3.
+		rtol (float, optional): [description]. Defaults to 1e-3.
+		t_stops (Union[List, Tensor, None], optional): [description]. Defaults to None.
+		verbose (bool, optional): [description]. Defaults to False.
+		use_interp (bool, optional): [description]. Defaults to False.
+		return_all_eval (bool, optional): [description]. Defaults to False.
+		seminorm (Tuple[bool, Union[int, None]], optional): [description]. Defaults to (False, None).
+
+	Raises:
+		NotImplementedError: [description]
+
+	Returns:
+		Tuple[Tensor, Tensor]: [description]
+	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -29,6 +52,11 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
+	# instantiate the interpolator similar to the solver steps above
+	if type(interpolator) == str: 
+		interpolator = str_to_interp(interpolator, x.dtype)
+		x, t_span = interpolator.sync_device_dtype(x, t_span)
+
 	# access parallel integration routines with different t_spans for each sample in `x`.
 	if len(t_span.shape) > 1:
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
@@ -38,9 +66,9 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
-			k1 = f(t, x)
+			k1 = f_(t, x)
 			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
-			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, interpolator, return_all_eval, seminorm)
 
 
 # TODO (qol) state augmentation for symplectic methods 
@@ -80,35 +108,63 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 				k1 = f(t, pos)
 				dt = init_step(f, k1, pos, t, solver.order, atol, rtol)
 			else:
-				 k1 = f(t, x)
-				 dt = init_step(f, k1, x, t, solver.order, atol, rtol)	
+				k1 = f(t, x)
+				dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
-def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
-					 fine_steps=4, B_initialization='manual', maxiter=100):
-		coarse_solver, fine_solver = str_to_ms_solver(solver)
-		# initialize solver
-		solver = solver()
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
+	if type(solver) == str:
+		solver = str_to_ms_solver(solver)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	# first-guess B0 of shooting parameters
+	if B0 is None:
+		_, B0 = odeint(f, x, t_span, solver.coarse_method)
+	# determine which odeint to apply to MS solver
+	# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
+	odeint_func = _fixed_odeint
+	###
+	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
+	return t_span, B
 
-		B = solver.root_solve(f, x, t_span, B)
-		return B, t_span
 
 
-# TODO: check why for some tols `min(....)` becomes empty in internal event finder
-def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3, rtol=1e-3, event_tol=1e-4,
-				  priority='jump'):
-	x_shape, dtype, device = x.shape, x.dtype, x.device
-	ckpt_counter = 0
-	t = t_span[:1]
-	jnum = 0
+def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
+				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
+	"""[summary]
 
+	Args:
+		f ([type]): [description]
+		x ([type]): [description]
+		t_span ([type]): [description]
+		j_span ([type]): [description]
+		solver ([type]): [description]
+		callbacks ([type]): [description]
+		t_eval (list, optional): [description]. Defaults to [].
+		atol ([type], optional): [description]. Defaults to 1e-3.
+		rtol ([type], optional): [description]. Defaults to 1e-3.
+		event_tol ([type], optional): [description]. Defaults to 1e-4.
+		priority (str, optional): [description]. Defaults to 'jump'.
+
+	Returns:
+		[type]: [description]
+	"""
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+	if type(solver) == str: solver = str_to_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	x_shape = x.shape
+	ckpt_counter, ckpt_flag, jnum = 0, False, 0
+	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
+	
 	###### initial jumps ###########
 	event_states = EventState([False for _ in range(len(callbacks))])
 
 	if priority == 'jump':
 		new_event_states = EventState([cb.check_event(t, x) for cb in callbacks])
 		triggered_events = event_states != new_event_states
+		# check if any event flag changed from `False` to `True` within last step
+		triggered_events = sum([(a_ != b_)  & (b_ == False)
+								for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 		if triggered_events > 0:
 			i = min([i for i, idx in enumerate(new_event_states.evid) if idx == True])
 			x = callbacks[i].jump_map(t, x)
@@ -119,50 +175,56 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 	dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 
 	#### init solution & time vector ####
-	eval_times = [t]
-	sol = [x]
+	eval_times, sol = [t], [x]
 
-	while t < t_span[-1] and jnum < j_span:
+	while t < T and jnum < j_span:
+		
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
+			#print(ckpt_counter, len(t_eval), t+dt, t_eval[ckpt_counter])
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+				#print("GOING IN")
+				dt_old, ckpt_flag = dt, True
 				dt = t_eval[ckpt_counter] - t
 				ckpt_counter += 1
+		#print('t, dt', t, dt)
 
-		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
+		################ step
+		f_new, x_new, x_err, _ = solver.step(f, x, t, dt, k1=k1)
 
 		################ callback and events ########################
 		new_event_states = EventState([cb.check_event(t + dt, x_new) for cb in callbacks])
-		triggered_events = event_states != new_event_states
+		triggered_events = sum([(a_ != b_)  & (b_ == False)
+								for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 
-		# if event close in on switching state in [t, t + Δt]
+
+		# if event, close in on switching state in [t, t + Δt] via bisection
 		if triggered_events > 0:
-			t_inner = t
-			dt_inner = dt
-			x_inner = x
-			niters = 0
-			max_iters = 100  # compute as function of tolerances
+			
+			dt_pre, t_inner, dt_inner, x_inner, niters = dt, t, dt, x, 0
+			max_iters = 100  # TODO (numerics): compute tol as function of tolerances
 
 			while niters < max_iters and event_tol < dt_inner:
 				with torch.no_grad():
 					dt_inner = dt_inner / 2
-					f_new, x_, _ = solver.step(f, x_inner, t_inner, dt_inner, k1=k1)
+					f_new, x_, x_err, _ = solver.step(f, x_inner, t_inner, dt_inner, k1=k1)
 
 					new_event_states = EventState([cb.check_event(t_inner + dt_inner, x_)
 												   for cb in callbacks])
-					triggered_events = event_states != new_event_states
+					triggered_events = sum([(a_ != b_)  & (b_ == False)
+											for a_, b_ in zip(new_event_states.evid, event_states.evid)])
 					niters = niters + 1
 
-				if triggered_events == 0:
+				if triggered_events == 0: # if no event, advance start point of bisection search
 					x_inner = x_
-					sol.append(x_inner.reshape(x_shape))
 					t_inner = t_inner + dt_inner
-					eval_times.append(t_inner.reshape(t.shape))
 					dt_inner = dt
 					k1 = f_new
-
+					# TODO (qol): optional save
+					#sol.append(x_inner.reshape(x_shape))
+					#eval_times.append(t_inner.reshape(t.shape))
 			x = x_inner
 			t = t_inner
 			i = min([i for i, x in enumerate(new_event_states.evid) if x == True])
@@ -179,23 +241,32 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 			eval_times.append(t.reshape(t.shape))
 
 			# reset k1
-			k1 = f_new
+			k1 = None
+			dt = dt_pre
 
 		else:
-
 			################# compute error #############################
-			error = x_new - x_app
-			error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-			error_ratio = norm(error / error_tol)
+			if seminorm[0] == True: 
+				state_dim = seminorm[1]
+				error = x_err[:state_dim]
+				error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+			else: 
+				error = x_err
+				error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
+			
+			error_ratio = hairer_norm(error_scaled)
 			accept_step = error_ratio <= 1
 
 			if accept_step:
 				t = t + dt
-				x = x_new.float()
+				x = x_new
 				sol.append(x.reshape(x_shape))
 				eval_times.append(t.reshape(t.shape))
 				k1 = f_new
 
+			if ckpt_flag:
+				dt = dt_old - dt
+				ckpt_flag = False
 			################ stepsize control ###########################
 			dt = adapt_step(dt, error_ratio,
 							solver.safety,
@@ -206,14 +277,14 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, t_eval=[], atol=1e-3,
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-# TODO (qol): interpolation option instead of checkpoint
-def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_all_eval=False):
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpolator=None, return_all_eval=False, seminorm=(False, None)):
 	"""
 	
 	Notes:
 	(1) We check if the user wants all evaluated solution points, not only those
 	corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
 	is called for interpolated adjoints
+
 
 	Args:
 		f ([type]): [description]
@@ -224,51 +295,73 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, return_
 		solver ([type]): [description]
 		atol ([type], optional): [description]. Defaults to 1e-4.
 		rtol ([type], optional): [description]. Defaults to 1e-4.
+		use_interp (bool, optional):
 		return_all_eval (bool, optional): [description]. Defaults to False.
 
 	Returns:
 		[type]: [description]
 	
 	"""
-	t_eval = t_span[1:]
-	t = t_span[:1]
+	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
 	eval_times, sol = [t], [x]
-	while t < t_span[-1]:
+	while t < T:
+		if t + dt > T: 
+			dt = T - t
 		############### checkpointing ###############################
-		if t + dt > t_span[-1]:
-			dt = t_span[-1] - t
 		if t_eval is not None:
+			# satisfy checkpointing by using interpolation scheme or resetting `dt`
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				# save old dt and raise "checkpoint" flag
-				dt_old, ckpt_flag = dt, True
-				dt = t_eval[ckpt_counter] - t				
-		f_new, x_new, x_app = solver.step(f, x, t, dt, k1=k1)
+				if interpolator == None:	
+					# save old dt, raise "checkpoint" flag and repeat step
+					dt_old, ckpt_flag = dt, True
+					dt = t_eval[ckpt_counter] - t
+
+		f_new, x_new, x_err, stages = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
-		error = x_new - x_app
-		
-		error_tol = atol + rtol * torch.max(x.abs(), x_new.abs())
-		error_ratio = norm(error / error_tol)
+		if seminorm[0] == True: 
+			state_dim = seminorm[1]
+			error = x_err[:state_dim]
+			error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
+		else: 
+			error = x_err
+			error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
+		error_ratio = hairer_norm(error_scaled)
 		accept_step = error_ratio <= 1
+
 		if accept_step:
-			t, x = t + dt, x_new
-			if t == t_eval[ckpt_counter] or return_all_eval: # note (1)
+			############### checkpointing via interpolation ###############################
+			if t_eval is not None and interpolator is not None:
+				coefs = None
+				while (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
+					t0, t1 = t, t + dt
+					x_mid = x + dt * sum([interpolator.bmid[i] * stages[i] for i in range(len(stages))])
+					f0, f1, x0, x1 = k1, f_new, x, x_new
+					if coefs == None: coefs = interpolator.fit(dt, f0, f1, x0, x1, x_mid)
+					x_in = interpolator.evaluate(coefs, t0, t1, t_eval[ckpt_counter])
+					sol.append(x_in)
+					eval_times.append(t_eval[ckpt_counter][None])
+					ckpt_counter += 1
+
+			if t + dt == t_eval[ckpt_counter] or return_all_eval: # note (1)
 				sol.append(x_new)
-				eval_times.append(t)
-				ckpt_counter += 1	
+				eval_times.append(t + dt)
+				# we only increment the ckpt counter if the solution points corresponds to a time point in `t_span`
+				if t + dt == t_eval[ckpt_counter]: ckpt_counter += 1
+			t, x = t + dt, x_new
 			k1 = f_new 
+
 		################ stepsize control ###########################
-		# reset "dt" in case of checkpoint
+		# reset "dt" in case of checkpoint without interp
 		if ckpt_flag:
 			dt = dt_old - dt
 			ckpt_flag = False
+			
 		dt = adapt_step(dt, error_ratio,
 						solver.safety,
 						solver.min_factor,
 						solver.max_factor,
 						solver.order)
-		# TODO: insert safety mechanism for small or large steps
-		# dt = max(dt, torch.tensor(1e-5).to(dt))
 	return torch.cat(eval_times), torch.stack(sol)
 
 
@@ -288,10 +381,10 @@ def _fixed_odeint(f, x, t_span, solver):
 	sol = [x]
 	steps = 1
 	while steps <= len(t_span) - 1:
-		_, _, x = solver.step(f, x, t, dt)
+		_, x, _ = solver.step(f, x, t, dt)
 		sol.append(x)
 		t = t + dt
-		dt = t_span[steps] - t
+		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
 	return t_span, torch.stack(sol)
 
@@ -359,3 +452,4 @@ def _jagged_fixed_odeint(f, x,
 	# prune solutions to remove noop steps
 	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
 	return [torch.stack(sol_, 0) for sol_ in sol]
+	
