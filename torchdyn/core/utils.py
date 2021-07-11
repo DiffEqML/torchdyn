@@ -29,6 +29,6 @@ def standardize_vf_call_signature(vector_field, order=1, defunc_wrap=False):
                 "we've wrapped it for you.")
             vector_field = DEFuncBase(vector_field, has_time_arg=False)   
         else: vector_field = DEFuncBase(vector_field, has_time_arg=True) 
-    if defunc_wrap: return DEFunc(vector_field)
+    if defunc_wrap: return DEFunc(vector_field, order)
     else: return vector_field
 

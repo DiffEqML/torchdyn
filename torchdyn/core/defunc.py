@@ -10,18 +10,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Callable
 import torch
 import torch.nn as nn
 
 
 class DEFuncBase(nn.Module):
-    def __init__(self, vector_field, has_time_arg=True):
-        """Differential Equation Function base wrapper (x) -> (t, x)
+    def __init__(self, vector_field:Callable, has_time_arg:bool=True):
+        """Basic wrapper to ensure call signature compatibility between generic torch Modules and vector fields. 
 
         Args:
-            vector_field ([type]): [description]
-            has_time_arg (bool, optional): flag if vector field has `t` in call signature permits upstream 
-                compatibility with a wider selection of vector fields including lambda functions . Defaults to True.
+            vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
+            has_time_arg (bool, optional): Internal arg. to indicate whether the callable has `t` in its `__call__' 
+                or `forward` method. Defaults to True.
         """
         super().__init__()
         self.nfe, self.vf, self.has_time_arg = 0., vector_field, has_time_arg 
@@ -33,17 +34,16 @@ class DEFuncBase(nn.Module):
 
 
 class DEFunc(nn.Module):
-    """Differential Equation Function wrapper for Neural ODEs. Handles auxiliary tasks: time ("depth") concatenation,
-    higher order dynamics and forward propagated integral losses.
+    def __init__(self, vector_field:Callable, order:int=1):
+        """Special vector field wrapper for Neural ODEs. Handles auxiliary tasks: time ("depth") concatenation,
+           higher-order dynamics and forward propagated integral losses.
 
-    :param model: neural network parametrizing the vector field
-    :type model: nn.Module
-    :param order: order of the differential equation
-    :type order: int
-   """
-    def __init__(self, model, order=1):
+        Args:
+            vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
+            order (int, optional): order of the differential equation. Defaults to 1.
+        """
         super().__init__()
-        self.vf, self.nfe,  = model, 0.
+        self.vf, self.nfe,  = vector_field, 0.
         self.order, self.integral_loss, self.sensitivity = order, None, None
         # identify whether vector field already has time arg
 
@@ -79,13 +79,13 @@ class DEFunc(nn.Module):
 
     
 class SDEFunc(nn.Module):
-    def __init__(self, f, g, order=1):
-        """[summary]
+    def __init__(self, f:Callable, g:Callable, order:int=1):
+        """Special vector field wrapper for Neural SDEs. 
 
         Args:
-            f ([type]): [description]
-            g ([type]): [description]
-            order (int, optional): [description]. Defaults to 1.
+            f (Callable): callable defining the drift
+            g (Callable): callable defining the diffusion term
+            order (int, optional): order of the differential equation. Defaults to 1.
         """
         super().__init__()  
         self.order, self.intloss, self.sensitivity = order, None, None
@@ -96,7 +96,6 @@ class SDEFunc(nn.Module):
         pass
     
     def f(self, t, x):
-        """Drift."""
         self.nfe += 1
         for _, module in self.f_func.named_modules():
             if hasattr(module, 't'):
@@ -104,7 +103,6 @@ class SDEFunc(nn.Module):
         return self.f_func(x)
     
     def g(self, t, x):
-        """Diffusion"""
         for _, module in self.g_func.named_modules():
             if hasattr(module, 't'):
                 module.t = t
