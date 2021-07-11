@@ -7,6 +7,7 @@ TORCHDYN_NOTEBOOKS_PATHS = [
     'module1-neuralde/02_crossing_trajectories.ipynb',
     'module1-neuralde/03_augmentation_strategies.ipynb',
     'module1-neuralde/04_higher_order.ipynb']
+
     #'module2-numerics/02_hypersolver_odeint.ipynb']
 
 
