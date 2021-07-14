@@ -55,7 +55,20 @@ class Euler(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
+    
+class Midpoint(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
 
+    def step(self, f, x, t, dt, k1=None):
+        if k1 == None: k1 = f(t, x)
+        x_mid = x + 0.5 * dt * k1
+        x_sol = x + dt * f(t + 0.5 * dt, x_mid)
+        return None, x_sol, None
+
+    
 class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=4)
@@ -319,7 +332,7 @@ class EulerMaruyama(SDESolverTemplate):
         raise NotImplementedError
 
 
-SOLVER_DICT = {'euler': Euler,
+SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
