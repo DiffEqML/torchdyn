@@ -62,7 +62,9 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
 	# odeint routine with a single t_span for all samples
 	elif len(t_span.shape) == 1:
-		if stepping_class == 'fixed': 
+		if stepping_class == 'fixed':
+			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
+				warn("Setting tolerances has no effect on fixed-step methods")
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
@@ -99,7 +101,9 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
 	# odeint routine with a single t_span for all samples
 	elif len(t_span.shape) == 1:
-		if stepping_class == 'fixed': 
+		if stepping_class == 'fixed':
+			if atol != odeint_symplectic.__defaults__[0] or rtol != odeint_symplectic.__defaults__[1]:
+				warn("Setting tolerances has no effect on fixed-step methods")
 			return _fixed_odeint(f_, x, t_span, solver) 
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
