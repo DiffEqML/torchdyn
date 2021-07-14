@@ -332,14 +332,17 @@ class EulerMaruyama(SDESolverTemplate):
         raise NotImplementedError
 
 
-SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
+SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
+               'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
                'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45,
+               'ieuler': ImplicitEuler, 'implicit_euler': ImplicitEuler,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
-MS_SOLVER_DICT = {'euler': Euler, 'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
-               'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
-               'tsit5': Tsitouras45, 'Tsitouras45': Tsitouras45, 'Tsitouras5': Tsitouras45}
+
+MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
+                  'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward,
+                  'ieuler': ParallelImplicitEuler, 'parallel-implicit-euler': ParallelImplicitEuler}
 
 
 def str_to_solver(solver_name, dtype=torch.float32):
