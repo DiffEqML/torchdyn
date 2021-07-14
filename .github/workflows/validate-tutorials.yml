@@ -38,4 +38,5 @@ jobs:
     - name: Validate all notebook tutorials
       run: |
         source $HOME/.poetry/env
+        poetry run ipython kernel install --user --name=torchdyn
         poetry run python test/validate_tutorials.py

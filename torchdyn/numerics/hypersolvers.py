@@ -10,7 +10,7 @@ class HyperEuler(Euler):
 
     def step(self, f, x, t, dt, k1=None):
         _, _, x_sol = super().step(f, x, t, dt, k1)
-        return None, None, x_sol + dt**2 * self.hypernet(t, x)
+        return None, x_sol + dt**2 * self.hypernet(t, x), None
 
 class HyperRungeKutta4(RungeKutta4):
     def __init__(self, hypernet, dtype=torch.float32):
@@ -19,4 +19,4 @@ class HyperRungeKutta4(RungeKutta4):
 
     def step(self, f, x, t, dt, k1=None):
         _, _, x_sol = super().step(f, x, t, dt, k1)
-        return None, None, x_sol + dt**5 * self.hypernet(t, x)
+        return None, x_sol + dt**5 * self.hypernet(t, x), None

@@ -15,6 +15,7 @@ General plotting utilities
 """
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 from mpl_toolkits.mplot3d import Axes3D
@@ -125,7 +126,7 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
         U, V = torch.ones(n_grid, n_grid), torch.zeros(n_grid, n_grid)
         for i in range(n_grid):
             for j in range(n_grid):
-                V[i,j] = model.defunc(
+                V[i,j] = model.vf(
                             S[i,j].reshape(1,-1).to(device),
                             X[i,j].reshape(1,-1).to(device)
                             ).detach().cpu()
@@ -178,7 +179,8 @@ def plot_2D_state_space(trajectory, yn, n_lines):
 def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
     colors = ['orange', 'blue']
     fig = plt.figure(figsize=(6,3))
-    ax = Axes3D(fig)
+    ax = Axes3D(fig, auto_add_to_figure=False)
+    fig.add_axes(ax)
     for i in range(n_lines):
         ax.plot(s_span, trajectory[:,i,0], trajectory[:,i,1], color=colors[yn[i].int()], alpha = .1)
         ax.view_init(30, -110)

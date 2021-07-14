@@ -20,8 +20,9 @@ def test_stable_neural_de(testlearner):
             nn.Tanh(),
             nn.Linear(64, 1)))
     model = NeuralODE(f)
-    learn = testlearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    t_span = torch.linspace(0, 1, 30)
+    learn = testlearner(t_span, model, trainloader=trainloader)
+    trainer = pl.Trainer(min_epochs=5, max_epochs=5)
     trainer.fit(learn)
 
 def test_hnn(testlearner):
@@ -37,8 +38,9 @@ def test_hnn(testlearner):
             nn.Tanh(),
             nn.Linear(64, 1)))
     model = NeuralODE(f)
-    learn = testlearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    t_span = torch.linspace(0, 1, 30)
+    learn = testlearner(t_span, model, trainloader=trainloader)
+    trainer = pl.Trainer(min_epochs=5, max_epochs=5)
     trainer.fit(learn)
 
 def test_lnn(testlearner):
@@ -53,7 +55,8 @@ def test_lnn(testlearner):
             nn.Linear(2, 64),
             nn.Tanh(),
             nn.Linear(64, 1)))
-    model = NeuralODE(f)
-    learn = testlearner(model, trainloader=trainloader)
-    trainer = pl.Trainer(min_epochs=10, max_epochs=30)
+    model = NeuralODE(f, solver='rk4')
+    t_span = torch.linspace(0, 1, 30)
+    learn = testlearner(t_span, model, trainloader=trainloader)
+    trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)

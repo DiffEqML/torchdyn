@@ -1,18 +1,19 @@
-from inspect import getfullargspec
 import torch
 from torch.autograd import Function
 from torch import Tensor
 import torch.nn as nn
-from typing import Union, List
+from typing import Callable, Union, List
 
 from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
 from torchdyn.numerics.odeint import odeint, str_to_solver
+from torchdyn.core.utils import standardize_vf_call_signature
 
 
 class ODEProblem(nn.Module):
-    def __init__(self, vector_field, solver:Union[str, nn.Module], order:int=1, atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd',
-                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, seminorm:bool=False):
+    def __init__(self, vector_field, solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1, atol:float=1e-4, rtol:float=1e-4, 
+                 sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, 
+                 seminorm:bool=False, integral_loss:Union[Callable, None]=None):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 
         Args:
@@ -31,28 +32,17 @@ class ODEProblem(nn.Module):
         """
         super().__init__()
         # instantiate solver at initialization
-        if type(solver) == str: 
-            solver = str_to_solver(solver)
+        if type(solver) == str: solver = str_to_solver(solver)
         if solver_adjoint is None:
             solver_adjoint = solver
         else: solver_adjoint = str_to_solver(solver_adjoint)
 
-        self.solver, self.atol, self.rtol = solver, atol, rtol
+        self.solver, self.interpolator, self.atol, self.rtol = solver, interpolator, atol, rtol
         self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint = solver_adjoint, atol_adjoint, rtol_adjoint
-
+        self.sensitivity, self.integral_loss = sensitivity, integral_loss
+        
         # wrap vector field if `t, x` is not the call signature
-        if issubclass(type(vector_field), nn.Module):
-            if 't' not in getfullargspec(vector_field.forward).args:
-                print("Your vector field callable (nn.Module) should have both time `t` and state `x` as arguments, "
-                    "we've wrapped it for you.")
-                vector_field = DEFuncBase(vector_field)
-        else: 
-            # argspec for lambda functions needs to be done on the function itself
-            if 't' not in getfullargspec(vector_field).args:
-                print("Your vector field callable (lambda) should have both time `t` and state `x` as arguments, "
-                    "we've wrapped it for you.")
-                vector_field = DEFuncBase(vector_field, has_time_arg=False)   
-            else: vector_field = DEFuncBase(vector_field, has_time_arg=True) 
+        vector_field = standardize_vf_call_signature(vector_field)
 
         self.vf, self.order, self.sensalg = vector_field, order, sensitivity
         if len(tuple(self.vf.parameters())) > 0:
@@ -65,21 +55,21 @@ class ODEProblem(nn.Module):
         # instantiates an underlying autograd.Function that overrides the backward pass with the intended version
         # sensitivity algorithm
         if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
-            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol,
-                                                            solver_adjoint, atol_adjoint, rtol_adjoint).apply
+            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
+                                                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
         elif self.sensalg == 'interpolated_adjoint':
-            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol,
-                                                                    solver_adjoint, atol_adjoint, rtol_adjoint).apply
+            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
+                                                                    solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
 
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"
         if self.sensalg == 'autograd':
-            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol)
+            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator)
         else:
             return self.autograd_function(self.vf_params, x, t_span)
 
     def forward(self, x:Tensor, t_span:Tensor):
-        "For safety redirects to intented method `odeint`"
+        "For safety redirects to intended method `odeint`"
         return self.odeint(x, t_span)
 
 
@@ -125,3 +115,8 @@ class MultipleShootingProblem(nn.Module):
         t_eval, sol = self.odefunc(self.vf_params, x0, t_span, t_eval)
         return t_eval, sol
         
+
+
+class SDEProblem(nn.Module):
+    def __init__(self):
+        super().__init__()

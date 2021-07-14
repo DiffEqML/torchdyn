@@ -3,9 +3,8 @@ import pytest
 import torch
 import torch.nn as nn
 import pytorch_lightning as pl
-from torchdyn.models import NeuralODE
-from torchdyn.nn import DataControl, DepthCat
-from torchdyn.nn.galerkin import *
+from torchdyn.core import NeuralODE
+from torchdyn.nn import *
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 vector_fields = [nn.Sequential(nn.Linear(2, 64), nn.Tanh(), nn.Linear(64, 2)),
@@ -19,8 +18,9 @@ def test_default_run_gallinear(moons_trainloader, testlearner, basis):
                       nn.Tanh(),
                       DepthCat(1),
                       GalLinear(8, 2, expfunc=basis))
-    model = NeuralODE(f)
-    learn = testlearner(model, trainloader=moons_trainloader)
-    trainer = pl.Trainer(min_epochs=100, max_epochs=100)
+    t_span = torch.linspace(0, 1, 30)
+    model = NeuralODE(f, solver='rk4')
+    learn = testlearner(t_span, model, trainloader=moons_trainloader)
+    trainer = pl.Trainer(min_epochs=5, max_epochs=10)
     trainer.fit(learn)
 
