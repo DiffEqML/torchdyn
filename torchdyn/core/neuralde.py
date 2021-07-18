@@ -87,7 +87,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
     def trajectory(self, x:torch.Tensor, t_span:Tensor):
         x, t_span = self._prep_integration(x, t_span)
-        sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
+        _, sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
         return sol
 
     def __repr__(self):

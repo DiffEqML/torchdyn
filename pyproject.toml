@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "torchdyn"
-version = "0.3.1"
+version = "0.4.1"
 license = "Apache License, Version 2.0"
 description = "Your PyTorch package for neural differential equations"
 authors = ["Michael Poli", "Stefano Massaroli", ]
@@ -25,6 +25,7 @@ pytest = "*"
 pytest-cov = "*"
 papermill = "*"
 poethepoet = "^0.10.0"
+dgl = "*"
 torchdiffeq = "*"
 torchsde = { git = "https://github.com/google-research/torchsde.git" }
 torchcde = { git = "https://github.com/patrick-kidger/torchcde.git" }

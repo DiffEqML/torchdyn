@@ -1,14 +1,16 @@
 import papermill as pm
 
-# TODO: extend tutorial automated validation, dry run parameter for quick training
+
 TORCHDYN_NOTEBOOKS_PATHS = [
     '00_quickstart.ipynb',
     'module1-neuralde/01_neural_ode_cookbook.ipynb',
     'module1-neuralde/02_crossing_trajectories.ipynb',
     'module1-neuralde/03_augmentation_strategies.ipynb',
-    'module1-neuralde/04_higher_order.ipynb']
-
-    #'module2-numerics/02_hypersolver_odeint.ipynb']
+    'module1-neuralde/04_higher_order.ipynb',
+    'module2-numerics/01_hypersolver_odeint.ipynb',
+    'module2-numerics/02_multiple_shooting.ipynb',
+    'module2-numerics/03_hybrid_odeint.ipynb',
+    'module2-numerics/04_generalized_adjoint.ipynb']
 
 
 for path in TORCHDYN_NOTEBOOKS_PATHS:
