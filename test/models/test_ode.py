@@ -58,7 +58,7 @@ def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
     trainer.fit(learn)
 
     x, _ = next(iter(moons_trainloader))
-    _, trajectory = model.trajectory(x, t_span)
+    trajectory = model.trajectory(x, t_span)
     assert len(trajectory) == 30
 
 
