@@ -126,12 +126,7 @@ class AsynchronousLeapfrog(SolverTemplate):
 
 class DormandPrince45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
-        """[summary]
-
-        Args:
-            dtype ([type], optional): [description]. Defaults to torch.float32.
-        """
-        super().__init__(order=6)
+        super().__init__(order=5)
         self.dtype = dtype
         self.stepping_class = 'adaptive'
         self.tableau = construct_dopri5(self.dtype)
@@ -153,7 +148,7 @@ class DormandPrince45(SolverTemplate):
 
 class Tsitouras45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
-        super().__init__(order=6)
+        super().__init__(order=5)
         self.dtype = dtype
         self.stepping_class = 'adaptive'
         self.tableau = construct_tsit5(self.dtype)
@@ -297,7 +292,6 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
         self.max_iters = 200
 
     def sync_device_dtype(self, x, t_span):
-        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
         return x, t_span
 
     @staticmethod

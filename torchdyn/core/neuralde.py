@@ -116,18 +116,18 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         """Generic Neural Stochastic Differential Equation. Follows the same design of the `NeuralODE` class.
 
         Args:
-            drift_func ([type]): [description]
-            diffusion_func ([type]): [description]
-            noise_type (str, optional): [description]. Defaults to 'diagonal'.
-            sde_type (str, optional): [description]. Defaults to 'ito'.
-            order (int, optional): [description]. Defaults to 1.
-            sensitivity (str, optional): [description]. Defaults to 'autograd'.
-            s_span ([type], optional): [description]. Defaults to torch.linspace(0, 1, 2).
-            solver (str, optional): [description]. Defaults to 'srk'.
-            atol ([type], optional): [description]. Defaults to 1e-4.
-            rtol ([type], optional): [description]. Defaults to 1e-4.
-            ds ([type], optional): [description]. Defaults to 1e-3.
-            intloss ([type], optional): [description]. Defaults to None.
+            drift_func ([type]): drift function
+            diffusion_func ([type]): diffusion function
+            noise_type (str, optional): Defaults to 'diagonal'.
+            sde_type (str, optional): Defaults to 'ito'.
+            order (int, optional): Defaults to 1.
+            sensitivity (str, optional): Defaults to 'autograd'.
+            s_span ([type], optional): Defaults to torch.linspace(0, 1, 2).
+            solver (str, optional): Defaults to 'srk'.
+            atol ([type], optional): Defaults to 1e-4.
+            rtol ([type], optional): Defaults to 1e-4.
+            ds ([type], optional): Defaults to 1e-3.
+            intloss ([type], optional): Defaults to None.
 
         Raises:
             NotImplementedError: higher-order Neural SDEs are not yet implemented, raised by setting `order` to >1.

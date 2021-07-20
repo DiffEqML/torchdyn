@@ -49,11 +49,7 @@ class ThirdHermite(Interpolator):
 
 class FourthOrder(Interpolator):
     def __init__(self, dtype):
-        """[summary]
-
-        Args:
-            dtype ([type]): [description]
-        """
+        """4th order interpolation scheme."""
         super().__init__(order=4)
         self.bmid = construct_4th(dtype)
 

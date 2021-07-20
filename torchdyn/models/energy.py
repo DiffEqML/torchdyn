@@ -20,15 +20,15 @@ from torch.autograd.functional import hessian, jacobian
 
 
 class ConservativeLinearSNF(nn.Module):
-    """Stable Neural Flows: https://arxiv.org/abs/2003.08063
-    A generalization of Hamiltonian Neural Networks and other energy-based parametrization of Neural ODEs
-    Conservative version with energy preservation. Input assumed to be of dimensions `batch, dim`
-    :param energy: function parametrizing the energy.
-    :type energy: nn.Module
-    :param J:
-    :type J: nn.Module
-    """
     def __init__(self, energy, J):
+        """Stable Neural Flows: https://arxiv.org/abs/2003.08063
+        A generalization of Hamiltonian Neural Networks and other energy-based parametrization of Neural ODEs
+        Conservative version with energy preservation. Input assumed to be of dimensions `batch, dim`
+
+        Args:
+            energy: function parametrizing the energy.
+            J: network parametrizing the skew-symmetric interconnection matrix
+        """
         super().__init__()
         self.energy = energy
         self.J = J
@@ -46,11 +46,11 @@ class ConservativeLinearSNF(nn.Module):
         return (M - M.transpose(0, 2, 1)) / 2
 
 class GNF(nn.Module):
-    """Gradient Neural Flows version of SNFs: https://arxiv.org/abs/2003.08063
-    :param energy: function parametrizing the energy.
-    :type energy: nn.Module
-    """
     def __init__(self, energy:nn.Module):
+        """Gradient Neural Flows version of SNFs: https://arxiv.org/abs/2003.08063
+        Args:
+            energy (nn.Module): function parametrizing the energy.
+        """
         super().__init__()
         self.energy = energy
 
@@ -63,12 +63,12 @@ class GNF(nn.Module):
 
 
 class HNN(nn.Module):
-    """Hamiltonian Neural ODE
-
-    :param net: function parametrizing the vector field.
-    :type net: nn.Module
-    """
     def __init__(self, net:nn.Module):
+        """Hamiltonian Neural ODE
+
+        Args:
+            net (nn.Module): function parametrizing the vector field.
+        """
         super().__init__()
         self.net = net
 
@@ -81,12 +81,15 @@ class HNN(nn.Module):
 
 
 class LNN(nn.Module):
-    """Lagrangian Neural ODE
-
-    :param net: function parametrizing the vector field.
-    :type net: nn.Module
-    """
     def __init__(self, net):
+        """Lagrangian Neural Network. 
+
+        Args:
+            net (nn.Module)
+        Notes:
+            LNNs are currently quite slow. Improvements will be made whenever `functorch` is either merged upstream or included 
+            as a dependency.
+        """
         super().__init__()
         self.net = net
 

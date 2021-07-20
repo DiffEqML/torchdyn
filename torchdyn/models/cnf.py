@@ -12,6 +12,7 @@
 
 import torch
 import torch.nn as nn
+from typing import Callable
 from torch.autograd import grad
 
 
@@ -32,18 +33,18 @@ def hutch_trace(x_out, x_in, noise=None, **kwargs):
 REQUIRES_NOISE = [hutch_trace]
 
 class CNF(nn.Module):
-    """Continuous Normalizing Flow
+    def __init__(self, net:nn.Module, trace_estimator:Union[Callable, None]=None, noise_dist=None, order=1):
+        """Continuous Normalizing Flow
 
-    :param net: function parametrizing the datasets vector field.
-    :type net: nn.Module
-    :param trace_estimator: specifies the strategy to otbain Jacobian traces. Options: (autograd_trace, hutch_trace)
-    :type trace_estimator: Callable
-    :param noise_dist: distribution of noise vectors sampled for stochastic trace estimators. Needs to have a `.sample` method.
-    :type noise_dist: torch.distributions.Distribution
-    :param order: specifies parameters of the Neural DE.
-    :type order: int
-    """
-    def __init__(self, net, trace_estimator=None, noise_dist=None, order=1):
+        :param net: function parametrizing the datasets vector field.
+        :type net: nn.Module
+        :param trace_estimator: specifies the strategy to otbain Jacobian traces. Options: (autograd_trace, hutch_trace)
+        :type trace_estimator: Callable
+        :param noise_dist: distribution of noise vectors sampled for stochastic trace estimators. Needs to have a `.sample` method.
+        :type noise_dist: torch.distributions.Distribution
+        :param order: specifies parameters of the Neural DE.
+        :type order: int
+        """
         super().__init__()
         self.net, self.order = net, order # order at the CNF level will be merged with DEFunc
         self.trace_estimator = trace_estimator if trace_estimator is not None else autograd_trace;

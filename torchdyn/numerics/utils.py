@@ -83,6 +83,7 @@ class EventState:
 
 @attr.s
 class EventCallback(nn.Module):
+    "Basic callback for hybrid differential equations. Must define an event condition and a state-jump"
     def __attrs_post_init__(self):
         super().__init__()
 

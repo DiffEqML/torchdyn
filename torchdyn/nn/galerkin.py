@@ -34,7 +34,7 @@ class GaussianRBF(nn.Module):
             self.centers = torch.nn.Parameter(centers * torch.ones(deg + 1))
             self.eps_scales = torch.nn.Parameter(eps_scales * torch.ones((deg + 1)))
         else:
-            self.centers = 0;
+            self.centers = 0
             self.eps_scales = 2
 
     def forward(self, n_range, s):
@@ -63,7 +63,7 @@ class VanillaRBF(nn.Module):
             self.centers = torch.nn.Parameter(centers * torch.ones(deg + 1))
             self.eps_scales = torch.nn.Parameter(eps_scales * torch.ones((deg + 1)))
         else:
-            self.centers = 0;
+            self.centers = 0
             self.eps_scales = 2
 
     def forward(self, n_range, s):
@@ -92,7 +92,7 @@ class MultiquadRBF(nn.Module):
             self.centers = torch.nn.Parameter(centers * torch.ones(deg + 1))
             self.eps_scales = torch.nn.Parameter(eps_scales * torch.ones((deg + 1)))
         else:
-            self.centers = 0;
+            self.centers = 0
             self.eps_scales = 2
 
     def forward(self, n_range, s):

@@ -92,9 +92,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
 
 
 #TODO: introduce `t_span` grad as above
-#TODO: introduce option to interpolate on all solution points evaluated
-# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
-# use those to interpolate
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                                 solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
     "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
