@@ -43,7 +43,6 @@ templates_path = ['_templates']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
-#
 source_suffix = '.rst'
 
 # The master toctree document.
@@ -103,7 +102,11 @@ nbsphinx_prolog = r"""
 #html_theme = 'alabaster'
 
 html_theme = "sphinx_rtd_theme"
-
+html_logo = '_static/logo_small.png'
+html_theme_options = {
+    'logo_only': True,
+    'display_version': False,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
