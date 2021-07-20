@@ -291,8 +291,7 @@ class MSBackward(MShootingSolverTemplate):
 
 class ParallelImplicitEuler(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='euler'):
-        """Parallel Implicit Euler Method
-        """
+        """Parallel Implicit Euler Method"""
         super().__init__(coarse_method, fine_method)
         self.solver = torch.optim.LBFGS
         self.max_iters = 200

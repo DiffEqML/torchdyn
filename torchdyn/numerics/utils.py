@@ -125,3 +125,4 @@ class WrapFunc(nn.Module):
         super().__init__()
         self.f = f
     def forward(self, t, x): return self.f(x)
+

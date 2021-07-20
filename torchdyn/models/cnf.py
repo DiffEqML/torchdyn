@@ -63,5 +63,3 @@ class CNF(nn.Module):
             trJ = self.trace_estimator(x_out, x_in, noise=self.noise)
         return torch.cat([-trJ[:, None], x_out], 1) + 0*x # `+ 0*x` has the only purpose of connecting x[:, 0] to autograd graph
 
-    def higher_order(self, x):
-        raise NotImplementedError

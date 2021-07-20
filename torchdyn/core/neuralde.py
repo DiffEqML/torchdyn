@@ -27,24 +27,33 @@ import warnings
 
 
 class NeuralODE(ODEProblem, pl.LightningModule):
-    def __init__(self, vector_field, solver:Union[str, nn.Module]='tsit5', order:int=1, atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd',
-                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, 
-                 interpolator:Union[str, Callable, None]=None, integral_loss:Union[Callable, None]=None, seminorm:bool=False,
-                 return_t_eval:bool=True):
-        """Generic Neural Ordinary Differential Equation. 
+    def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module]='tsit5', order:int=1, 
+                atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, 
+                atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, interpolator:Union[str, Callable, None]=None, \
+                integral_loss:Union[Callable, None]=None, seminorm:bool=False, return_t_eval:bool=True):
+        """Generic Neural Ordinary Differential Equation.
 
         Args:
-            vector_field ([type]): [description]
+            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+                                       In the second case, the Callable is automatically wrapped for consistency
             solver (Union[str, nn.Module]): [description]
-            order (int, optional): [description]. Defaults to 1.
-            atol (float, optional): [description]. Defaults to 1e-4.
-            rtol (float, optional): [description]. Defaults to 1e-4.
-            sensitivity (str, optional): [description]. Defaults to 'autograd'.
-            solver_adjoint (Union[str, nn.Module, None], optional): [description]. Defaults to None.
-            atol_adjoint (float, optional): [description]. Defaults to 1e-6.
-            rtol_adjoint (float, optional): [description]. Defaults to 1e-6.
-            integral_loss (Union[Callable, None], optional): [description]. Defaults to None.
-            seminorm (bool, optional): [description]. Defaults to False.
+            order (int, optional): Order of the ODE. Defaults to 1.
+            atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
+            rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
+            sensitivity (str, optional): Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
+            solver_adjoint (Union[str, nn.Module, None], optional): ODE solver for the adjoint. Defaults to None.
+            atol_adjoint (float, optional): Defaults to 1e-6.
+            rtol_adjoint (float, optional): Defaults to 1e-6.
+            integral_loss (Union[Callable, None], optional): Defaults to None.
+            seminorm (bool, optional): Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
+            return_t_eval (bool): Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
+        Notes:
+            In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
+            as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
+            the solution only. 
+
+            The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used. 
+            The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
         """
         super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
                          solver=solver, atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
@@ -101,26 +110,31 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
 
 class NeuralSDE(SDEProblem, pl.LightningModule):
-    """General Neural SDE class
-    :param drift_func: function parametrizing the drift.
-    :type drift_func: nn.Module
-    :param diffusion_func: function parametrizing the diffusion.
-    :type diffusion_func: nn.Module
-    :param settings: specifies parameters of the Neural DE.
-    :type settings: dict
-    """
-    def __init__(self, drift_func, 
-                       diffusion_func, 
-                       noise_type ='diagonal',
-                       sde_type = 'ito',
-                       order=1,
-                       sensitivity='autograd',
-                       s_span=torch.linspace(0, 1, 2),
-                       solver='srk',
-                       atol=1e-4,
-                       rtol=1e-4,
-                       ds = 1e-3,
-                       intloss=None):
+    def __init__(self, drift_func, diffusion_func, noise_type ='diagonal', sde_type = 'ito', order=1,
+                 sensitivity='autograd', s_span=torch.linspace(0, 1, 2), solver='srk',
+                 atol=1e-4, rtol=1e-4, ds = 1e-3, intloss=None):
+        """Generic Neural Stochastic Differential Equation. Follows the same design of the `NeuralODE` class.
+
+        Args:
+            drift_func ([type]): [description]
+            diffusion_func ([type]): [description]
+            noise_type (str, optional): [description]. Defaults to 'diagonal'.
+            sde_type (str, optional): [description]. Defaults to 'ito'.
+            order (int, optional): [description]. Defaults to 1.
+            sensitivity (str, optional): [description]. Defaults to 'autograd'.
+            s_span ([type], optional): [description]. Defaults to torch.linspace(0, 1, 2).
+            solver (str, optional): [description]. Defaults to 'srk'.
+            atol ([type], optional): [description]. Defaults to 1e-4.
+            rtol ([type], optional): [description]. Defaults to 1e-4.
+            ds ([type], optional): [description]. Defaults to 1e-3.
+            intloss ([type], optional): [description]. Defaults to None.
+
+        Raises:
+            NotImplementedError: higher-order Neural SDEs are not yet implemented, raised by setting `order` to >1.
+
+        Notes:
+            The current implementation is rougher around the edges compared to `NeuralODE`, and is not guaranteed to have the same features.
+        """
         super().__init__(func=SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
                                       atol=atol, rtol=rtol)
         if order != 1: raise NotImplementedError
@@ -133,7 +147,6 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
     def _prep_sdeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
         # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
-        # TO DO: merge the named_modules loop for perf
         excess_dims = 0
         for _, module in self.defunc.named_modules():
             if hasattr(module, 'u'):
@@ -175,3 +188,4 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
 class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
     def __init__(self):
         super().__init__()
+        raise NotImplementedError("Coming soon")
