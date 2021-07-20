@@ -230,4 +230,5 @@ class MatMulBoundedSystem(nn.Module):
     def randomize_parameters(self):
         for p in self.net.parameters():
             torch.nn.init.normal_(p, 0, 1)
-            
+
+          

@@ -12,7 +12,7 @@
 
 import torch
 import torch.nn as nn
-from torchdyn.numerics.solvers import  Euler, Midpoint, RungeKutta4
+from torchdyn.numerics.solvers import Euler, Midpoint, RungeKutta4
 
 class HyperEuler(Euler):
     def __init__(self, hypernet, dtype=torch.float32):

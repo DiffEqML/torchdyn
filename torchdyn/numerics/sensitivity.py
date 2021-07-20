@@ -13,9 +13,8 @@
 from inspect import getfullargspec
 import torch
 from torch.autograd import Function, grad
-from torchcde import NaturalCubicSpline, natural_cubic_coeffs
+from torchcde import CubicSpline, hermite_cubic_coefficients_with_backward_differences
 from torchdyn.numerics.odeint import odeint
-import torchdiffeq
 
 
 # TODO: optimize and make conditional gradient computations w.r.t end times
@@ -92,9 +91,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
 
 
 #TODO: introduce `t_span` grad as above
-#TODO: introduce option to interpolate on all solution points evaluated
-# TODO (qol): if `t_sol` contains additional solution points other than the specified ones in `t_span`
-# use those to interpolate
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                                 solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
     "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
@@ -115,8 +111,9 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
             λT_nel, μT_nel = λT.numel(), μT.numel()
             xT_shape, λT_shape, μT_shape = xT.shape, λT.shape, μT.shape
             A = torch.cat([λT.flatten(), μT.flatten()])
-            spline_coeffs = natural_cubic_coeffs(x=sol.permute(1, 0, 2).detach(), t=t_sol)
-            x_spline = NaturalCubicSpline(coeffs=spline_coeffs, t=t_sol)
+
+            spline_coeffs = hermite_cubic_coefficients_with_backward_differences(x=sol.permute(1, 0, 2).detach())
+            x_spline = CubicSpline(coeffs=spline_coeffs)
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):

@@ -10,6 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"Experimental API for hybrid Neural DEs and continuous models applied to sequences -> [ODE-RNN, Neural CDE]"
+
 import math
 import torch
 import torch.nn as nn
@@ -22,6 +24,7 @@ from torchdyn.models import LSDEFunc
 
 class HybridNeuralDE(nn.Module):
     def __init__(self, flow, jump, out, last_output=True, reverse=False):
+        """ODE-RNN / LSTM / GRU"""
         super().__init__()
         self.flow, self.jump, self.out = flow, jump, out
         self.reverse, self.last_output = reverse, last_output
@@ -63,6 +66,7 @@ class HybridNeuralDE(nn.Module):
 class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
     def __init__(self, post_drift, diffusion, prior_drift, sigma, theta, mu, options,
                  noise_type, order, sensitivity, s_span, solver, atol, rtol, intloss):
+        """Latent Neural SDEs."""
 
         super().__init__(drift_func=post_drift, diffusion_func=diffusion, noise_type=noise_type,
                          order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
@@ -82,16 +86,6 @@ class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
         self.qy0_logvar = nn.Parameter(torch.tensor([[logvar]]), requires_grad=True)
 
     def forward(self, eps: torch.Tensor, s_span=None):
-        """[summary]
-
-        Args:
-            eps (torch.Tensor): [description]
-            s_span ([type], optional): [description]. Defaults to None.
-
-        Returns:
-            [type]: [description]
-        """
-
         eps = eps.to(self.qy0_std)
         x0 = self.qy0_mean + eps * self.qy0_std
 
@@ -114,35 +108,11 @@ class LatentNeuralSDE(NeuralSDE, pl.LightningModule): # pragma: no cover
         return zs, log_ratio
 
     def sample_p(self, vis_span, n_sim, eps=None, bm=None, dt=0.01):
-        """[summary]
-
-        Args:
-            vis_span ([type]): [description]
-            n_sim ([type]): [description]
-            eps ([type], optional): [description]. Defaults to None.
-            bm ([type], optional): [description]. Defaults to None.
-            dt (float, optional): [description]. Defaults to 0.01.
-
-        Returns:
-            [type]: [description]
-        """
         eps = torch.randn(n_sim, 1).to(self.py0_mean).to(self.device) if eps is None else eps
         y0 = self.py0_mean + eps.to(self.device) * self.py0_std
         return torchsde.sdeint(self.defunc, y0, vis_span, bm=bm, method='srk', dt=dt, names={'drift': 'h'})
 
     def sample_q(self, vis_span, n_sim, eps=None, bm=None, dt=0.01):
-        """[summary]
-
-        Args:
-            vis_span ([type]): [description]
-            n_sim ([type]): [description]
-            eps ([type], optional): [description]. Defaults to None.
-            bm ([type], optional): [description]. Defaults to None.
-            dt (float, optional): [description]. Defaults to 0.01.
-
-        Returns:
-            [type]: [description]
-        """
         eps = torch.randn(n_sim, 1).to(self.qy0_mean) if eps is None else eps
         y0 = self.qy0_mean + eps.to(self.device) * self.qy0_std
         return torchsde.sdeint(self.defunc, y0, vis_span, bm=bm, method='srk', dt=dt)

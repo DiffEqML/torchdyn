@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Root finding solvers and utilities"""
+"""Root finding solvers, line search utilities and root find API"""
 import torch
 from torch import einsum
 from torch import norm

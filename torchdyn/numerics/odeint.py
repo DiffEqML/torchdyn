@@ -30,7 +30,8 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
 		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
-	"""[summary]
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
+	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
 		f (Callable): [description]
@@ -39,17 +40,14 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		solver (Union[str, nn.Module]): [description]
 		atol (float, optional): [description]. Defaults to 1e-3.
 		rtol (float, optional): [description]. Defaults to 1e-3.
-		t_stops (Union[List, Tensor, None], optional): [description]. Defaults to None.
-		verbose (bool, optional): [description]. Defaults to False.
-		use_interp (bool, optional): [description]. Defaults to False.
-		return_all_eval (bool, optional): [description]. Defaults to False.
-		seminorm (Tuple[bool, Union[int, None]], optional): [description]. Defaults to (False, None).
-
-	Raises:
-		NotImplementedError: [description]
+		t_stops (Union[List, Tensor, None], optional): Defaults to None.
+		verbose (bool, optional): Defaults to False.
+		interpolator (bool, optional): Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
+		seminorm (Tuple[bool, Union[int, None]], optional): Whether to use seminorms in local error computation.
 
 	Returns:
-		Tuple[Tensor, Tensor]: [description]
+		Tuple[Tensor, Tensor]: returns a Tuple (t_eval, solution).
 	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
@@ -294,13 +292,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 
 
 def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpolator=None, return_all_eval=False, seminorm=(False, None)):
-	"""
-	
-	Notes:
-	(1) We check if the user wants all evaluated solution points, not only those
-	corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
-	is called for interpolated adjoints
-
+	"""Adaptive ODE solve routine, called by `odeint`.
 
 	Args:
 		f ([type]): [description]
@@ -314,9 +306,11 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 		use_interp (bool, optional):
 		return_all_eval (bool, optional): [description]. Defaults to False.
 
-	Returns:
-		[type]: [description]
 	
+	Notes:
+		(1) We check if the user wants all evaluated solution points, not only those
+		corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
+		is called for interpolated adjoints
 	"""
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
 	ckpt_counter, ckpt_flag = 0, False	
@@ -382,17 +376,7 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 
 
 def _fixed_odeint(f, x, t_span, solver):
-	"""Solves IVPs with same `t_span`, using fixed-step methods
-
-	Args:
-		f ([type]): [description]
-		x ([type]): [description]
-		t_span ([type]): [description]
-		solver ([type]): [description]
-
-	Returns:
-		[type]: [description]
-	"""
+	"""Solves IVPs with same `t_span`, using fixed-step methods"""
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
 	steps = 1
@@ -405,10 +389,12 @@ def _fixed_odeint(f, x, t_span, solver):
 	return t_span, torch.stack(sol)
 
 
-# TODO: update dt
 def _shifted_fixed_odeint(f, x, t_span):
 	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
-	have equal step sizes and number of solution points"""
+	have equal step sizes and number of solution points
+	
+	Notes:
+		Assumes `dt` fixed. TODO: update in each loop evaluation."""
 	t, T = t_span[..., 0], t_span[..., -1]
 	dt = t_span[..., 1] - t
 	sol, k1 = [], f(t, x)
@@ -431,12 +417,6 @@ def _jagged_fixed_odeint(f, x,
 	"""
 	Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. Each sub-IVP can vary in number
     of solution steps and step sizes
-
-	Args:
-		f:
-		x:
-		t_span:
-		solver:
 
 	Returns:
 		A list of `len(t_span)' containing solutions of each IVP computed in parallel.
@@ -468,4 +448,4 @@ def _jagged_fixed_odeint(f, x,
 	# prune solutions to remove noop steps
 	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
 	return [torch.stack(sol_, 0) for sol_ in sol]
-	
+

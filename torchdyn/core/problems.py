@@ -12,7 +12,7 @@ from torchdyn.core.utils import standardize_vf_call_signature
 
 class ODEProblem(nn.Module):
     def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1, 
-                atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                atol:float=1e-4, rtol:float=1e-4, sensitivity:str='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
                 rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 
@@ -76,46 +76,33 @@ class ODEProblem(nn.Module):
         return self.odeint(x, t_span)
 
 
-class MultipleShootingProblem(nn.Module):
-    def __init__(self, solver:str, vector_field, sensalg='autograd'):
+class MultipleShootingProblem(ODEProblem):
+    def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
+                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                 rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
         """An ODE problem solved with parallel-in-time methods.
 
         Args:
-            solver (str): [description]
-            vector_field ([type]): [description]
-            sensalg (str, optional): [description]. Defaults to 'autograd'.
+            vector_field (Callable):  the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+                                    In the second case, the Callable is automatically wrapped for consistency
+            solver (str): parallel-in-time solver.
+            sensitivity (str, optional): [description]. Defaults to 'autograd'.
+            solver_adjoint (Union[str, nn.Module, None], optional): [description]. Defaults to None.
+            atol_adjoint (float, optional): [description]. Defaults to 1e-6.
+            rtol_adjoint (float, optional): [description]. Defaults to 1e-6.
+            seminorm (bool, optional): [description]. Defaults to False.
+            integral_loss (Union[Callable, None], optional): [description]. Defaults to None.
         """
-        super().__init__()
-        
-        self.solver
-        self.sensalg, self.vf, self.solver = sensalg, vf, solver
-
-        #TODO: this fails when vf does not have parameters
-        if len(tuple(vf.parameters())) > 0:
-            self.vector_field = torch.cat([p.contiguous().flatten() for p in vector_field.parameters()])
-        else:
-            self.vf_params = nn.Parameter(torch.zeros(1))
-
-        if 't' not in getfullargspec(vector_field.forward).args:
-            self.vf = DEFuncBase(vector_field)
-
-        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
-            self.odefunc = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, atol, rtol).apply
-        elif self.sensalg == 'interpolated_adjoint':
-            self.odefunc = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, atol, rtol).apply
-        else:
-            def odefunc(vf_params, x0, t_span, t_eval=[]):
-                return odeint(self.vf, x=x0, t_span=t_span,
-                              t_eval=t_eval, solver=self.solver, atol=atol, rtol=rtol)
-
-            self.odefunc = odefunc
+        super().__init__(vector_field=vector_field, solver=None, interpolator=None, order=1, 
+                sensitivity=sensitivity, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, 
+                rtol_adjoint=rtol_adjoint, seminorm=seminorm, integral_loss=integral_loss)
+        self.parallel_solver = solver
 
     def forward(self, x0, t_span, atol=1e-4, rtol=1e-4, t_eval=[]):
         x0, t_span = prep_input(x0, t_span)
         t_eval, sol = self.odefunc(self.vf_params, x0, t_span, t_eval)
         return t_eval, sol
         
-
 
 class SDEProblem(nn.Module):
     def __init__(self):
