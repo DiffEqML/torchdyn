@@ -19,6 +19,6 @@ setup(use_scm_version=True,
     install_requires=[
         'sphinx>=1.8',
         'ipykernel',
-        'nbsphinx'
+        'nbsphinx',
+        'myst_parser'
         ])
-        
