@@ -6,3 +6,12 @@ readthedocs-sphinx-search
 ipykernel
 nbsphinx
 myst_parser
+torch 
+sklearn 
+pytorch-lightning 
+torchvision 
+scipy 
+matplotlib 
+pytest
+pytest-cov 
+papermill 
