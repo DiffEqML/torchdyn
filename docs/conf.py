@@ -18,12 +18,12 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'TorchDyn'
+project = 'torchdyn'
 copyright = '2020, Stefano Massaroli & Michael Poli'
 author = 'Stefano Massaroli & Michael Poli'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '1.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -33,7 +33,7 @@ release = '0.1'
 # ones.
 extensions = [
 	'sphinx.ext.autodoc', 'sphinx.ext.coverage', 'sphinx.ext.napoleon',
-	'recommonmark',
+	'myst_parser',
 	'nbsphinx',
 	'sphinx.ext.viewcode'
 ]

@@ -12,15 +12,7 @@ from torchdyn.numerics._constants import construct_rk4, construct_dopri5, constr
 
 
 class SolverTemplate(nn.Module):
-    def __init__(self, order, min_factor=0.2, max_factor=10, safety=0.9):
-        """[summary]
-
-        Args:
-            order ([type]): [description]
-            min_factor (float, optional): [description]. Defaults to 0.2.
-            max_factor ([type], optional): [description]. Defaults to 10..
-            safety (float, optional): [description]. Defaults to 0.9.
-        """
+    def __init__(self, order, min_factor:float=0.2, max_factor:float=10, safety:float=0.9):
         super().__init__()
         self.order = order
         self.min_factor = torch.tensor([min_factor])
@@ -46,6 +38,7 @@ class SolverTemplate(nn.Module):
 
 class Euler(SolverTemplate):
     def __init__(self, dtype=torch.float32):
+        """Explicit Euler ODE stepper, order 1"""
         super().__init__(order=1)
         self.dtype = dtype
         self.stepping_class = 'fixed'
@@ -58,6 +51,7 @@ class Euler(SolverTemplate):
     
 class Midpoint(SolverTemplate):
     def __init__(self, dtype=torch.float32):
+        """Explicit Midpoint ODE stepper, order 2"""
         super().__init__(order=2)
         self.dtype = dtype
         self.stepping_class = 'fixed'
@@ -71,6 +65,7 @@ class Midpoint(SolverTemplate):
     
 class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
+        """Explicit Midpoint ODE stepper, order 4"""
         super().__init__(order=4)
         self.dtype = dtype
         self.stepping_class = 'fixed'
@@ -88,6 +83,8 @@ class RungeKutta4(SolverTemplate):
 
 class AsynchronousLeapfrog(SolverTemplate):
     def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
+        """Explicit Leapfrog symplectic ODE stepper. 
+        Can return local error estimates if adaptive stepping is required"""
         super().__init__(order=2)
         self.dtype = dtype
         self.channel_index = channel_index

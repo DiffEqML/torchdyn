@@ -47,4 +47,4 @@ This module offers an overview of several specialized continuous or implicit mod
 
 #### Goals
 
-Our current goals is to extend model zoo with pretrained Neural *DE variants and equilibrium models. 
+Our current goals are to extend model zoo with pretrained Neural *DE variants and equilibrium models. 
