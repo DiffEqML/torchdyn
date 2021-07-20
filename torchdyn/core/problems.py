@@ -11,24 +11,27 @@ from torchdyn.core.utils import standardize_vf_call_signature
 
 
 class ODEProblem(nn.Module):
-    def __init__(self, vector_field, solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1, atol:float=1e-4, rtol:float=1e-4, 
-                 sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6, 
-                 seminorm:bool=False, integral_loss:Union[Callable, None]=None):
+    def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1, 
+                atol:float=1e-4, rtol:float=1e-4, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
                                        In the second case, the Callable is automatically wrapped for consistency
             solver (Union[str, nn.Module]): [description]
-            order (int, optional): [description]. Defaults to 1.
-            atol (float, optional): [description]. Defaults to 1e-4.
-            rtol (float, optional): [description]. Defaults to 1e-4.
-            sensitivity (str, optional): [description]. Defaults to 'autograd'.
-            solver_adjoint (Union[str, nn.Module, None], optional): [description]. Defaults to None.
-            atol_adjoint (float, optional): [description]. Defaults to 1e-6.
-            rtol_adjoint (float, optional): [description]. Defaults to 1e-6.
+            order (int, optional): Order of the ODE. Defaults to 1.
+            atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
+            rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
+            sensitivity (str, optional): Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
+            solver_adjoint (Union[str, nn.Module, None], optional): ODE solver for the adjoint. Defaults to None.
+            atol_adjoint (float, optional): Defaults to 1e-6.
+            rtol_adjoint (float, optional): Defaults to 1e-6.
             seminorm (bool, optional): Indicates whether the a seminorm should be used for error estimation during adjoint backsolves. Defaults to False.
-        
+            integral_loss (Union[Callable, None]): Integral loss to optimize for. Defaults to None.
+
+        Notes:
+            Integral losses can be passed as generic function or `nn.Modules`. 
         """
         super().__init__()
         # instantiate solver at initialization
@@ -75,18 +78,15 @@ class ODEProblem(nn.Module):
 
 class MultipleShootingProblem(nn.Module):
     def __init__(self, solver:str, vector_field, sensalg='autograd'):
-        """[summary]
+        """An ODE problem solved with parallel-in-time methods.
 
         Args:
             solver (str): [description]
             vector_field ([type]): [description]
             sensalg (str, optional): [description]. Defaults to 'autograd'.
-
-        Returns:
-            [type]: [description]
         """
         super().__init__()
-        #
+        
         self.solver
         self.sensalg, self.vf, self.solver = sensalg, vf, solver
 
@@ -119,4 +119,6 @@ class MultipleShootingProblem(nn.Module):
 
 class SDEProblem(nn.Module):
     def __init__(self):
+        "Extension of `ODEProblem` to SDE"
         super().__init__()
+        raise NotImplementedError("Hoperfully soon...")

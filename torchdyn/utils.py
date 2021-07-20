@@ -11,7 +11,7 @@
 # limitations under the License.
 
 """
-General plotting utilities
+General plotting utilities. These are used in tutorials and are designed for narrow uses.
 """
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -22,23 +22,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8):
-    """Plots decision boundary of a 2-dimensional task
-
-     :param model: model
-     :type model: nn.Module
-     :param X: input datasets
-     :type X: torch.Tensor
-     :param y: input labels
-     :type y: torch.Tensor
-     :param mesh: meshgrid of points to classify with `model`
-     :type mesh: torch.Tensor
-     :param num_classes: number of classes
-     :type num_classes: int
-     :param figsize: figure size
-     :type figsize: tuple(int, int)
-     :param alpha: alpha of figure
-     :type alpha: float
-     """
+    "Plots decision boundary of a 2-dimensional task"
     preds = torch.argmax(nn.Softmax(1)(model(mesh)), dim=1)
     preds = preds.detach().cpu().reshape(mesh.size(0), mesh.size(1))
     plt.figure(figsize=figsize)
@@ -49,17 +33,7 @@ def plot_2d_boundary(model, X, y, mesh, num_classes=2, figsize=(8,4), alpha=0.8)
 
 
 def plot_2d_flows(trajectory, num_flows=2, figsize=(8,4), alpha=0.8):
-    """Plots datasets flows learned by a neural differential equation.
-
-     :param trajectory: tensor of datasets flows. Assumed to be of dimensions `L, B, *` with `L`:length of trajectory, `B`:batch size, `*`:remaining dimensions.
-     :type trajectory: torch.Tensor
-     :param num_flows: number of datasets flows to visualize
-     :type num_flows: int
-     :param figsize: figure size
-     :type figsize: tuple(int, int)
-     :param alpha: alpha of figure
-     :type alpha: float
-     """
+    "Plots datasets flows learned by a neural differential equation."
     plt.figure(figsize=figsize)
     plt.subplot(121)
     plt.title('Dimension: 0')
@@ -78,21 +52,7 @@ defaults_1D = {'n_grid':100, 'n_levels':30, 'x_span':[-1,1],
 
 def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
                     n_levels=30, contour_alpha=0.7, cmap='winter', traj_color='orange', traj_alpha=0.1):
-    """Plots 1D datasets flows.
-
-     :param model: model
-     :type model: nn.Module
-     :param s_span: number of datasets flows to visualize
-     :type s_span: torch.Tensor
-     :param traj: figure size
-     :type traj: tuple(int, int)
-     :param device: alpha of figure
-     :type device: float
-     :param x_span: alpha of figure
-     :type x_span: float
-     :param n_grid: alpha of figure
-     :type n_grid: float
-     """
+    "Plots 1D datasets flows."
     ss = torch.linspace(s_span[0], s_span[-1], n_grid)
     xx = torch.linspace(x_span[0], x_span[-1], n_grid)
 
@@ -145,13 +105,14 @@ def plot_traj_vf_1D(model, s_span, traj, device, x_span, n_grid,
 
         return (S, X, U, V)
 
-def plot_2D_depth_trajectory(s_span, trajectory, yn, n_lines):
+def plot_2D_depth_trajectory(s_span, trajectory, yn, n_samples=128):
+    "Plots 2-dimensional trajectories of points."
     color=['orange', 'blue']
 
     fig = plt.figure(figsize=(8,2))
     ax0 = fig.add_subplot(121)
     ax1 = fig.add_subplot(122)
-    for i in range(n_lines):
+    for i in range(n_samples):
         ax0.plot(s_span, trajectory[:,i,0], color=color[int(yn[i])], alpha=.1)
         ax1.plot(s_span, trajectory[:,i,1], color=color[int(yn[i])], alpha=.1)
 
@@ -163,12 +124,13 @@ def plot_2D_depth_trajectory(s_span, trajectory, yn, n_lines):
     ax1.set_title("Dimension 1")
 
 
-def plot_2D_state_space(trajectory, yn, n_lines):
+def plot_2D_state_space(trajectory, yn, n_samples=128):
+    "Plots state-space trajectories."
     color=['orange', 'blue']
 
     fig = plt.figure(figsize=(3,3))
     ax = fig.add_subplot(111)
-    for i in range(n_lines):
+    for i in range(n_samples):
         ax.plot(trajectory[:,i,0], trajectory[:,i,1], color=color[int(yn[i])], alpha=.1);
 
     ax.set_xlabel(r"$h_0$")
@@ -177,6 +139,7 @@ def plot_2D_state_space(trajectory, yn, n_lines):
 
 
 def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
+    "Plots 2D trajectories in a 3D space (2 dimensions of the system + time)."
     colors = ['orange', 'blue']
     fig = plt.figure(figsize=(6,3))
     ax = Axes3D(fig, auto_add_to_figure=False)
@@ -195,6 +158,7 @@ def plot_2D_space_depth(s_span, trajectory, yn, n_lines):
 
 
 def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
+    "Plots vector field and trajectories on it."
     x = torch.linspace(trajectory[:,:,0].min(), trajectory[:,:,0].max(), N)
     y = torch.linspace(trajectory[:,:,1].min(), trajectory[:,:,1].max(), N)
     X, Y = torch.meshgrid(x,y)
@@ -219,6 +183,7 @@ def plot_static_vector_field(model, trajectory, t=0., N=50, device='cuda'):
 
 
 def plot_3D_dataset(X, yn):
+    "Plots set of points in 3D."
     colors = ['orange', 'blue']
     fig = plt.figure(figsize=(4,4))
     ax = Axes3D(fig)
@@ -231,3 +196,4 @@ def plot_3D_dataset(X, yn):
     ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
     ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+

@@ -11,36 +11,33 @@ It features a self-contained numerical suite of differential equation solvers, d
    pip install torchdyn
 
 
-GitHub page `<https://github.com/diffeqml/torchdyn.git>`.
+GitHub: `<https://github.com/diffeqml/torchdyn>`.
 
 .. note::
 
     * This library is developed and maintained by **Michael Poli** & **Stefano Massaroli**, with gracious contributions from the community.
     * The work has been supported by **Prof. Jinkyoo Park** (KAIST), **Prof. Atsushi Yamashita** (The University of Tokyo) and **Prof. Hajime Asama** (The University of Tokyo).
 
-..toctree::
-   :maxdepth: 1
-   :caption: Getting Started
 
-   tutorials/00_quickstart
+Refer to the links below for a quickstart to core torchdyn features and a description of the library goals and design principles. 
+
+A set of extended tutorials, covering everything from models, benchmarks and numerics can be found at `<https://github.com/diffeqml/torchdyn/notebooks>`.
 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Tutorials
-   
-   tutorials/01_neural_ode_cookbook
-   tutorials/02_classification
-   tutorials/03_crossing_trajectories
-   tutorials/04_augmentation_strategies
-   tutorials/05_generalized_adjoint
-   tutorials/06_higher_order
-   tutorials/07a_continuous_normalizing_flows
-   tutorials/07b_ffjord
-   tutorials/08_hamiltonian_nets
-   tutorials/09_lagrangian_nets
-   tutorials/10_stable_neural_odes
-   tutorials/11_gde_node_classification
+   :caption: Getting Started
+
+   tutorials/00_quickstart
+   torchdyn_design
+   FAQ
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Contributing
+
+   contributing
 
 
 .. toctree::

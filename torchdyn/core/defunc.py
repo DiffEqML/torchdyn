@@ -12,6 +12,7 @@
 
 from typing import Callable
 import torch
+from torch import Tensor, cat
 import torch.nn as nn
 
 
@@ -27,7 +28,7 @@ class DEFuncBase(nn.Module):
         super().__init__()
         self.nfe, self.vf, self.has_time_arg = 0., vector_field, has_time_arg 
 
-    def forward(self, t, x):
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
         if self.has_time_arg: return self.vf(t, x)
         else: return self.vf(x)
@@ -41,13 +42,19 @@ class DEFunc(nn.Module):
         Args:
             vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
             order (int, optional): order of the differential equation. Defaults to 1.
+        Notes:
+            Currently handles the following:
+                - assigns time tensor to each submodule requiring it (e.g. `GalLinear`). 
+                - in case of integral losses + reverse-mode differentiation, propagates the loss in the first dimension of `x`
+                    and automatically splits the Tensor into `x[:, 0]` and `x[:, 1:]` for vector field computation
+                - in case of higher-order dynamics, adjusts the vector field forward to recursively compute various orders.
         """
         super().__init__()
         self.vf, self.nfe,  = vector_field, 0.
         self.order, self.integral_loss, self.sensitivity = order, None, None
         # identify whether vector field already has time arg
 
-    def forward(self, t, x):
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
         # set `t` depth-variable to DepthCat modules
         for _, module in self.vf.named_modules():
@@ -61,21 +68,21 @@ class DEFunc(nn.Module):
             if len(dlds.shape) == 1: dlds = dlds[:, None]
             if self.order > 1: x_dyn = self.horder_forward(t, x_dyn)
             else: x_dyn = self.vf(t, x_dyn)
-            return torch.cat([dlds, x_dyn], 1).to(x_dyn)
+            return cat([dlds, x_dyn], 1).to(x_dyn)
 
         # regular forward
         else:
-            if self.order > 1: x = self.horder_forward(t, x)
+            if self.order > 1: x = self.higher_order_forward(t, x)
             else: x = self.vf(t, x)
             return x
 
-    def horder_forward(self, t, x):
+    def higher_order_forward(self, t:Tensor, x:Tensor) -> Tensor:
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
-            x_new += [x[:, size_order*i:size_order*(i+1)]]
-        x_new += [self.vf(t, x)]
-        return torch.cat(x_new, 1).to(x)
+            x_new.append([x[:, size_order*i : size_order*(i+1)]])
+        x_new.append([self.vf(t, x)])
+        return cat(x_new, 1).to(x)
 
     
 class SDEFunc(nn.Module):
@@ -92,17 +99,17 @@ class SDEFunc(nn.Module):
         self.f_func, self.g_func = f, g
         self.nfe = 0
 
-    def forward(self, t, x):
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         pass
     
-    def f(self, t, x):
+    def f(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
         for _, module in self.f_func.named_modules():
             if hasattr(module, 't'):
                 module.t = t
         return self.f_func(x)
     
-    def g(self, t, x):
+    def g(self, t:Tensor, x:Tensor) -> Tensor:
         for _, module in self.g_func.named_modules():
             if hasattr(module, 't'):
                 module.t = t

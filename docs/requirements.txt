@@ -15,3 +15,5 @@ matplotlib
 pytest
 pytest-cov 
 papermill 
+torchsde
+torchcde

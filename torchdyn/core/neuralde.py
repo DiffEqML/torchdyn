@@ -68,7 +68,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as datasets-control set to DataControl module
-        for name, module in self.vf.named_modules():
+        for _, module in self.vf.named_modules():
             if hasattr(module, 'trace_estimator'):
                 if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
@@ -135,7 +135,7 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         # TO DO: merge the named_modules loop for perf
         excess_dims = 0
-        for name, module in self.defunc.named_modules():
+        for _, module in self.defunc.named_modules():
             if hasattr(module, 'u'):
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
