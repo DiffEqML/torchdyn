@@ -13,4 +13,22 @@
 
 from setuptools import setup
 
-setup(use_scm_version=True)
+setup(
+    name="torchdyn",
+    version="0.4.2",
+    author="Michael Poli and Stefano Massaroli",
+    description="PyTorch package for all things neural differential equations.",
+    url="https://github.com/DiffEqML/torchdyn",
+    install_requires=[
+        "torch>=1.6.0",
+        "pytorch-lightning>=0.8.4"
+        "matplotlib"
+        "torchvision"
+        "scikit-learn"
+        "torchsde"
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+    ],
+)
