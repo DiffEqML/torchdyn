@@ -18,7 +18,7 @@ import attr
 import torch
 import torch.nn as nn
 from torch.distributions import Exponential
-from torchcde import NaturalCubicSpline, natural_cubic_spline_coeffs
+from torchcde import CubicSpline, hermite_cubic_coefficients_with_backward_differences
 
 
 def make_norm(state):
@@ -65,8 +65,8 @@ def adapt_step(dt, error_ratio, safety, min_factor, max_factor, order):
 
 def dense_output(sol, t_sol, t_eval, return_spline=False):
     t_sol = t_sol.to(sol)
-    spline_coeff = natural_cubic_spline_coeffs(t_sol, sol.permute(1, 0, 2))
-    sol_spline = NaturalCubicSpline(t_sol, spline_coeff)
+    spline_coeff = hermite_cubic_coefficients_with_backward_differences(t_sol, sol.permute(1, 0, 2))
+    sol_spline = CubicSpline(t_sol, spline_coeff)
     sol_eval = torch.stack([sol_spline.evaluate(t) for t in t_eval])
     if return_spline:
         return sol_eval, sol_spline
