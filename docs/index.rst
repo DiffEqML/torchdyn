@@ -4,7 +4,8 @@ torchdyn reference documentation
 
 torchdyn is a Python library entirely dedicated to continuous, implicit neural architectures and the numerical methods that underpin them. 
 
-It features a self-contained numerical suite of differential equation solvers, different techniques to compute gradients of neural differential equations (continuous backsolve or interpolated adjoints, reverse-mode AD), a model zoo and an extensive set of tutorials for researchers and practitioners.
+It features a self-contained numerical suite of differential equation and root solvers, including sensitivity methods (continuous backsolve or interpolated adjoints, reverse-mode AD). 
+The library further contains a model zoo and an extensive set of tutorials for researchers and practitioners.
 
 .. code:: bash
 
@@ -16,7 +17,6 @@ GitHub: `<https://github.com/diffeqml/torchdyn>`.
 .. note::
 
     * This library is developed and maintained by **Michael Poli** & **Stefano Massaroli**, with gracious contributions from the community.
-    * The work has been supported by **Prof. Jinkyoo Park** (KAIST), **Prof. Atsushi Yamashita** (The University of Tokyo) and **Prof. Hajime Asama** (The University of Tokyo).
 
 
 Refer to the links below for a quickstart to core torchdyn features and a description of the library goals and design principles. 
@@ -28,8 +28,7 @@ A set of extended tutorials, covering everything from models, benchmarks and num
    :maxdepth: 1
    :caption: Getting Started
 
-   tutorials/00_quickstart
-   torchdyn_design
+   tutorials/quickstart
    FAQ
 
 

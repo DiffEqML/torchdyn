@@ -17,9 +17,9 @@ import torch.nn as nn
 
 
 class DEFuncBase(nn.Module):
+    """Basic wrapper to ensure call signature compatibility between generic torch Modules and vector fields. """
     def __init__(self, vector_field:Callable, has_time_arg:bool=True):
-        """Basic wrapper to ensure call signature compatibility between generic torch Modules and vector fields. 
-
+        """
         Args:
             vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
             has_time_arg (bool, optional): Internal arg. to indicate whether the callable has `t` in its `__call__' 
@@ -35,10 +35,10 @@ class DEFuncBase(nn.Module):
 
 
 class DEFunc(nn.Module):
+    """Special vector field wrapper for Neural ODEs. Handles auxiliary tasks: time ("depth") concatenation,
+        higher-order dynamics and forward propagated integral losses."""
     def __init__(self, vector_field:Callable, order:int=1):
-        """Special vector field wrapper for Neural ODEs. Handles auxiliary tasks: time ("depth") concatenation,
-           higher-order dynamics and forward propagated integral losses.
-
+        """
         Args:
             vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
             order (int, optional): order of the differential equation. Defaults to 1.
@@ -86,9 +86,9 @@ class DEFunc(nn.Module):
 
     
 class SDEFunc(nn.Module):
+    """Special vector field wrapper for Neural SDEs."""
     def __init__(self, f:Callable, g:Callable, order:int=1):
-        """Special vector field wrapper for Neural SDEs. 
-
+        """
         Args:
             f (Callable): callable defining the drift
             g (Callable): callable defining the diffusion term
