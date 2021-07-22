@@ -35,7 +35,7 @@ t_span = torch.linspace(0, 1, 100)
 # TODO(bug): `tsit5` + `adjoint` peak error
 @pytest.mark.parametrize('sensitivity', ['adjoint', 'interpolated_adjoint'])
 @pytest.mark.parametrize('solver', ['dopri5', 'tsit5'])
-@pytest.mark.parametrize('interpolator', [None])
+2
 @pytest.mark.parametrize('stiffness', [0.1, 0.5])
 def test_odeint_adjoint(sensitivity, solver, interpolator, stiffness):
     f = VanDerPol(stiffness)
