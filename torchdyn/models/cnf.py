@@ -12,7 +12,7 @@
 
 import torch
 import torch.nn as nn
-from typing import Callable
+from typing import Union, Callable
 from torch.autograd import grad
 
 

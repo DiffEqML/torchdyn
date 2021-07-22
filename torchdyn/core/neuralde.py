@@ -186,6 +186,32 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
 
 
 class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
-    def __init__(self):
-        super().__init__()
-        raise NotImplementedError("Coming soon")
+    def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
+                 maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                 rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
+        """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885. Uses parallel-in-time ODE solvers to solve
+           an ODE parametrized by neural network `vector_field`. 
+
+        Args:
+            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+                                       In the second case, the Callable is automatically wrapped for consistency
+            solver (Union[str, nn.Module]): parallel-in-time solver, ['zero', 'direct']
+            sensitivity (str, optional): Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
+            maxiter (int): number of iterations of the root finding routine defined to parallel solve the ODE.
+            fine_steps (int): number of fine-solver steps to perform in each subinterval of the parallel solution.
+            solver_adjoint (Union[str, nn.Module, None], optional): Standard sequential ODE solver for the adjoint system. 
+            atol_adjoint (float, optional): Defaults to 1e-6.
+            rtol_adjoint (float, optional): Defaults to 1e-6.
+            integral_loss (Union[Callable, None], optional): Currently not implemented
+            seminorm (bool, optional): Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
+        Notes:
+            The number of shooting parameters (first dimension in `B0`) is implicitly defined by passing `t_span` during forward calls.
+            For example, a `t_span=torch.linspace(0, 1, 10)` will define 9 intervals and 10 shooting parameters.
+            
+            For the moment only a thin wrapper around `MultipleShootingProblem`. At this level will be convenience routines for special
+            initializations of shooting parameters `B0`, as well as usual convenience checks for integral losses.
+        """
+        super().__init__(vector_field, solver, sensitivity, maxiter, fine_steps, solver_adjoint, atol_adjoint,
+                         rtol_adjoint, seminorm, integral_loss)
+                    
+                    

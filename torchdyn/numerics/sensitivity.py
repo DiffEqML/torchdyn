@@ -13,19 +13,29 @@
 from inspect import getfullargspec
 import torch
 from torch.autograd import Function, grad
-from torchcde import CubicSpline, hermite_cubic_coefficients_with_backward_differences
-from torchdyn.numerics.odeint import odeint
+from torchcde import CubicSpline, natural_cubic_coeffs
+from torchdyn.numerics.odeint import odeint, odeint_mshooting
+
+
+def generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B0=None, 
+                  return_all_eval=False, maxiter=4, fine_steps=4):
+    "Dispatches to appropriate `odeint` function depending on `Problem` class (ODEProblem, MultipleShootingProblem)"
+    if problem_type == 'standard':
+        return odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=return_all_eval)
+    elif problem_type == 'multiple_shooting':
+        return odeint_mshooting(vf, x, t_span, solver, B0=B0, fine_steps=fine_steps, maxiter=maxiter)
 
 
 # TODO: optimize and make conditional gradient computations w.r.t end times
 # TODO: link `seminorm` arg from `ODEProblem`
-def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
-                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator, solver_adjoint, 
+                            atol_adjoint, rtol_adjoint, integral_loss, problem_type, maxiter=4, fine_steps=4):
     "Prepares definition of autograd.Function for adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator)
+        def forward(ctx, vf_params, x, t_span, B=None):
+            t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
+                                        False, maxiter, fine_steps)
             ctx.save_for_backward(sol, t_sol)
             return t_sol, sol
 
@@ -72,7 +82,6 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
                                       solver_adjoint, atol=atol_adjoint, rtol=rtol_adjoint,
                                       seminorm=(True, xT_nel+λT_nel))
                 # prepare adjoint state for next interval
-
                 #TODO: reuse vf_eval for dLdt calculations
                 xt = A[-1, :xT_nel].reshape(xT_shape)
                 dLdt_ = A[-1, xT_nel:xT_nel + λT_nel]@vf(t_sol[i], xt).flatten()
@@ -85,19 +94,20 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
             λ, μ = A[xT_nel:xT_nel + λT_nel], A[-μT_nel-1:-1]
             λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
             λ_tspan = torch.stack([dLdt[0], dLdt[-1]])
-            return (μ, λ, λ_tspan, None, None)
+            return (μ, λ, λ_tspan, None, None, None)
 
     return _ODEProblemFunc
 
 
 #TODO: introduce `t_span` grad as above
-def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator,
-                                solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss):
+def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator, solver_adjoint, 
+                                   atol_adjoint, rtol_adjoint, integral_loss, problem_type, maxiter=4, fine_steps=4):
     "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x, t_span):
-            t_sol, sol = odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=True)
+        def forward(ctx, vf_params, x, t_span, B=None):
+            t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
+                                        True, maxiter, fine_steps)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
@@ -112,8 +122,8 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
             xT_shape, λT_shape, μT_shape = xT.shape, λT.shape, μT.shape
             A = torch.cat([λT.flatten(), μT.flatten()])
 
-            spline_coeffs = hermite_cubic_coefficients_with_backward_differences(x=sol.permute(1, 0, 2).detach())
-            x_spline = CubicSpline(coeffs=spline_coeffs)
+            spline_coeffs = natural_cubic_coeffs(x=sol.permute(1, 0, 2).detach(), t=t_sol)
+            x_spline = CubicSpline(coeffs=spline_coeffs, t=t_sol)
 
             # define adjoint dynamics
             def adjoint_dynamics(t, A):
@@ -145,6 +155,6 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
 
             λ, μ = A[:λT_nel], A[-μT_nel:]
             λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
-            return (μ, λ, None, None)
+            return (μ, λ, None, None, None)
 
     return _ODEProblemFunc

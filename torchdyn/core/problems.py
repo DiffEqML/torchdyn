@@ -6,7 +6,7 @@ from typing import Callable, Union, List
 
 from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
-from torchdyn.numerics.odeint import odeint, str_to_solver
+from torchdyn.numerics.odeint import odeint, odeint_mshooting, str_to_solver
 from torchdyn.core.utils import standardize_vf_call_signature
 
 
@@ -59,10 +59,12 @@ class ODEProblem(nn.Module):
         # sensitivity algorithm
         if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
             self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
-                                                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
+                                                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss,
+                                                            problem_type='standard').apply
         elif self.sensalg == 'interpolated_adjoint':
             self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, atol, rtol, interpolator, 
-                                                                    solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss).apply
+                                                                    solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss,
+                                                                    problem_type='standard').apply
 
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"
@@ -78,7 +80,7 @@ class ODEProblem(nn.Module):
 
 class MultipleShootingProblem(ODEProblem):
     def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
-                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                 maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
                  rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
         """An ODE problem solved with parallel-in-time methods.
 
@@ -97,10 +99,27 @@ class MultipleShootingProblem(ODEProblem):
                 sensitivity=sensitivity, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, 
                 rtol_adjoint=rtol_adjoint, seminorm=seminorm, integral_loss=integral_loss)
         self.parallel_solver = solver
+        self.fine_steps, self.maxiter = fine_steps, maxiter
 
-    def forward(self, x0, t_span, atol=1e-4, rtol=1e-4, t_eval=[]):
-        t_eval, sol = self.odefunc(self.vf_params, x0, t_span, t_eval)
-        return t_eval, sol
+        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
+            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, solver, 0, 0, None, 
+                                                            solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss,
+                                                            'multiple_shooting', fine_steps, maxiter).apply
+        elif self.sensalg == 'interpolated_adjoint':
+            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, solver, 0, 0, None, 
+                                                                    solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss,
+                                                                    'multiple_shooting', fine_steps, maxiter).apply
+
+    def odeint(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
+        "Returns Tuple(`t_eval`, `solution`)"
+        if self.sensalg == 'autograd':
+            return odeint_mshooting(self.vf, x, t_span, self.parallel_solver, B0, self.fine_steps, self.maxiter)
+        else:
+            return self.autograd_function(self.vf_params, x, t_span, B0)
+
+    def forward(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
+        "For safety redirects to intended method `odeint`"
+        return self.odeint(x, t_span, B0)
         
 
 class SDEProblem(nn.Module):
