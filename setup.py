@@ -15,17 +15,17 @@ from setuptools import setup
 
 setup(
     name="torchdyn",
-    version="0.4.2",
+    version="0.4.3",
     author="Michael Poli and Stefano Massaroli",
     description="PyTorch package for all things neural differential equations.",
     url="https://github.com/DiffEqML/torchdyn",
     install_requires=[
         "torch>=1.6.0",
-        "pytorch-lightning>=0.8.4"
-        "matplotlib"
-        "torchvision"
-        "scikit-learn"
-        "torchsde"
+        "pytorch-lightning>=0.8.4",
+        "matplotlib",
+        "scikit-learn",
+        "torchsde>=0.2.5",
+        "torchcde>=0.1.0"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

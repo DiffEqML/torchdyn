@@ -99,7 +99,6 @@ class MultipleShootingProblem(ODEProblem):
         self.parallel_solver = solver
 
     def forward(self, x0, t_span, atol=1e-4, rtol=1e-4, t_eval=[]):
-        x0, t_span = prep_input(x0, t_span)
         t_eval, sol = self.odefunc(self.vf_params, x0, t_span, t_eval)
         return t_eval, sol
         
