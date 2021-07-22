@@ -56,7 +56,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
         """
         super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
-                         solver=solver, atol=atol, rtol=rtol, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
+                         solver=solver, atol=atol, rtol=rtol, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
                          seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss)
         self.u, self.controlled, self.t_span = None, False, None # data-control conditioning
         self.return_t_eval = return_t_eval
@@ -214,4 +214,4 @@ class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
         super().__init__(vector_field, solver, sensitivity, maxiter, fine_steps, solver_adjoint, atol_adjoint,
                          rtol_adjoint, seminorm, integral_loss)
                     
-                    
+

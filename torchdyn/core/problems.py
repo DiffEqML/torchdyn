@@ -126,4 +126,4 @@ class SDEProblem(nn.Module):
     def __init__(self):
         "Extension of `ODEProblem` to SDE"
         super().__init__()
-        raise NotImplementedError("Hoperfully soon...")
+        raise NotImplementedError("Hopefully soon...")
