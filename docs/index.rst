@@ -29,15 +29,14 @@ A set of extended tutorials, covering everything from models, benchmarks and num
    :caption: Getting Started
 
    tutorials/quickstart
-   FAQ
-
+   
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contributing
+   :caption: General Information
 
    contributing
-
+   FAQ
 
 .. toctree::
    :maxdepth: 1
