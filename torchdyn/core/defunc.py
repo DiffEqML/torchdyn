@@ -42,12 +42,13 @@ class DEFunc(nn.Module):
         Args:
             vector_field (Callable): callable defining the dynamics / vector field / `dxdt` / forcing function 
             order (int, optional): order of the differential equation. Defaults to 1.
+        
         Notes:
             Currently handles the following:
-                - assigns time tensor to each submodule requiring it (e.g. `GalLinear`). 
-                - in case of integral losses + reverse-mode differentiation, propagates the loss in the first dimension of `x`
-                    and automatically splits the Tensor into `x[:, 0]` and `x[:, 1:]` for vector field computation
-                - in case of higher-order dynamics, adjusts the vector field forward to recursively compute various orders.
+            (1) assigns time tensor to each submodule requiring it (e.g. `GalLinear`). 
+            (2) in case of integral losses + reverse-mode differentiation, propagates the loss in the first dimension of `x`
+                and automatically splits the Tensor into `x[:, 0]` and `x[:, 1:]` for vector field computation
+            (3) in case of higher-order dynamics, adjusts the vector field forward to recursively compute various orders.
         """
         super().__init__()
         self.vf, self.nfe,  = vector_field, 0.

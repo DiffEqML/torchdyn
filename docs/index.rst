@@ -11,7 +11,7 @@ The library further contains a model zoo and an extensive set of tutorials for r
 
    pip install torchdyn
 
-`Link GitHub: `<https://github.com/diffeqml/torchdyn>`_.
+`GitHub link <https://github.com/diffeqml/torchdyn>`_.
 
 .. note::
 
@@ -20,7 +20,7 @@ The library further contains a model zoo and an extensive set of tutorials for r
 
 Refer to the links below for a quickstart to core torchdyn features and a description of the library goals and design principles. 
 
-A set of extended tutorials, covering everything from models, benchmarks and numerics can be found at `<https://github.com/diffeqml/torchdyn/tutorials>`.
+A set of extended tutorials, covering everything from models, benchmarks and numerics can be found `here <https://github.com/diffeqml/torchdyn/tutorials>`_.
 
 
 .. toctree::
