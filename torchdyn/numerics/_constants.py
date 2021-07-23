@@ -40,6 +40,9 @@ def construct_dopri5(dtype):
     ]
     bsol = torch.tensor([35 / 384, 0, 500 / 1113, 125 / 192, -2187 / 6784, 11 / 84, 0], dtype=dtype)
     berr = torch.tensor([1951 / 21600, 0, 22642 / 50085, 451 / 720, -12231 / 42400, 649 / 6300, 1 / 60.], dtype=dtype)
+
+    dmid = torch.tensor([-1.1270175653862835, 0., 2.675424484351598, -5.685526961588504, 3.5219323679207912,
+                         -1.7672812570757455, 2.382468931778144])
     return (c, a, bsol, bsol - berr)
 
 
@@ -110,8 +113,10 @@ def construct_tsit5(dtype):
 
 
 ########################
-# Interpolator coeff 
+# Interpolator coeffs
 ########################
+
+"Once we have enough combinations implemented, these will go in each solver's tableau constructor and will be accessed by `Interpolators` through the solver."
 
 def construct_4th(dtype):
     "4th order interpolator for `dopri5`"

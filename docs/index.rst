@@ -1,6 +1,6 @@
 torchdyn reference documentation
 ====================================
-(New release 1.0 is finally out!)
+(New release 1.0 is out!)
 
 torchdyn is a Python library entirely dedicated to continuous, implicit neural architectures and the numerical methods that underpin them. 
 
@@ -11,8 +11,7 @@ The library further contains a model zoo and an extensive set of tutorials for r
 
    pip install torchdyn
 
-
-GitHub: `<https://github.com/diffeqml/torchdyn>`.
+`GitHub link <https://github.com/diffeqml/torchdyn>`_.
 
 .. note::
 
@@ -21,7 +20,7 @@ GitHub: `<https://github.com/diffeqml/torchdyn>`.
 
 Refer to the links below for a quickstart to core torchdyn features and a description of the library goals and design principles. 
 
-A set of extended tutorials, covering everything from models, benchmarks and numerics can be found at `<https://github.com/diffeqml/torchdyn/tutorials>`.
+A set of extended tutorials, covering everything from models, benchmarks and numerics can be found `here <https://github.com/diffeqml/torchdyn/tutorials>`_.
 
 
 .. toctree::
@@ -29,15 +28,14 @@ A set of extended tutorials, covering everything from models, benchmarks and num
    :caption: Getting Started
 
    tutorials/quickstart
-   FAQ
-
+   
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contributing
+   :caption: General Information
 
    contributing
-
+   FAQ
 
 .. toctree::
    :maxdepth: 1

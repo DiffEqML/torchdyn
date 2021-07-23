@@ -3,6 +3,7 @@
 sphinx
 sphinx_rtd_theme
 readthedocs-sphinx-search
+sphinx_autodoc_typehints
 ipykernel
 nbsphinx
 myst_parser

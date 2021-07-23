@@ -36,7 +36,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
                                        In the second case, the Callable is automatically wrapped for consistency
-            solver (Union[str, nn.Module]): [description]
+            solver (Union[str, nn.Module]): 
             order (int, optional): Order of the ODE. Defaults to 1.
             atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
             rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
@@ -189,8 +189,9 @@ class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
     def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
                  maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
                  rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
-        """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885. Uses parallel-in-time ODE solvers to solve
-           an ODE parametrized by neural network `vector_field`. 
+        """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885. 
+        
+        Uses parallel-in-time ODE solvers to solve an ODE parametrized by neural network `vector_field`. 
 
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 

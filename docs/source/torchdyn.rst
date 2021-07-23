@@ -22,7 +22,6 @@ torchdyn.utils module
 .. automodule:: torchdyn.utils
    :members:
    :undoc-members:
-   :show-inheritance:
 
 Module contents
 ---------------
@@ -30,4 +29,3 @@ Module contents
 .. automodule:: torchdyn
    :members:
    :undoc-members:
-   :show-inheritance:

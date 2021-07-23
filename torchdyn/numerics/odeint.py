@@ -22,7 +22,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from torchdyn.numerics.solvers import AsynchronousLeapfrog, str_to_solver, str_to_ms_solver
+from torchdyn.numerics.solvers import AsynchronousLeapfrog, Tsitouras45, str_to_solver, str_to_ms_solver
 from torchdyn.numerics.interpolators import str_to_interp
 from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
@@ -31,15 +31,16 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
 		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
+	   
 	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
-		f (Callable): [description]
-		x (Tensor): [description]
-		t_span (Union[List, Tensor]): [description]
-		solver (Union[str, nn.Module]): [description]
-		atol (float, optional): [description]. Defaults to 1e-3.
-		rtol (float, optional): [description]. Defaults to 1e-3.
+		f (Callable): 
+		x (Tensor): 
+		t_span (Union[List, Tensor]): 
+		solver (Union[str, nn.Module]): 
+		atol (float, optional): Defaults to 1e-3.
+		rtol (float, optional): Defaults to 1e-3.
 		t_stops (Union[List, Tensor, None], optional): Defaults to None.
 		verbose (bool, optional): Defaults to False.
 		interpolator (bool, optional): Defaults to False.
@@ -63,6 +64,10 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	stepping_class = solver.stepping_class
 
 	# instantiate the interpolator similar to the solver steps above
+	if isinstance(solver, Tsitouras45):
+		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
+		interpolator = None
+
 	if type(interpolator) == str: 
 		interpolator = str_to_interp(interpolator, x.dtype)
 		x, t_span = interpolator.sync_device_dtype(x, t_span)
@@ -86,6 +91,20 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 # TODO (qol) state augmentation for symplectic methods 
 def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
 		   verbose:bool=False, return_all_eval:bool=False):
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using symplectic methods.
+	   
+	   Designed to be a subroutine of `odeint` (i.e. will eventually automatically be dispatched to here, much like `_adaptive_odeint`)
+
+	Args:
+		f (Callable): 
+		x (Tensor):
+		t_span (Union[List, Tensor]):
+		solver (Union[str, nn.Module]): 
+		atol (float, optional): Defaults to 1e-3.
+		rtol (float, optional): Defaults to 1e-3.
+		verbose (bool, optional): Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
+	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -128,16 +147,30 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using parallel-in-time solvers.
+
+	Args:
+		f (Callable): vector field
+		x (Tensor): batch of initial conditions
+		t_span (Tensor): integration interval
+		solver (Union[str, nn.Module]): parallel-in-time solver.
+		B0 ([type], optional): Initialized shooting parameters. If left to None, will compute automatically 
+							   using the coarse method of solver. Defaults to None.
+		fine_steps (int, optional): Defaults to 2.
+		maxiter (int, optional): Defaults to 4.
+
+	Notes:
+		TODO: At the moment assumes the ODE to NOT be time-varying. An extension is possible by adaptive the step 
+		function of a parallel-in-time solvers. 
+	"""
 	if type(solver) == str:
 		solver = str_to_ms_solver(solver)
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	# first-guess B0 of shooting parameters
 	if B0 is None:
 		_, B0 = odeint(f, x, t_span, solver.coarse_method)
-	# determine which odeint to apply to MS solver
-	# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
+	# determine which odeint to apply to MS solver. This is where time-variance can be introduced
 	odeint_func = _fixed_odeint
-	###
 	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
 	return t_span, B
 
@@ -145,23 +178,21 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 
 def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
 				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
-	"""[summary]
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`, with jump events defined 
+	   by a callbacks.
 
 	Args:
-		f ([type]): [description]
-		x ([type]): [description]
-		t_span ([type]): [description]
-		j_span ([type]): [description]
-		solver ([type]): [description]
-		callbacks ([type]): [description]
-		t_eval (list, optional): [description]. Defaults to [].
-		atol ([type], optional): [description]. Defaults to 1e-3.
-		rtol ([type], optional): [description]. Defaults to 1e-3.
-		event_tol ([type], optional): [description]. Defaults to 1e-4.
-		priority (str, optional): [description]. Defaults to 'jump'.
-
-	Returns:
-		[type]: [description]
+		f ([type]): 
+		x ([type]): 
+		t_span ([type]): 
+		j_span ([type]): 
+		solver ([type]): 
+		callbacks ([type]): 
+		t_eval (list, optional): Defaults to [].
+		atol ([type], optional): Defaults to 1e-3.
+		rtol ([type], optional): Defaults to 1e-3.
+		event_tol ([type], optional): Defaults to 1e-4.
+		priority (str, optional): Defaults to 'jump'.
 	"""
 	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
 	if type(solver) == str: solver = str_to_solver(solver, x.dtype)
@@ -197,13 +228,10 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
-			#print(ckpt_counter, len(t_eval), t+dt, t_eval[ckpt_counter])
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				#print("GOING IN")
 				dt_old, ckpt_flag = dt, True
 				dt = t_eval[ckpt_counter] - t
 				ckpt_counter += 1
-		#print('t, dt', t, dt)
 
 		################ step
 		f_new, x_new, x_err, _ = solver.step(f, x, t, dt, k1=k1)
@@ -295,16 +323,16 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	"""Adaptive ODE solve routine, called by `odeint`.
 
 	Args:
-		f ([type]): [description]
-		k1 ([type]): [description]
-		x ([type]): [description]
-		dt ([type]): [description]
-		t_span ([type]): [description]
-		solver ([type]): [description]
-		atol ([type], optional): [description]. Defaults to 1e-4.
-		rtol ([type], optional): [description]. Defaults to 1e-4.
+		f ([type]): 
+		k1 ([type]): 
+		x ([type]): 
+		dt ([type]): 
+		t_span ([type]): 
+		solver ([type]): 
+		atol ([type], optional): Defaults to 1e-4.
+		rtol ([type], optional): Defaults to 1e-4.
 		use_interp (bool, optional):
-		return_all_eval (bool, optional): [description]. Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
 
 	
 	Notes:

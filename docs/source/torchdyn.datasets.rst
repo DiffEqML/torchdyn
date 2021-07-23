@@ -1,21 +1,10 @@
-torchdyn.datasets package
+torchdyn.datasets 
 =========================
 
-Submodules
-----------
-
-torchdyn.datasets.static\_datasets module
------------------------------------------
-
-.. automodule:: torchdyn.datasets.static_datasets
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Utilities to generate data necessary for various tasks
 
 Module contents
 ---------------
 
 .. automodule:: torchdyn.datasets
    :members:
-   :undoc-members:
-   :show-inheritance:
