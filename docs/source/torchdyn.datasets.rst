@@ -8,5 +8,3 @@ Module contents
 
 .. automodule:: torchdyn.datasets
    :members:
-   :undoc-members:
-   :show-inheritance:

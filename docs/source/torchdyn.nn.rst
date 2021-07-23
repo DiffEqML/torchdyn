@@ -10,4 +10,3 @@ Module contents
 .. automodule:: torchdyn.nn
    :members:
    :undoc-members:
-   :show-inheritance:
