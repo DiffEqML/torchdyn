@@ -267,7 +267,6 @@ class MSBackward(MShootingSolverTemplate):
         i = 0
         B = B.requires_grad_(True)
         while i <= maxiter:
-            print(i)
             i += 1
             B_fine = odeint_func(f, B[i-1:], sub_t_span, solver=self.fine_method)[1][-1]
             B_out = torch.zeros_like(B)
