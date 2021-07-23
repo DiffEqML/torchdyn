@@ -5,7 +5,7 @@
 </p>
 <div align="center">
 
-## A PyTorch library dedicated to **neural differential equations** and **equilibrium models**. Maintained by [DiffEqML](https://github.com/DiffEqML).
+## A PyTorch library dedicated to **neural differential equations** and **implicit models**. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 ![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?)
 ![CI](https://github.com/DiffEqML/torchdyn/actions/workflows/os-coverage.yml/badge.svg)
@@ -30,7 +30,7 @@ f = nn.Sequential(nn.Conv2d(1, 32, 3),
 
 nde = NeuralODE(f)
 ```
-And you're good to train. Feel free to combine the `NeuralODE` class with any `PyTorch` modules to build derivative models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
+And you have a trainable model. Feel free to combine similar `torchdyn` classes with any `PyTorch` modules to build composite models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
 
 Contribute to the library with your benchmark and model variants! No need to reinvent the wheel :)
 
