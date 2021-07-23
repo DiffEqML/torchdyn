@@ -86,6 +86,20 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 # TODO (qol) state augmentation for symplectic methods 
 def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
 		   verbose:bool=False, return_all_eval:bool=False):
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using symplectic methods.
+	   
+	   Designed to be a subroutine of `odeint` (i.e. will eventually automatically be dispatched to here, much like `_adaptive_odeint`)
+
+	Args:
+		f (Callable): 
+		x (Tensor):
+		t_span (Union[List, Tensor]):
+		solver (Union[str, nn.Module]): 
+		atol (float, optional): Defaults to 1e-3.
+		rtol (float, optional): Defaults to 1e-3.
+		verbose (bool, optional): Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
+	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
 		f_ = lambda t, x: -f(-t, x)
@@ -139,6 +153,10 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 							   using the coarse method of solver. Defaults to None.
 		fine_steps (int, optional): Defaults to 2.
 		maxiter (int, optional): Defaults to 4.
+
+	Notes:
+		TODO: At the moment assumes the ODE to NOT be time-varying. An extension is possible by adaptive the step 
+		function of a parallel-in-time solvers. 
 	"""
 	if type(solver) == str:
 		solver = str_to_ms_solver(solver)
@@ -146,10 +164,8 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 	# first-guess B0 of shooting parameters
 	if B0 is None:
 		_, B0 = odeint(f, x, t_span, solver.coarse_method)
-	# determine which odeint to apply to MS solver
-	# TODO (qol): automatically detect if time-variant ODE and use `_shifted_odeint`
+	# determine which odeint to apply to MS solver. This is where time-variance can be introduced.
 	odeint_func = _fixed_odeint
-	###
 	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
 	return t_span, B
 
@@ -207,13 +223,10 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
 		if t_eval is not None:
-			#print(ckpt_counter, len(t_eval), t+dt, t_eval[ckpt_counter])
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				#print("GOING IN")
 				dt_old, ckpt_flag = dt, True
 				dt = t_eval[ckpt_counter] - t
 				ckpt_counter += 1
-		#print('t, dt', t, dt)
 
 		################ step
 		f_new, x_new, x_err, _ = solver.step(f, x, t, dt, k1=k1)

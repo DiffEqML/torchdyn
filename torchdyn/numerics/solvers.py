@@ -142,7 +142,7 @@ class DormandPrince45(SolverTemplate):
         k7 = f(t + c[5] * dt, x + dt * a[5][0] * k1 + dt * a[5][1] * k2 + dt * a[5][2] * k3 + dt * a[5][3] * k4 + dt * a[5][4] * k5 + dt * a[5][5] * k6)
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4 + bsol[4] * k5 + bsol[5] * k6)
         err = berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7
-        return k7, x_sol, err, (k1, k2, k3, k4 ,k5, k6, k7)
+        return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
 
@@ -164,7 +164,7 @@ class Tsitouras45(SolverTemplate):
         k7 = f(t + c[5] * dt, x + dt * a[5][0] * k1 + dt * a[5][1] * k2 + dt * a[5][2] * k3 + dt * a[5][3] * k4 + dt * a[5][4] * k5 + dt * a[5][5] * k6)
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4 + bsol[4] * k5 + bsol[5] * k6)
         err = berr[0] * k1 + berr[1] * k2 + berr[2] * k3 + berr[3] * k4 + berr[4] * k5 + berr[5] * k6 + berr[6] * k7
-        return k7, x_sol, err, (k1, k2, k3, k4 ,k5, k6, k7)
+        return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
 class ImplicitEuler(SolverTemplate):
