@@ -41,13 +41,8 @@ Contribute to the library with your benchmark and model variants! No need to rei
 
 `pip install torchdyn`
 
-We note that `PyPI` currently does not allow non-packaged dependencies. You will have to install `torchsde` and `torchcde` separately, or build a virtual environment with poetry following the steps outlined in `Contributing`
+Alternatively, you can build a virtual dev environment for `torchdyn` with poetry, following the steps outlined in `Contributing`.
 
-**Bleeding-edge** version:
-
-`git clone https://github.com/DiffEqML/torchdyn.git && cd torchdyn && python setup.py install`
-
-Don't forget to install in your environment of choice if necessary. We offer an automated method for setting up your `torchdyn` environment designed specifically for contributors or those planning to tinker with the internals. Check `Contributing` below for more details.
 
 ## Documentation
 Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of available features.
