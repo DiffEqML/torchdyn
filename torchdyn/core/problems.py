@@ -19,7 +19,7 @@ class ODEProblem(nn.Module):
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
                                        In the second case, the Callable is automatically wrapped for consistency
-            solver (Union[str, nn.Module]): [description]
+            solver (Union[str, nn.Module]): 
             order (int, optional): Order of the ODE. Defaults to 1.
             atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
             rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
@@ -88,12 +88,12 @@ class MultipleShootingProblem(ODEProblem):
             vector_field (Callable):  the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
                                     In the second case, the Callable is automatically wrapped for consistency
             solver (str): parallel-in-time solver.
-            sensitivity (str, optional): [description]. Defaults to 'autograd'.
-            solver_adjoint (Union[str, nn.Module, None], optional): [description]. Defaults to None.
-            atol_adjoint (float, optional): [description]. Defaults to 1e-6.
-            rtol_adjoint (float, optional): [description]. Defaults to 1e-6.
-            seminorm (bool, optional): [description]. Defaults to False.
-            integral_loss (Union[Callable, None], optional): [description]. Defaults to None.
+            sensitivity (str, optional): . Defaults to 'autograd'.
+            solver_adjoint (Union[str, nn.Module, None], optional): . Defaults to None.
+            atol_adjoint (float, optional): . Defaults to 1e-6.
+            rtol_adjoint (float, optional): . Defaults to 1e-6.
+            seminorm (bool, optional): . Defaults to False.
+            integral_loss (Union[Callable, None], optional): . Defaults to None.
         """
         super().__init__(vector_field=vector_field, solver=None, interpolator=None, order=1, 
                 sensitivity=sensitivity, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, 

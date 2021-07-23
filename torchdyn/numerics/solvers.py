@@ -226,8 +226,8 @@ class MSZero(MShootingSolverTemplate):
         """Multiple shooting solver using Parareal updates (zero-order approximation of the Jacobian)
 
         Args:
-            coarse_method (str, optional): [description]. Defaults to 'euler'.
-            fine_method (str, optional): [description]. Defaults to 'rk4'.
+            coarse_method (str, optional): . Defaults to 'euler'.
+            fine_method (str, optional): . Defaults to 'rk4'.
         """
         super().__init__(coarse_method, fine_method)
 
@@ -256,8 +256,8 @@ class MSBackward(MShootingSolverTemplate):
         """Multiple shooting solver using discrete adjoints for the Jacobian
 
         Args:
-            coarse_method (str, optional): [description]. Defaults to 'euler'.
-            fine_method (str, optional): [description]. Defaults to 'rk4'.
+            coarse_method (str, optional): . Defaults to 'euler'.
+            fine_method (str, optional): . Defaults to 'rk4'.
         """
         super().__init__(coarse_method, fine_method)
 

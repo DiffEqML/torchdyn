@@ -36,7 +36,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
                                        In the second case, the Callable is automatically wrapped for consistency
-            solver (Union[str, nn.Module]): [description]
+            solver (Union[str, nn.Module]): 
             order (int, optional): Order of the ODE. Defaults to 1.
             atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
             rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.

@@ -34,12 +34,12 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
-		f (Callable): [description]
-		x (Tensor): [description]
-		t_span (Union[List, Tensor]): [description]
-		solver (Union[str, nn.Module]): [description]
-		atol (float, optional): [description]. Defaults to 1e-3.
-		rtol (float, optional): [description]. Defaults to 1e-3.
+		f (Callable): 
+		x (Tensor): 
+		t_span (Union[List, Tensor]): 
+		solver (Union[str, nn.Module]): 
+		atol (float, optional): Defaults to 1e-3.
+		rtol (float, optional): Defaults to 1e-3.
 		t_stops (Union[List, Tensor, None], optional): Defaults to None.
 		verbose (bool, optional): Defaults to False.
 		interpolator (bool, optional): Defaults to False.
@@ -128,6 +128,18 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 
 
 def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using parallel-in-time solvers.
+
+	Args:
+		f (Callable): vector field
+		x (Tensor): batch of initial conditions
+		t_span (Tensor): integration interval
+		solver (Union[str, nn.Module]): parallel-in-time solver.
+		B0 ([type], optional): Initialized shooting parameters. If left to None, will compute automatically 
+							   using the coarse method of solver. Defaults to None.
+		fine_steps (int, optional): Defaults to 2.
+		maxiter (int, optional): Defaults to 4.
+	"""
 	if type(solver) == str:
 		solver = str_to_ms_solver(solver)
 	x, t_span = solver.sync_device_dtype(x, t_span)
@@ -145,23 +157,21 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 
 def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
 				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
-	"""[summary]
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`, with jump events defined 
+	   by a callbacks.
 
 	Args:
-		f ([type]): [description]
-		x ([type]): [description]
-		t_span ([type]): [description]
-		j_span ([type]): [description]
-		solver ([type]): [description]
-		callbacks ([type]): [description]
-		t_eval (list, optional): [description]. Defaults to [].
-		atol ([type], optional): [description]. Defaults to 1e-3.
-		rtol ([type], optional): [description]. Defaults to 1e-3.
-		event_tol ([type], optional): [description]. Defaults to 1e-4.
-		priority (str, optional): [description]. Defaults to 'jump'.
-
-	Returns:
-		[type]: [description]
+		f ([type]): 
+		x ([type]): 
+		t_span ([type]): 
+		j_span ([type]): 
+		solver ([type]): 
+		callbacks ([type]): 
+		t_eval (list, optional): Defaults to [].
+		atol ([type], optional): Defaults to 1e-3.
+		rtol ([type], optional): Defaults to 1e-3.
+		event_tol ([type], optional): Defaults to 1e-4.
+		priority (str, optional): Defaults to 'jump'.
 	"""
 	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
 	if type(solver) == str: solver = str_to_solver(solver, x.dtype)
@@ -295,16 +305,16 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	"""Adaptive ODE solve routine, called by `odeint`.
 
 	Args:
-		f ([type]): [description]
-		k1 ([type]): [description]
-		x ([type]): [description]
-		dt ([type]): [description]
-		t_span ([type]): [description]
-		solver ([type]): [description]
-		atol ([type], optional): [description]. Defaults to 1e-4.
-		rtol ([type], optional): [description]. Defaults to 1e-4.
+		f ([type]): 
+		k1 ([type]): 
+		x ([type]): 
+		dt ([type]): 
+		t_span ([type]): 
+		solver ([type]): 
+		atol ([type], optional): Defaults to 1e-4.
+		rtol ([type], optional): Defaults to 1e-4.
 		use_interp (bool, optional):
-		return_all_eval (bool, optional): [description]. Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
 
 	
 	Notes:
