@@ -67,6 +67,7 @@ exclude_patterns = [
 
 autosummary_generate = True
 napolean_use_rtype = False
+autoclass_content = 'both'
 
 # -- Options for nbsphinx -----------------------------------------------------
 

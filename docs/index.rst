@@ -1,6 +1,6 @@
 torchdyn reference documentation
 ====================================
-(New release 1.0 is finally out!)
+(New release 1.0 is out!)
 
 torchdyn is a Python library entirely dedicated to continuous, implicit neural architectures and the numerical methods that underpin them. 
 

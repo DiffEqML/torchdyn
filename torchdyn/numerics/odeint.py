@@ -22,7 +22,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from torchdyn.numerics.solvers import AsynchronousLeapfrog, str_to_solver, str_to_ms_solver
+from torchdyn.numerics.solvers import AsynchronousLeapfrog, Tsitouras45, str_to_solver, str_to_ms_solver
 from torchdyn.numerics.interpolators import str_to_interp
 from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
@@ -31,6 +31,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
 		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
+	   
 	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
@@ -63,6 +64,10 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	stepping_class = solver.stepping_class
 
 	# instantiate the interpolator similar to the solver steps above
+	if isinstance(solver, Tsitouras45):
+		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
+		interpolator = None
+
 	if type(interpolator) == str: 
 		interpolator = str_to_interp(interpolator, x.dtype)
 		x, t_span = interpolator.sync_device_dtype(x, t_span)
@@ -164,7 +169,7 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 	# first-guess B0 of shooting parameters
 	if B0 is None:
 		_, B0 = odeint(f, x, t_span, solver.coarse_method)
-	# determine which odeint to apply to MS solver. This is where time-variance can be introduced.
+	# determine which odeint to apply to MS solver. This is where time-variance can be introduced
 	odeint_func = _fixed_odeint
 	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
 	return t_span, B
