@@ -47,6 +47,7 @@ class ThirdHermite(Interpolator):
         super().__init__(order=3)
         raise NotImplementedError
 
+
 class FourthOrder(Interpolator):
     def __init__(self, dtype):
         """4th order interpolation scheme."""

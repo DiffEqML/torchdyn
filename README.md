@@ -51,8 +51,8 @@ Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of ava
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. Central to the `torchdyn` approach are continuous and implicit neural networks, where layer *depth* is taken to an infinite limit. 
 
 <p align="center">
-<img src="media/GalNODE.gif" width="200" height="200">
-<img src="media/cnf_diffeq.gif" width="200" height="200">
+<img src=https://github.com/DiffEqML/diffeqml-media/blob/main/animations/GalNODE.gif" width="200" height="200">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/animations/cnf_diffeq.gif" width="200" height="200">
 </p>
 
 By providing a centralized, easy-to-access collection of model templates, tutorial and application notebooks, we hope to speed-up research in this area and ultimately establish neural differential equations and implicit models as an effective tool for control, system identification and general machine learning tasks.
