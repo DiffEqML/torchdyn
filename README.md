@@ -1,7 +1,7 @@
 # torchdyn
 
 <p align="center">
-<img src="media/logo_small.png" width="150" height="150">
+<img src="media/torchdyn_logo.png" width="150" height="179">
 </p>
 <div align="center">
 
@@ -60,7 +60,6 @@ By providing a centralized, easy-to-access collection of model templates, tutori
 
 #### Dependencies
 `torchdyn` leverages modern PyTorch best practices and handles training with `pytorch-lightning` [[6](https://github.com/PyTorchLightning/pytorch-lightning)]. We build Graph Neural ODEs utilizing the Graph Neural Networks (GNNs) API of `dgl` [[7](https://www.dgl.ai/)]. For a complete list of references, check `pyproject.toml`. We offer a complete suite of ODE solvers and sensitivity methods, extending the functionality offered by `torchdiffeq` [[1](https://arxiv.org/abs/1806.07366)]. We have light dependencies on `torchsde` [[7](https://arxiv.org/abs/2001.01328)] and `torchcde` [[8](https://arxiv.org/abs/2005.08926)].
-
 
 ### Applications and tutorials
 `torchdyn` contains a variety of self-contained quickstart examples / tutorials built for practitioners and researchers. Refer to [the tutorial readme](tutorials/README.md)
