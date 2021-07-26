@@ -1,7 +1,7 @@
 # torchdyn
 
 <p align="center">
-<img src="media/torchdyn_logo.png" width="150" height="179">
+<img src="media/animated_logo_no_background.png" width="180" height="180">
 </p>
 <div align="center">
 
@@ -89,3 +89,8 @@ If you find `torchdyn` valuable for your research or applied projects:
   year={2020}
 }
 ```
+
+<p align="center">
+<img src="media/torchdyn_logo.png" width="150" height="179">
+</p>
+<div align="center">
