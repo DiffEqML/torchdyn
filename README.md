@@ -1,7 +1,7 @@
 # torchdyn
 
 <p align="center">
-<img src="media/animated_logo_no_background.gif" width="180" height="180">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/animations/animated_logo_no_background.gif" width="180" height="180">
 </p>
 <div align="center">
 
