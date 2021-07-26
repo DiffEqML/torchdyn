@@ -22,13 +22,13 @@ Neural differential equations made easy:
 ```
 from torchdyn import NeuralODE
 
-# your preferred torch.nn.Module here 
+# define your vector field with a torch.nn.Module or Callable. 
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
                   nn.Softplus(),
                   nn.Conv2d(32, 1, 3)
           )
 
-nde = NeuralODE(f)
+nde = NeuralODE(f, solver='tsit5', sensitivity='interpolated_adjoint')
 ```
 And you have a trainable model. Feel free to combine similar `torchdyn` classes with any `PyTorch` modules to build composite models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
 
