@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "torchdyn"
-version = "0.5.1"
+version = "1.0.0"
 license = "Apache License, Version 2.0"
 description = "Your PyTorch package for neural differential equations"
 authors = ["Michael Poli", "Stefano Massaroli", ]
