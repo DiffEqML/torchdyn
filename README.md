@@ -45,7 +45,7 @@ Alternatively, you can build a virtual dev environment for `torchdyn` with poetr
 
 
 ## Documentation
-Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of available features.
+Check our [docs](https://torchdyn.readthedocs.io/) for more information.
 
 ## Introduction
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. Central to the `torchdyn` approach are continuous and implicit neural networks, where layer *depth* is taken to an infinite limit. 
