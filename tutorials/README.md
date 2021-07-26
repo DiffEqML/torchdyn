@@ -27,7 +27,7 @@ Here, we showcase how `torchdyn` models can be used in various machine learning 
 
 * ⬜️ `m3a_image_classification`: convolutional Neural ODEs for digit classification on MNIST
 * ✅ `m3b_optimal_control`: direct optimal control of dynamical systems via the Neural ODE API.
-* ✅ `m4c_pde_optimal_control`: fast optimal control of a Timoshenko beam via Multiple Shooting Layers and root tracking.
+* ⬜️ `m4c_pde_optimal_control`: fast optimal control of a Timoshenko beam via Multiple Shooting Layers and root tracking.
 * ⬜️ `m3d_continuous_normalizing_flows`: density estimation with continuous normalizing flows.
 
 ### Module 4: Models 
