@@ -1,7 +1,7 @@
 # torchdyn
 
 <p align="center">
-<img src="media/animated_logo_no_background.png" width="180" height="180">
+<img src="media/animated_logo_no_background.gif" width="180" height="180">
 </p>
 <div align="center">
 
