@@ -15,7 +15,7 @@ from setuptools import setup
 
 setup(
     name="torchdyn",
-    version="0.5.1",
+    version="1.0.0",
     author="Michael Poli and Stefano Massaroli",
     description="PyTorch package for all things neural differential equations.",
     url="https://github.com/DiffEqML/torchdyn",
