@@ -22,13 +22,13 @@ Neural differential equations made easy:
 ```
 from torchdyn import NeuralODE
 
-# define your vector field with a torch.nn.Module or Callable. 
+# your preferred torch.nn.Module here 
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
                   nn.Softplus(),
                   nn.Conv2d(32, 1, 3)
           )
 
-nde = NeuralODE(f, solver='tsit5', sensitivity='interpolated_adjoint')
+nde = NeuralODE(f)
 ```
 And you have a trainable model. Feel free to combine similar `torchdyn` classes with any `PyTorch` modules to build composite models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
 
@@ -51,7 +51,7 @@ Check our [wiki](https://torchdyn.readthedocs.io/) for a full description of ava
 Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. Central to the `torchdyn` approach are continuous and implicit neural networks, where layer *depth* is taken to an infinite limit. 
 
 <p align="center">
-<iframe src="https://media.giphy.com/media/5u9Dc1fM0zAXAMRflX/giphy.gif" width="200" height="200">
+![](https://media.giphy.com/media/5u9Dc1fM0zAXAMRflX/giphy.gif)
 <img src="media/cnf_diffeq.gif" width="200" height="200">
 </p>
 
