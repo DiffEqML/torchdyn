@@ -20,7 +20,7 @@
 
 Neural differential equations made easy:
 ```
-from torchdyn import NeuralODE
+from torchdyn.core import NeuralODE
 
 # your preferred torch.nn.Module here 
 f = nn.Sequential(nn.Conv2d(1, 32, 3),
