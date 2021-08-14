@@ -128,6 +128,7 @@ class MultipleShootingProblem(ODEProblem):
 
     def odeint(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
         "Returns Tuple(`t_eval`, `solution`)"
+        self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint_mshooting(self.vf, x, t_span, self.parallel_solver, B0, self.fine_steps, self.maxiter)
         else:
@@ -136,6 +137,18 @@ class MultipleShootingProblem(ODEProblem):
     def forward(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
         "For safety redirects to intended method `odeint`"
         return self.odeint(x, t_span, B0)
+
+    def _prep_odeint(self):
+        "create autograd functions for backward pass"
+        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
+        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
+            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, 0, 0, None, 
+                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
+                                                            'multiple_shooting', self.fine_steps, self.maxiter).apply
+        elif self.sensalg == 'interpolated_adjoint':
+            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, 0, 0, None, 
+                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
+                                                            'multiple_shooting', self.fine_steps, self.maxiter).apply
         
 
 class SDEProblem(nn.Module):
