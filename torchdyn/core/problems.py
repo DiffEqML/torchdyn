@@ -48,12 +48,12 @@ class ODEProblem(nn.Module):
         vector_field = standardize_vf_call_signature(vector_field)
 
         self.vf, self.order, self.sensalg = vector_field, order, sensitivity
-        if len(tuple(self.vf.parameters())) > 0:
-            self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
-        else:
+        if not len(tuple(self.vf.parameters())) > 0:
             print("Your vector field does not have `nn.Parameters` to optimize.")
-            dummy_parameter = self.vf_params = nn.Parameter(torch.zeros(1))
+            dummy_parameter = nn.Parameter(torch.zeros(1))
             self.vf.register_parameter('dummy_parameter', dummy_parameter)
+        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
+        
 
         # instantiates an underlying autograd.Function that overrides the backward pass with the intended version
         # sensitivity algorithm
