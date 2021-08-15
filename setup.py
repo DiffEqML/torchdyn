@@ -25,7 +25,7 @@ setup(
         "matplotlib",
         "scikit-learn",
         "torchsde>=0.2.5",
-        "torchcde>=0.1.0"
+        "torchcde>=0.2.3"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
