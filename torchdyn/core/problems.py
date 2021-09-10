@@ -76,8 +76,23 @@ class ODEProblem(nn.Module):
                                                                     solver_adjoint, atol_adjoint, rtol_adjoint, integral_loss,
                                                                     problem_type='standard').apply
 
+
+    def _prep_odeint(self):
+        "create autograd functions for backward pass"
+        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
+        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
+            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, self.atol, self.rtol, self.interpolator, 
+                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
+                                                            problem_type='standard').apply
+        elif self.sensalg == 'interpolated_adjoint':
+            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, self.atol, self.rtol, self.interpolator, 
+                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
+                                                                    problem_type='standard').apply
+
+
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"
+        self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator)
 
