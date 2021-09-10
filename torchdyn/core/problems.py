@@ -2,7 +2,7 @@ import torch
 from torch.autograd import Function
 from torch import Tensor
 import torch.nn as nn
-from typing import Callable, Union, List
+from typing import Callable, Generator, Iterable, Union, List
 
 from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
@@ -13,7 +13,7 @@ from torchdyn.core.utils import standardize_vf_call_signature
 class ODEProblem(nn.Module):
     def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1, 
                 atol:float=1e-4, rtol:float=1e-4, sensitivity:str='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
-                rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
+                rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None, optimizable_params:Union[Iterable, Generator]=()):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 
         Args:
@@ -29,7 +29,7 @@ class ODEProblem(nn.Module):
             rtol_adjoint (float, optional): Defaults to 1e-6.
             seminorm (bool, optional): Indicates whether the a seminorm should be used for error estimation during adjoint backsolves. Defaults to False.
             integral_loss (Union[Callable, None]): Integral loss to optimize for. Defaults to None.
-
+            optimizable_parameters (Union[Iterable, Generator]): parameters to calculate sensitivies for. Defaults to ().
         Notes:
             Integral losses can be passed as generic function or `nn.Modules`. 
         """
@@ -48,12 +48,21 @@ class ODEProblem(nn.Module):
         vector_field = standardize_vf_call_signature(vector_field)
 
         self.vf, self.order, self.sensalg = vector_field, order, sensitivity
-        if not len(tuple(self.vf.parameters())) > 0:
+        optimizable_params = tuple(optimizable_params)
+
+        if len(tuple(self.vf.parameters())) > 0:
+            self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
+
+        elif len(optimizable_params) > 0:
+            # use `optimizable_parameters` if f itself does not have a .parameters() iterable
+            # TODO: advanced logic to retain naming in case `state_dicts()` are passed
+            for k, p in enumerate(optimizable_params): self.vf.register_parameter(f'optimizable_parameter_{k}', p)
+            self.vf_params  = torch.cat([p.contiguous().flatten() for p in optimizable_params])
+
+        else:
             print("Your vector field does not have `nn.Parameters` to optimize.")
-            dummy_parameter = nn.Parameter(torch.zeros(1))
+            dummy_parameter = self.vf_params = nn.Parameter(torch.zeros(1))
             self.vf.register_parameter('dummy_parameter', dummy_parameter)
-        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
-        
 
         # instantiates an underlying autograd.Function that overrides the backward pass with the intended version
         # sensitivity algorithm
@@ -68,30 +77,15 @@ class ODEProblem(nn.Module):
 
     def odeint(self, x:Tensor, t_span:Tensor):
         "Returns Tuple(`t_eval`, `solution`)"
-        self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator)
+
         else:
             return self.autograd_function(self.vf_params, x, t_span)
 
     def forward(self, x:Tensor, t_span:Tensor):
         "For safety redirects to intended method `odeint`"
         return self.odeint(x, t_span)
-
-    def _prep_odeint(self):
-        "create autograd functions for backward pass"
-        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
-        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
-            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, self.atol, self.rtol, self.interpolator, 
-                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
-                                                            problem_type='standard').apply
-        elif self.sensalg == 'interpolated_adjoint':
-            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, self.atol, self.rtol, self.interpolator, 
-                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
-                                                                    problem_type='standard').apply
-
-
-    
 
 
 class MultipleShootingProblem(ODEProblem):
@@ -128,7 +122,6 @@ class MultipleShootingProblem(ODEProblem):
 
     def odeint(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
         "Returns Tuple(`t_eval`, `solution`)"
-        self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint_mshooting(self.vf, x, t_span, self.parallel_solver, B0, self.fine_steps, self.maxiter)
         else:
@@ -137,18 +130,6 @@ class MultipleShootingProblem(ODEProblem):
     def forward(self, x:Tensor, t_span:Tensor, B0:Tensor=None):
         "For safety redirects to intended method `odeint`"
         return self.odeint(x, t_span, B0)
-
-    def _prep_odeint(self):
-        "create autograd functions for backward pass"
-        self.vf_params = torch.cat([p.contiguous().flatten() for p in self.vf.parameters()])
-        if self.sensalg == 'adjoint':  # alias .apply as direct call to preserve consistency of call signature
-            self.autograd_function = _gather_odefunc_adjoint(self.vf, self.vf_params, self.solver, 0, 0, None, 
-                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
-                                                            'multiple_shooting', self.fine_steps, self.maxiter).apply
-        elif self.sensalg == 'interpolated_adjoint':
-            self.autograd_function = _gather_odefunc_interp_adjoint(self.vf, self.vf_params, self.solver, 0, 0, None, 
-                                                            self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
-                                                            'multiple_shooting', self.fine_steps, self.maxiter).apply
         
 
 class SDEProblem(nn.Module):

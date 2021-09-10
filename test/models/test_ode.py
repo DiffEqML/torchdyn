@@ -13,12 +13,15 @@
 import pytest
 import torch
 import torch.nn as nn
+from torch.autograd import grad
 import pytorch_lightning as pl
 import torch.utils.data as data
 from torchdyn.datasets import ToyDataset
 from torchdyn.core import NeuralODE
 from torchdyn.nn import GalLinear, GalConv2d, DepthCat, Augmenter, DataControl
+from torchdyn.numerics import odeint
 
+from functools import partial
 import copy
 
 
@@ -197,3 +200,29 @@ def test_2nd_order():
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
     trainer.fit(learn)
+
+
+# https://github.com/DiffEqML/torchdyn/issues/118
+def test_arg_ode():
+    """Test sensitivity through NeuralODE solutions of a functools.partial vector field"""
+    l = nn.Linear(1, 1)
+
+    class TFunc(nn.Module):
+        def __init__(self, l):
+            super().__init__()
+            self.l = l
+        def forward(self, t, x, u, v, z):
+            return self.l(x + u + v + z)
+        
+    tfunc = TFunc(l)
+
+    u = v = z = torch.randn(1, 1)
+    f = partial(tfunc.forward, u=u, v=v, z=z)
+    x0 = torch.randn(1, 1, requires_grad=True)
+    t_eval, sol1 = odeint(f, x0, torch.linspace(0, 5, 10), solver='euler')
+
+    odeprob = NeuralODE(f, 'euler', sensitivity='interpolated_adjoint', optimizable_params=tfunc.parameters())
+    t_eval, sol2 = odeprob(x0, t_span=torch.linspace(0, 5, 10))
+
+    assert (sol1==sol2).all()
+    grad(sol2.sum(), x0)
