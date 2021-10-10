@@ -60,7 +60,7 @@ class Euler(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
-    
+
 class Midpoint(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 2"""
@@ -70,9 +70,60 @@ class Midpoint(SolverTemplate):
 
     def step(self, f, x, t, dt, k1=None):
         if k1 == None: k1 = f(t, x)
-        x_mid = x + 0.5 * dt * k1
-        x_sol = x + dt * f(t + 0.5 * dt, x_mid)
+        k2 = f(t + 0.5 * dt, x + 0.5 * dt * k1)
+        x_sol = x + dt * k2
         return None, x_sol, None
+
+
+class Heun(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        """Explicit Midpoint ODE stepper, order 2"""
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
+
+    def step(self, f, x, t, dt, k1=None):
+        if k1 == None: k1 = f(t, x)
+        k2 = f(t + dt, x + dt * k1)
+        x_sol = x + 0.5 * dt * (k1 + k2)
+        return None, x_sol, None
+
+class Ralston(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        """Explicit Midpoint ODE stepper, order 2"""
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
+
+    def step(self, f, x, t, dt, k1=None):
+        if k1 == None: k1 = f(t, x)
+        k2 = f(t + 2 * dt / 3, x + 2 * dt * k1 / 3)
+        x_sol = x + 0.25 * dt * (k1 + 3 * k2)
+        return None, x_sol, None
+
+
+class RungeKutta2(SolverTemplate):
+    def __init__(self, alpha=1, dtype=torch.float32, trainable=False):
+        """General RK solver of order 2 (trainable)"""
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.trainable = trainable
+        self.stepping_class = 'fixed'
+        self.alpha = torch.Tensor([alpha])
+        if trainable: self.register_tableau()
+
+    def step(self, f, x, t, dt, k1=None):
+        if self.trainable: 
+            a = self.parameter_tableau['alpha']
+        else: a = self.alpha
+        if k1 == None: k1 = f(t, x)
+        k2 = f(t + a * dt, x + a * dt * k1)
+        x_sol = x + dt * ((2 * a - 1) * k1 + k2) / (2 * a)
+        return None, x_sol, None
+
+    def register_tableau(self):
+        parameter_tableau = nn.ParameterDict({'alpha': nn.Parameter(self.alpha)})
+        self.parameter_tableau = parameter_tableau
 
     
 class RungeKutta4(SolverTemplate):
