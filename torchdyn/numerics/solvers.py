@@ -20,8 +20,13 @@
 from typing import Tuple
 import torch
 import torch.nn as nn
+from torch import eye
 from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
+from functorch import vmap
 
+###########################################
+############### ODE Solvers ###############
+###########################################
 
 class SolverTemplate(nn.Module):
     def __init__(self, order, min_factor:float=0.2, max_factor:float=10, safety:float=0.9):
@@ -48,6 +53,8 @@ class SolverTemplate(nn.Module):
         pass
 
 
+### 1st order solvers
+
 class Euler(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Euler ODE stepper, order 1"""
@@ -60,6 +67,35 @@ class Euler(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
+
+class ImplicitEuler(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        super().__init__(order=1)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
+        self.opt = torch.optim.LBFGS
+        self.max_iters = 200
+
+    @staticmethod
+    def _residual(f, x, t, dt, x_sol):
+        f_sol = f(t, x_sol)
+        return torch.sum((x_sol - x - dt*f_sol)**2)
+
+    def step(self, f, x, t, dt, k1=None):
+        x_sol = x.clone()
+        x_sol = nn.Parameter(data=x_sol)
+        opt = self.opt([x_sol], lr=1, max_iter=self.max_iters, max_eval=10*self.max_iters,
+        tolerance_grad=1.e-12, tolerance_change=1.e-12, history_size=100, line_search_fn='strong_wolfe')
+        def closure():
+            opt.zero_grad()
+            residual = ImplicitEuler._residual(f, x, t, dt, x_sol)
+            x_sol.grad, = torch.autograd.grad(residual, x_sol, only_inputs=True, allow_unused=False)
+            return residual
+        opt.step(closure)
+        return None, None, x_sol
+
+
+### second-oder solvers
 
 class Midpoint(SolverTemplate):
     def __init__(self, dtype=torch.float32):
@@ -87,6 +123,7 @@ class Heun(SolverTemplate):
         k2 = f(t + dt, x + dt * k1)
         x_sol = x + 0.5 * dt * (k1 + k2)
         return None, x_sol, None
+
 
 class Ralston(SolverTemplate):
     def __init__(self, dtype=torch.float32):
@@ -125,7 +162,39 @@ class RungeKutta2(SolverTemplate):
         parameter_tableau = nn.ParameterDict({'alpha': nn.Parameter(self.alpha)})
         self.parameter_tableau = parameter_tableau
 
-    
+
+class AsynchronousLeapfrog(SolverTemplate):
+    def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
+        """Explicit Leapfrog symplectic ODE stepper. 
+        Can return local error estimates if adaptive stepping is required"""
+        super().__init__(order=2)
+        self.dtype = dtype
+        self.channel_index = channel_index
+        self.stepping_class = stepping_class
+        self.const = 1
+        self.tableau = construct_rk4(self.dtype)  
+        # an additional overhead, necessary to preserve a certain degree of sanity 
+        # in the implementation and to avoid API bloating.
+        self.x_shape = None 
+
+    def step(self, f, xv, t, dt, k1=None):
+        half_state_dim = xv.shape[-1] // 2
+        x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
+        if k1 == None: k1 = f(t, x)
+        x1 = x + 0.5 * dt * v
+        vt1 = f(t + 0.5 * dt, x1)
+        v1 = 2 * self.const * (vt1 - v) + v
+        x2 = x1 + 0.5 * dt * v1 
+        x_sol = torch.cat([x2, v1], -1)
+        if self.stepping_class == 'adaptive':
+            xv_err = torch.cat([torch.zeros_like(x), v], -1)
+        else:
+            xv_err = None
+        return None, x_sol, xv_err
+
+
+### higher-order and adaptive-step Runge-Kutta methods
+
 class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 4"""
@@ -142,37 +211,6 @@ class RungeKutta4(SolverTemplate):
         k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3))
         x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
         return None, x_sol, None
-
-
-class AsynchronousLeapfrog(SolverTemplate):
-    def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
-        """Explicit Leapfrog symplectic ODE stepper. 
-        Can return local error estimates if adaptive stepping is required"""
-        super().__init__(order=2)
-        self.dtype = dtype
-        self.channel_index = channel_index
-        self.stepping_class = stepping_class
-        self.const = 1
-        self.tableau = construct_rk4(self.dtype)  
-        # an additional overhead, necessary to preserve a certain degree of sanity 
-        # in the implementation and to avoid API bloating.
-        self.x_shape = None 
-
-
-    def step(self, f, xv, t, dt, k1=None):
-        half_state_dim = xv.shape[-1] // 2
-        x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
-        if k1 == None: k1 = f(t, x)
-        x1 = x + 0.5 * dt * v
-        vt1 = f(t + 0.5 * dt, x1)
-        v1 = 2 * self.const * (vt1 - v) + v
-        x2 = x1 + 0.5 * dt * v1 
-        x_sol = torch.cat([x2, v1], -1)
-        if self.stepping_class == 'adaptive':
-            xv_err = torch.cat([torch.zeros_like(x), v], -1)
-        else:
-            xv_err = None
-        return None, x_sol, xv_err
 
 
 class DormandPrince45(SolverTemplate):
@@ -196,7 +234,6 @@ class DormandPrince45(SolverTemplate):
         return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
-
 class Tsitouras45(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=5)
@@ -218,32 +255,53 @@ class Tsitouras45(SolverTemplate):
         return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
-class ImplicitEuler(SolverTemplate):
-    def __init__(self, dtype=torch.float32):
-        super().__init__(order=1)
-        self.dtype = dtype
-        self.stepping_class = 'fixed'
-        self.opt = torch.optim.LBFGS
-        self.max_iters = 200
+###########################################
+######## Multiple Shooting Solvers ########
+###########################################
 
-    @staticmethod
-    def _residual(f, x, t, dt, x_sol):
-        f_sol = f(t, x_sol)
-        return torch.sum((x_sol - x - dt*f_sol)**2)
+class ForwardSensitivity(nn.Module):
+    "Forward sensitivity for ODEs. Integrates the ODE returning the state and forward sensitivity"
+    def __init__(self, f):
+        super().__init__()
+        self.f = f
 
-    def step(self, f, x, t, dt, k1=None):
-        x_sol = x.clone()
-        x_sol = nn.Parameter(data=x_sol)
-        opt = self.opt([x_sol], lr=1, max_iter=self.max_iters, max_eval=10*self.max_iters,
-        tolerance_grad=1.e-12, tolerance_change=1.e-12, history_size=100, line_search_fn='strong_wolfe')
-        def closure():
-            opt.zero_grad()
-            residual = ImplicitEuler._residual(f, x, t, dt, x_sol)
-            x_sol.grad, = torch.autograd.grad(residual, x_sol, only_inputs=True, allow_unused=False)
-            return residual
-        opt.step(closure)
-        return None, None, x_sol
+    def forward(self, z0, t_span, odeint_func, solver='rk4', atol=1e-5, rtol=1e-5):
+        I = eye(z0.shape[-1]).to(z0)
+        # handle regular `batch, dim` case as well as `seq_dim, batch, dim`
+        v0 = I.repeat(z0.shape[0], 1, 1) if len(z0.shape) < 3 else I.repeat(*z0.shape[:2], 1, 1)
+        
+        self.z_shape, self.v_shape = z0.shape, v0.shape        
 
+        zv0 = self._ravel_state(z0, v0)
+        _, zvT = odeint_func(self._sensitivity_dynamics, zv0, t_span, 
+                        solver=solver)#, atol=atol, rtol=rtol, interpolator='4th')
+        zT, vT = self._unravel_state(zvT)
+        return zT, vT
+
+    def _sensitivity_dynamics(self, t, zv):
+        z, v = self._unravel_state(zv)
+        # compute vector field
+        dz = self.f(t, z.requires_grad_(True))
+        # compute fw sensitivity via mjp
+        dv = self._mjp(dz, z, v)
+        return self._ravel_state(dz, dv)
+    
+    def _mjp(self, f, z, v):
+        """Parallel computation of matrix jacobian products with vmap
+        """
+        def get_vjp(v):
+            return torch.autograd.grad(f, z, v, retain_graph=True)[0]
+        return vmap(get_vjp, in_dims=2, out_dims=2)(v)
+    
+    def _ravel_state(self, z, v):  
+        v = v.reshape(*z.shape[:-1], -1)
+        zv = torch.cat([z, v], -1)
+        return zv
+    
+    def _unravel_state(self, zv):
+        z, v = zv[...,:self.z_shape[-1]], zv[...,self.z_shape[-1]:]
+        v = v.reshape(*z.shape, self.z_shape[-1])
+        return z, v
 
 class MShootingSolverTemplate(nn.Module):
     def __init__(self, coarse_method, fine_method):
@@ -265,12 +323,29 @@ class MSForward(MShootingSolverTemplate):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         super().__init__(coarse_method, fine_method)
+        self.fsens = None
 
-    def root_solve(self, f, x, t_span, B):
-        raise NotImplementedError("Waiting for `functorch` to be merged in the stable version of Pytorch"
-                                  "we need their vjp for efficient implementation of forward sensitivity"
-                                  "Refer to DiffEqML/diffeqml-research/multiple-shooting-layers for a manual implementation")
-
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
+        if self.fsens is None:
+            self.fsens = ForwardSensitivity(f)
+            
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span)
+        sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
+        i = 0
+        while i <= maxiter:
+            i += 1
+            with torch.set_grad_enabled(True):
+                B_fine, V_fine = self.fsens(B[i - 1:], sub_t_span, odeint_func=odeint_func, 
+                                            solver=self.fine_method)
+            B_fine, V_fine = B_fine[-1], V_fine[-1]
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i - 1]
+            for m in range(i, n_subinterv):
+                B_in = B_fine[m - i] + torch.einsum('bij, bj -> bi', V_fine[m - i], B_in - B[m - 1])
+                B_out[m] = B_in
+            B = B_out
+        return B
 
 class MSZero(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
@@ -300,7 +375,6 @@ class MSZero(MShootingSolverTemplate):
                 B_out[m] = B_in
             B = B_out
         return B
-
 
 class MSBackward(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
@@ -370,6 +444,10 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
         return B
 
 
+###########################################
+############### SDE Solvers ###############
+###########################################
+
 class SDESolverTemplate(SolverTemplate):
     def __init__(self, order, min_factor=0.2, max_factor=2., safety=0.9):
         super().__init__(order=order, min_factor=min_factor, max_factor=max_factor, safety=safety)
@@ -384,6 +462,11 @@ class EulerMaruyama(SDESolverTemplate):
         raise NotImplementedError
 
 
+###########################################
+############## Solvers Dicts ##############
+###########################################
+
+
 SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
@@ -392,7 +475,8 @@ SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 
-MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
+MS_SOLVER_DICT = {'newton': MSForward, 'fsens': MSForward, 
+                  'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
                   'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward,
                   'ieuler': ParallelImplicitEuler, 'parallel-implicit-euler': ParallelImplicitEuler}
 
