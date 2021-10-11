@@ -255,6 +255,37 @@ class Tsitouras45(SolverTemplate):
         return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
+### CDE solvers
+
+class EulerCDE(SolverTemplate):
+    def __init__(self):
+        super().__init__(order=1)
+        self.dtype = default = torch.float32
+        self.stepping_class = 'fixed'
+
+    def step(self, f, x, u, t, dt, k1=None):
+        if k1 == None: k1 = f(t, x, u[0])
+        x_sol = x + dt * k1
+        return None, x_sol, None
+
+class RungeKutta4(SolverTemplate):
+    def __init__(self, dtype=torch.float32):
+        """Explicit Midpoint ODE stepper, order 4"""
+        super().__init__(order=4)
+        self.dtype = dtype
+        self.stepping_class = 'fixed'
+        self.tableau = construct_rk4(self.dtype)
+
+    def step(self, f, x, u, t, dt, k1=None):
+        c, a, bsol, _ = self.tableau
+        if k1 == None: k1 = f(t, x, u[0])
+        k2 = f(t + c[0] * dt, x + dt * (a[0] * k1), u[1])
+        k3 = f(t + c[1] * dt, x + dt * (a[1][0] * k1 + a[1][1] * k2), u[2])
+        k4 = f(t + c[2] * dt, x + dt * (a[2][0] * k1 + a[2][1] * k2 + a[2][2] * k3), u[3])
+        x_sol = x + dt * (bsol[0] * k1 + bsol[1] * k2 + bsol[2] * k3 + bsol[3] * k4)
+        return k3, x_sol, None
+
+
 ###########################################
 ######## Multiple Shooting Solvers ########
 ###########################################
@@ -273,8 +304,8 @@ class ForwardSensitivity(nn.Module):
         self.z_shape, self.v_shape = z0.shape, v0.shape        
 
         zv0 = self._ravel_state(z0, v0)
-        _, zvT = odeint_func(self._sensitivity_dynamics, zv0, t_span, 
-                        solver=solver)#, atol=atol, rtol=rtol, interpolator='4th')
+        zvT = odeint_func(self._sensitivity_dynamics, zv0, t_span, 
+                        solver=solver)[1]
         zT, vT = self._unravel_state(zvT)
         return zT, vT
 
@@ -319,6 +350,8 @@ class MShootingSolverTemplate(nn.Module):
         pass
 
 
+### ODEs 
+
 class MSForward(MShootingSolverTemplate):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
     def __init__(self, coarse_method='euler', fine_method='rk4'):
@@ -335,17 +368,18 @@ class MSForward(MShootingSolverTemplate):
         while i <= maxiter:
             i += 1
             with torch.set_grad_enabled(True):
-                B_fine, V_fine = self.fsens(B[i - 1:], sub_t_span, odeint_func=odeint_func, 
+                B_fine, V_fine = self.fsens(B[i-1:], sub_t_span, odeint_func=odeint_func, 
                                             solver=self.fine_method)
             B_fine, V_fine = B_fine[-1], V_fine[-1]
             B_out = torch.zeros_like(B)
             B_out[:i] = B[:i]
-            B_in = B[i - 1]
+            B_in = B[i-1]
             for m in range(i, n_subinterv):
-                B_in = B_fine[m - i] + torch.einsum('bij, bj -> bi', V_fine[m - i], B_in - B[m - 1])
+                B_in = B_fine[m-i] + torch.einsum('bij, bj -> bi', V_fine[m-i], B_in - B[m-1])
                 B_out[m] = B_in
             B = B_out
         return B
+
 
 class MSZero(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
@@ -375,6 +409,7 @@ class MSZero(MShootingSolverTemplate):
                 B_out[m] = B_in
             B = B_out
         return B
+
 
 class MSBackward(MShootingSolverTemplate):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
@@ -441,6 +476,107 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
             return residual
 
         solver.step(closure)
+        return B
+
+
+### CDEs
+
+class ForwardSensitivityCDE(nn.Module):
+    "Forward sensitivity for ODEs. Integrates the ODE returning the state and forward sensitivity"
+    def __init__(self, f):
+        super().__init__()
+        self.f = f
+
+    def forward(self, z0, controls, t_span, cdeint_func, solver='rk4'):
+        I = eye(z0.shape[-1]).to(z0)
+        # handle regular `batch, dim` case as well as `seq_dim, batch, dim`
+        v0 = I.repeat(z0.shape[0], 1, 1) if len(z0.shape) < 3 else I.repeat(*z0.shape[:2], 1, 1)
+        
+        self.z_shape, self.v_shape = z0.shape, v0.shape        
+
+        zv0 = self._ravel_state(z0, v0)
+        zvT = cdeint_func(self._sensitivity_dynamics, zv0, controls, t_span, solver=solver)
+        zT, vT = self._unravel_state(zvT)
+        return zT, vT
+
+    def _sensitivity_dynamics(self, t, zv, u):
+        z, v = self._unravel_state(zv)
+        # compute vector field
+        dz = self.f(t, z.requires_grad_(True), u)
+        # compute fw sensitivity via mjp
+        dv = self._mjp(dz, z, v)
+        return self._ravel_state(dz, dv)
+    
+    def _mjp(self, f, z, v):
+        """Parallel computation of matrix jacobian products with vmap
+        """
+        def get_vjp(v):
+            return torch.autograd.grad(f, z, v, retain_graph=True)[0]
+        return vmap(get_vjp, in_dims=2, out_dims=2)(v)
+    
+    def _ravel_state(self, z, v):  
+        v = v.reshape(*z.shape[:-1], -1)
+        zv = torch.cat([z, v], -1)
+        return zv
+    
+    def _unravel_state(self, zv):
+        z, v = zv[...,:self.z_shape[-1]], zv[...,self.z_shape[-1]:]
+        v = v.reshape(*z.shape, self.z_shape[-1])
+        return z, v
+
+
+class MSForwardCDE(MShootingSolverTemplate):
+    def __init__(self, coarse_method='euler', fine_method='rk4'):
+        """MSL CDE layer solved via parareal updates"""
+        super().__init__(coarse_method, fine_method)
+
+    def root_solve(self, cdeint_func, f, x, controls, t_span, B, fine_steps, maxiter):
+        if self.fcdesens is None:
+            self.fcdesens = ForwardSensitivityCDE(f)
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span)
+        sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
+        i = 0
+        while i <= maxiter:
+            i += 1
+            with torch.set_grad_enabled(True):
+                B_fine, V_fine = self.fcdesens(B[i-1:], controls[:,i-1:], sub_t_span, 
+                    cdeint_func=cdeint_func, solver=self.fine_method)
+            B_fine, V_fine = B_fine[-1], V_fine[-1]
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i-1]
+            for m in range(i, n_subinterv):
+                B_in = B_fine[m-i] + torch.einsum('bij, bj -> bi', V_fine[m-i], B_in - B[m-1])
+                B_out[m] = B_in
+            B = B_out
+        return B
+
+
+class MSZeroCDE(MShootingSolverTemplate):
+    def __init__(self, coarse_method='euler', fine_method='rk4'):
+        """MSL CDE layer solved via parareal updates"""
+        super().__init__(coarse_method, fine_method)
+
+    def root_solve(self, cdeint_func, f, x, controls, t_span, B, fine_steps, maxiter):
+        dt, n_subinterv = t_span[1] - t_span[0], len(t_span)
+        sub_t_span = torch.linspace(0, dt, fine_steps).to(x)
+        increasing_subspans =  torch.stack([sub_t_span + i * sub_t_span[-1] for i in range(n_subinterv)]).to(x)
+        i = 0
+        while i < maxiter:
+            i += 1
+            B_coarse = \
+                cdeint_func(f, B[i-1:], controls[:,i-1:], increasing_subspans[i-1:], solver=self.coarse_method)[-1]
+            B_fine = \
+                cdeint_func(f, B[i-1:], controls[:,i-1:], increasing_subspans[i - 1:], solver=self.fine_method)[-1]
+
+            B_out = torch.zeros_like(B)
+            B_out[:i] = B[:i]
+            B_in = B[i-1]
+            for m in range(i, n_subinterv):
+                B_in = cdeint_func(f, B_in, controls[:,m], sub_t_span, solver=self.coarse_method)[-1]
+                B_in = B_in - B_coarse[m-i] + B_fine[m-i]
+                B_out[m] = B_in
+            B = B_out
         return B
 
 

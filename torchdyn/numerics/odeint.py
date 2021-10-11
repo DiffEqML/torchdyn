@@ -146,7 +146,7 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, return_all_eval)
 
 
-def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4):
+def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4, init_sol=True):
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using parallel-in-time solvers.
 
 	Args:
@@ -168,7 +168,10 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	# first-guess B0 of shooting parameters
 	if B0 is None:
-		_, B0 = odeint(f, x, t_span, solver.coarse_method)
+		if init_sol:
+			_, B0 = odeint(f, x, t_span, solver.coarse_method)
+		else:
+			B0 = torch.zeros(t_span.shape, *x.shape)
 	# determine which odeint to apply to MS solver. This is where time-variance can be introduced
 	odeint_func = _fixed_odeint
 	B = solver.root_solve(odeint_func, f, x, t_span, B0, fine_steps, maxiter)
@@ -414,6 +417,7 @@ def _fixed_odeint(f, x, t_span, solver):
 		t = t + dt
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
+	# TODO : do we need to return t_span? we can just return sol and let odeint handle the rest
 	return t_span, torch.stack(sol)
 
 
@@ -437,7 +441,6 @@ def _shifted_fixed_odeint(f, x, t_span):
 	# stacking is only possible since the number of steps in each of the ``n_segments''
 	# is assumed to be the same. Otherwise require jagged tensors or a []
 	return torch.stack(sol)
-
 
 
 def _jagged_fixed_odeint(f, x,
@@ -477,3 +480,131 @@ def _jagged_fixed_odeint(f, x,
 	sol = [sol_[:len(t_)] for sol_, t_ in zip(sol, t_span)]
 	return [torch.stack(sol_, 0) for sol_ in sol]
 
+### CDEs
+
+def cdeint(f:Callable, x:Tensor, controls:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
+		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
+		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+	"""Solve a 	controlled initial value problem (IVP) determined by function `f`, initial condition `x` and control input `controls`.
+	   
+	   Functional `cdeint` API of the `torchdyn` package.
+
+	Args:
+		f (Callable): 
+		x (Tensor): 
+		controls (Tensor):
+		t_span (Union[List, Tensor]): 
+		solver (Union[str, nn.Module]): 
+		atol (float, optional): Defaults to 1e-3.
+		rtol (float, optional): Defaults to 1e-3.
+		t_stops (Union[List, Tensor, None], optional): Defaults to None.
+		verbose (bool, optional): Defaults to False.
+		interpolator (bool, optional): Defaults to False.
+		return_all_eval (bool, optional): Defaults to False.
+		seminorm (Tuple[bool, Union[int, None]], optional): Whether to use seminorms in local error computation.
+
+	Returns:
+		Tuple[Tensor, Tensor]: returns a Tuple (t_eval, solution).
+	"""
+	if t_span[1] < t_span[0]: # time is reversed
+		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
+		f_ = lambda t, x: -f(-t, x)
+		t_span = -t_span
+	else: f_ = f
+
+	if type(t_span) == list: t_span = torch.cat(t_span)
+	# instantiate the solver in case the user has specified preference via a `str` and ensure compatibility of device ~ dtype
+	if type(solver) == str:
+		solver = str_to_cde_solver(solver, x.dtype)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	stepping_class = solver.stepping_class
+
+	# instantiate the interpolator similar to the solver steps above
+	if isinstance(solver, Tsitouras45):
+		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
+		interpolator = None
+
+	if type(interpolator) == str: 
+		interpolator = str_to_interp(interpolator, x.dtype)
+		x, t_span = interpolator.sync_device_dtype(x, t_span)
+
+	# access parallel integration routines with different t_spans for each sample in `x`.
+	if len(t_span.shape) > 1:
+		raise NotImplementedError("Parallel routines not implemented yet, check experimental versions of `torchdyn`")
+	# odeint routine with a single t_span for all samples
+	elif len(t_span.shape) == 1:
+		if stepping_class == 'fixed':
+			if atol != cdeint.__defaults__[0] or rtol != cdeint.__defaults__[1]:
+				warn("Setting tolerances has no effect on fixed-step methods")
+			return _fixed_cdeint(f_, x, controls, t_span, solver) 
+		elif stepping_class == 'adaptive':
+			raise NotImplementedError("Adaptive-step solvers for CDEs not implemented yet, check experimental versions of `torchdyn`")
+
+
+def cdeint_mshooting(f:Callable, x:Tensor, controls:Tensor, t_span:Tensor, solver:Union[str, nn.Module], B0=None, fine_steps=2, maxiter=4, init_sol=True):
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using parallel-in-time solvers.
+
+	Args:
+		f (Callable): vector field
+		x (Tensor): batch of initial conditions
+		t_span (Tensor): integration interval
+		solver (Union[str, nn.Module]): parallel-in-time solver.
+		B0 ([type], optional): Initialized shooting parameters. If left to None, will compute automatically 
+							   using the coarse method of solver. Defaults to None.
+		fine_steps (int, optional): Defaults to 2.
+		maxiter (int, optional): Defaults to 4.
+
+	Notes:
+		TODO: At the moment assumes the ODE to NOT be time-varying. An extension is possible by adaptive the step 
+		function of a parallel-in-time solvers. 
+	"""
+	if type(solver) == str:
+		solver = str_to_ms_cde_solvers(solver)
+	x, t_span = solver.sync_device_dtype(x, t_span)
+	# first-guess B0 of shooting parameters
+	if B0 is None:
+		if init_sol:
+			_, B0 = _fixed_cdeint(f, x, controls, t_span, solver=solver.coarse_method)
+		else:
+			B0 = torch.zeros(t_span.shape, *x.shape)
+	# determine which odeint to apply to MS solver. This is where time-variance can be introduced
+	cdeint_func = _fixed_cdeint
+	B = solver.root_solve(cdeint_func, f, x, controls, t_span, B0, fine_steps, maxiter)
+	return t_span, B
+
+
+	def _fixed_cdeint(f, x, u, t_span, solver):
+	"""Solves controlled IVPs with same `t_span`, using fixed-step methods"""
+	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
+	sol = [x]
+	steps = 1
+	while steps <= len(t_span) - 1:
+		_, x, _ = solver.step(f, x, u, t, dt)
+		sol.append(x)
+		t = t + dt
+		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
+		steps += 1
+	# TODO : do we need to return t_span? we can just return sol and let odeint handle the rest
+	return t_span, torch.stack(sol)
+
+
+def _shifted_fixed_cdeint(f, x, u, t_span):
+	"""Solves ``n_segments'' jagged controlled IVPs in parallel with fixed-step methods. All subproblems
+	have equal step sizes and number of solution points
+	
+	Notes:
+		Assumes `dt` fixed. TODO: update in each loop evaluation."""
+	t, T = t_span[..., 0], t_span[..., -1]
+	dt = t_span[..., 1] - t
+	sol, k1 = [], f(t, x, controls[0])
+
+	not_converged = ~((t - T).abs() <= 1e-6).bool()
+	while not_converged.any():
+		x[:, ~not_converged] = torch.zeros_like(x[:, ~not_converged])
+		k1, _, x = solver.step(f, x, u, t, dt[..., None], k1=k1)  # dt will be broadcasted on dim1
+		sol.append(x)
+		t = t + dt
+		not_converged = ~((t - T).abs() <= 1e-6).bool()
+	# stacking is only possible since the number of steps in each of the ``n_segments''
+	# is assumed to be the same. Otherwise require jagged tensors or a []
+	return torch.stack(sol)
