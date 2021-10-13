@@ -268,7 +268,7 @@ class EulerCDE(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
-class RungeKutta4(SolverTemplate):
+class RungeKutta4CDE(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 4"""
         super().__init__(order=4)
@@ -481,6 +481,21 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
 
 ### CDEs
 
+class MShootingSolverTemplateCDE(nn.Module):
+    def __init__(self, coarse_method, fine_method):
+        super().__init__()
+        if type(coarse_method) == str: self.coarse_method = str_to_cde_solver(coarse_method)
+        if type(fine_method) == str: self.fine_method = str_to_cde_solver(fine_method)
+
+    def sync_device_dtype(self, x, t_span):
+        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
+        x, t_span = self.coarse_method.sync_device_dtype(x, t_span)
+        x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
+        return x, t_span
+
+    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
+        pass
+
 class ForwardSensitivityCDE(nn.Module):
     "Forward sensitivity for ODEs. Integrates the ODE returning the state and forward sensitivity"
     def __init__(self, f):
@@ -525,7 +540,7 @@ class ForwardSensitivityCDE(nn.Module):
         return z, v
 
 
-class MSForwardCDE(MShootingSolverTemplate):
+class MSForwardCDE(MShootingSolverTemplateCDE):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         """MSL CDE layer solved via parareal updates"""
         super().__init__(coarse_method, fine_method)
@@ -552,7 +567,7 @@ class MSForwardCDE(MShootingSolverTemplate):
         return B
 
 
-class MSZeroCDE(MShootingSolverTemplate):
+class MSZeroCDE(MShootingSolverTemplateCDE):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         """MSL CDE layer solved via parareal updates"""
         super().__init__(coarse_method, fine_method)
@@ -567,7 +582,7 @@ class MSZeroCDE(MShootingSolverTemplate):
             B_coarse = \
                 cdeint_func(f, B[i-1:], controls[:,i-1:], increasing_subspans[i-1:], solver=self.coarse_method)[-1]
             B_fine = \
-                cdeint_func(f, B[i-1:], controls[:,i-1:], increasing_subspans[i - 1:], solver=self.fine_method)[-1]
+                cdeint_func(f, B[i-1:], controls[:,i-1:], increasing_subspans[i-1:], solver=self.fine_method)[-1]
 
             B_out = torch.zeros_like(B)
             B_out[:i] = B[:i]
@@ -602,6 +617,7 @@ class EulerMaruyama(SDESolverTemplate):
 ############## Solvers Dicts ##############
 ###########################################
 
+### ODEs
 
 SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
@@ -626,4 +642,24 @@ def str_to_solver(solver_name, dtype=torch.float32):
 def str_to_ms_solver(solver_name, dtype=torch.float32):
     "Returns MSSolver class corresponding to a given string."
     solver = MS_SOLVER_DICT[solver_name]
+    return solver()
+
+
+### CDEs
+
+CDE_SOLVER_DICT = {'euler': EulerCDE, 'rk4': RungeKutta4CDE, 'rk-4': RungeKutta4CDE, 'RungeKutta4': RungeKutta4CDE,}
+
+MS_CDE_SOLVER_DICT = {'newton': MSForwardCDE, 'fsens': MSForwardCDE, 
+                  'mszero': MSZeroCDE, 'zero': MSZeroCDE, 'parareal': MSZeroCDE}
+
+
+def str_to_cde_solver(solver_name, dtype=torch.float32):
+    "Transforms string specifying desired solver into an instance of the Solver class."
+    solver = CDE_SOLVER_DICT[solver_name]
+    return solver(dtype)
+
+
+def str_to_ms_cde_solver(solver_name, dtype=torch.float32):
+    "Returns MSSolver class corresponding to a given string."
+    solver = MS_CDE_SOLVER_DICT[solver_name]
     return solver()

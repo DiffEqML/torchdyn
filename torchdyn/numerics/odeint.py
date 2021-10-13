@@ -601,7 +601,7 @@ def _shifted_fixed_cdeint(f, x, u, t_span):
 	not_converged = ~((t - T).abs() <= 1e-6).bool()
 	while not_converged.any():
 		x[:, ~not_converged] = torch.zeros_like(x[:, ~not_converged])
-		k1, _, x = solver.step(f, x, u, t, dt[..., None], k1=k1)  # dt will be broadcasted on dim1
+		k1, _, x = solver.step(f, x, u, t, dt[...,None], k1=k1)  # dt will be broadcasted on dim1
 		sol.append(x)
 		t = t + dt
 		not_converged = ~((t - T).abs() <= 1e-6).bool()
