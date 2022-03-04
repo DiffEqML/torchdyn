@@ -82,11 +82,9 @@ If you wish to run `jupyter` notebooks within your newly created poetry environm
 #### Cite us
 If you find `torchdyn` valuable for your research or applied projects:
 ```
-@article{poli2020torchdyn,
-  title={TorchDyn: A Neural Differential Equations Library},
-  author={Poli, Michael and Massaroli, Stefano and Yamashita, Atsushi and Asama, Hajime and Park, Jinkyoo},
-  journal={arXiv preprint arXiv:2009.09346},
-  year={2020}
+@article{politorchdyn,
+  title={TorchDyn: Implicit Models and Neural Numerical Methods in PyTorch},
+  author={Poli, Michael and Massaroli, Stefano and Yamashita, Atsushi and Asama, Hajime and Park, Jinkyoo and Ermon, Stefano}
 }
 ```
 

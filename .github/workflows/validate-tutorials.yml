@@ -9,7 +9,7 @@ jobs:
       max-parallel: 15
 
       matrix:
-        os: [ubuntu-16.04, ubuntu-18.04]
+        os: [ubuntu-18.04]
         python-version: [3.8, 3.9]
         exclude:
           # temporary exclusion until py3.8 deps work on Windows
@@ -34,7 +34,9 @@ jobs:
         poetry lock
         poetry build
         poetry install 
-        
+        poetry run pip install 'setuptools==59.5.0'
+      # pinning setuptools is a temporary fix to: pytorch-lightning 1.5.10 requires setuptools==59.5.0
+      # supposedly poetry allows pinning ver. of setuptools in pyproject.ml files but it is not working atm https://github.com/python-poetry/poetry/issues/4511
     - name: Validate all notebook tutorials
       run: |
         source $HOME/.poetry/env
