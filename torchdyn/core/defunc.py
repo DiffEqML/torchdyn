@@ -81,9 +81,9 @@ class DEFunc(nn.Module):
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
-            x_new.append([x[:, size_order*i : size_order*(i+1)]])
-        x_new.append([self.vf(t, x)])
-        return cat(x_new, 1).to(x)
+            x_new.append(x[:, size_order*i : size_order*(i+1)])
+        x_new.append(self.vf(t, x))
+        return cat(x_new, dim=1).to(x)
 
     
 class SDEFunc(nn.Module):
