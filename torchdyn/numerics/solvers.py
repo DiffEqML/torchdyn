@@ -191,7 +191,7 @@ class ImplicitEuler(SolverTemplate):
             x_sol.grad, = torch.autograd.grad(residual, x_sol, only_inputs=True, allow_unused=False)
             return residual
         opt.step(closure)
-        return None, None, x_sol
+        return None, x_sol, None
 
 
 class MShootingSolverTemplate(nn.Module):
