@@ -41,7 +41,7 @@ class SolverTemplate(nn.Module):
         t_span = t_span.to(device)
         self.safety = self.safety.to(device)
         self.min_factor = self.min_factor.to(device)
-        self.max_factor = self.max_factor.to(device)     
+        self.max_factor = self.max_factor.to(device)
         return x, t_span
 
     def step(self, f, x, t, dt, k1=None):
@@ -60,7 +60,15 @@ class Euler(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
-    
+
+class Dummy(Euler):
+    def __init__(self):
+        super(Dummy, self).__init__()
+
+    def step(self, f, x, t, dt, k1=None):
+        _, x_sol = f(t, x)
+        return None, x_sol, None
+
 class Midpoint(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 2"""
@@ -74,7 +82,7 @@ class Midpoint(SolverTemplate):
         x_sol = x + dt * f(t + 0.5 * dt, x_mid)
         return None, x_sol, None
 
-    
+
 class RungeKutta4(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 4"""
@@ -95,17 +103,17 @@ class RungeKutta4(SolverTemplate):
 
 class AsynchronousLeapfrog(SolverTemplate):
     def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
-        """Explicit Leapfrog symplectic ODE stepper. 
+        """Explicit Leapfrog symplectic ODE stepper.
         Can return local error estimates if adaptive stepping is required"""
         super().__init__(order=2)
         self.dtype = dtype
         self.channel_index = channel_index
         self.stepping_class = stepping_class
         self.const = 1
-        self.tableau = construct_rk4(self.dtype)  
-        # an additional overhead, necessary to preserve a certain degree of sanity 
+        self.tableau = construct_rk4(self.dtype)
+        # an additional overhead, necessary to preserve a certain degree of sanity
         # in the implementation and to avoid API bloating.
-        self.x_shape = None 
+        self.x_shape = None
 
 
     def step(self, f, xv, t, dt, k1=None):
@@ -115,7 +123,7 @@ class AsynchronousLeapfrog(SolverTemplate):
         x1 = x + 0.5 * dt * v
         vt1 = f(t + 0.5 * dt, x1)
         v1 = 2 * self.const * (vt1 - v) + v
-        x2 = x1 + 0.5 * dt * v1 
+        x2 = x1 + 0.5 * dt * v1
         x_sol = torch.cat([x2, v1], -1)
         if self.stepping_class == 'adaptive':
             xv_err = torch.cat([torch.zeros_like(x), v], -1)
@@ -203,7 +211,7 @@ class MShootingSolverTemplate(nn.Module):
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
         x, t_span = self.coarse_method.sync_device_dtype(x, t_span)
-        x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
+        x, t_span = self.fine_method.sync_device_dtype(x, t_span)
         return x, t_span
 
     def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
@@ -341,7 +349,7 @@ SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 
-MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
+MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero,
                   'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward,
                   'ieuler': ParallelImplicitEuler, 'parallel-implicit-euler': ParallelImplicitEuler}
 
