@@ -69,6 +69,7 @@ class Dummy(Euler):
         _, x_sol = f(t, x)
         return None, x_sol, None
 
+
 class Midpoint(SolverTemplate):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 2"""
