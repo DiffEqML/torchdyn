@@ -20,7 +20,8 @@
 from typing import Tuple
 import torch
 import torch.nn as nn
-from torchdyn.numerics._constants import construct_rk4, construct_dopri5, construct_tsit5
+from torchdyn.numerics.solvers.templates import DiffEqSolver, MultipleShootingDiffeqSolver
+from torchdyn.numerics.solvers._constants import construct_rk4, construct_dopri5, construct_tsit5
 
 
 class SolverTemplate(nn.Module):
@@ -41,7 +42,7 @@ class SolverTemplate(nn.Module):
         t_span = t_span.to(device)
         self.safety = self.safety.to(device)
         self.min_factor = self.min_factor.to(device)
-        self.max_factor = self.max_factor.to(device)     
+        self.max_factor = self.max_factor.to(device)
         return x, t_span
 
     def step(self, f, x, t, dt, k1=None):
@@ -60,8 +61,9 @@ class Euler(SolverTemplate):
         x_sol = x + dt * k1
         return None, x_sol, None
 
-    
-class Midpoint(SolverTemplate):
+
+
+class Midpoint(DiffEqSolver):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 2"""
         super().__init__(order=2)
@@ -74,8 +76,8 @@ class Midpoint(SolverTemplate):
         x_sol = x + dt * f(t + 0.5 * dt, x_mid)
         return None, x_sol, None
 
-    
-class RungeKutta4(SolverTemplate):
+
+class RungeKutta4(DiffEqSolver):
     def __init__(self, dtype=torch.float32):
         """Explicit Midpoint ODE stepper, order 4"""
         super().__init__(order=4)
@@ -93,19 +95,19 @@ class RungeKutta4(SolverTemplate):
         return None, x_sol, None
 
 
-class AsynchronousLeapfrog(SolverTemplate):
+class AsynchronousLeapfrog(DiffEqSolver):
     def __init__(self, channel_index:int=-1, stepping_class:str='fixed', dtype=torch.float32):
-        """Explicit Leapfrog symplectic ODE stepper. 
+        """Explicit Leapfrog symplectic ODE stepper.
         Can return local error estimates if adaptive stepping is required"""
         super().__init__(order=2)
         self.dtype = dtype
         self.channel_index = channel_index
         self.stepping_class = stepping_class
         self.const = 1
-        self.tableau = construct_rk4(self.dtype)  
-        # an additional overhead, necessary to preserve a certain degree of sanity 
+        self.tableau = construct_rk4(self.dtype)
+        # an additional overhead, necessary to preserve a certain degree of sanity
         # in the implementation and to avoid API bloating.
-        self.x_shape = None 
+        self.x_shape = None
 
 
     def step(self, f, xv, t, dt, k1=None):
@@ -115,7 +117,7 @@ class AsynchronousLeapfrog(SolverTemplate):
         x1 = x + 0.5 * dt * v
         vt1 = f(t + 0.5 * dt, x1)
         v1 = 2 * self.const * (vt1 - v) + v
-        x2 = x1 + 0.5 * dt * v1 
+        x2 = x1 + 0.5 * dt * v1
         x_sol = torch.cat([x2, v1], -1)
         if self.stepping_class == 'adaptive':
             xv_err = torch.cat([torch.zeros_like(x), v], -1)
@@ -124,7 +126,7 @@ class AsynchronousLeapfrog(SolverTemplate):
         return None, x_sol, xv_err
 
 
-class DormandPrince45(SolverTemplate):
+class DormandPrince45(DiffEqSolver):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=5)
         self.dtype = dtype
@@ -146,7 +148,7 @@ class DormandPrince45(SolverTemplate):
 
 
 
-class Tsitouras45(SolverTemplate):
+class Tsitouras45(DiffEqSolver):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=5)
         self.dtype = dtype
@@ -167,7 +169,7 @@ class Tsitouras45(SolverTemplate):
         return k7, x_sol, err, (k1, k2, k3, k4, k5, k6, k7)
 
 
-class ImplicitEuler(SolverTemplate):
+class ImplicitEuler(DiffEqSolver):
     def __init__(self, dtype=torch.float32):
         super().__init__(order=1)
         self.dtype = dtype
@@ -194,23 +196,10 @@ class ImplicitEuler(SolverTemplate):
         return None, x_sol, None
 
 
-class MShootingSolverTemplate(nn.Module):
-    def __init__(self, coarse_method, fine_method):
-        super().__init__()
-        if type(coarse_method) == str: self.coarse_method = str_to_solver(coarse_method)
-        if type(fine_method) == str: self.fine_method = str_to_solver(fine_method)
-
-    def sync_device_dtype(self, x, t_span):
-        "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
-        x, t_span = self.coarse_method.sync_device_dtype(x, t_span)
-        x, t_span = self.fine_method.sync_device_dtype(x, t_span)  
-        return x, t_span
-
-    def root_solve(self, odeint_func, f, x, t_span, B, fine_steps, maxiter):
-        pass
 
 
-class MSForward(MShootingSolverTemplate):
+
+class MSForward(MultipleShootingDiffeqSolver):
     """Multiple shooting solver using forward sensitivity analysis on the matching conditions of shooting parameters"""
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         super().__init__(coarse_method, fine_method)
@@ -221,7 +210,7 @@ class MSForward(MShootingSolverTemplate):
                                   "Refer to DiffEqML/diffeqml-research/multiple-shooting-layers for a manual implementation")
 
 
-class MSZero(MShootingSolverTemplate):
+class MSZero(MultipleShootingDiffeqSolver):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         """Multiple shooting solver using Parareal updates (zero-order approximation of the Jacobian)
 
@@ -251,7 +240,7 @@ class MSZero(MShootingSolverTemplate):
         return B
 
 
-class MSBackward(MShootingSolverTemplate):
+class MSBackward(MultipleShootingDiffeqSolver):
     def __init__(self, coarse_method='euler', fine_method='rk4'):
         """Multiple shooting solver using discrete adjoints for the Jacobian
 
@@ -283,7 +272,7 @@ class MSBackward(MShootingSolverTemplate):
         return B
 
 
-class ParallelImplicitEuler(MShootingSolverTemplate):
+class ParallelImplicitEuler(MultipleShootingDiffeqSolver):
     def __init__(self, coarse_method='euler', fine_method='euler'):
         """Parallel Implicit Euler Method"""
         super().__init__(coarse_method, fine_method)
@@ -319,20 +308,6 @@ class ParallelImplicitEuler(MShootingSolverTemplate):
         return B
 
 
-class SDESolverTemplate(SolverTemplate):
-    def __init__(self, order, min_factor=0.2, max_factor=2., safety=0.9):
-        super().__init__(order=order, min_factor=min_factor, max_factor=max_factor, safety=safety)
-        self.tableau = None
-
-    def step(self, f, x, t, dt, k1=None):
-        pass
-
-
-class EulerMaruyama(SDESolverTemplate):
-    def __init__(self):
-        raise NotImplementedError
-
-
 SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'rk4': RungeKutta4, 'rk-4': RungeKutta4, 'RungeKutta4': RungeKutta4,
                'dopri5': DormandPrince45, 'DormandPrince45': DormandPrince45, 'DormandPrince5': DormandPrince45,
@@ -341,7 +316,7 @@ SOLVER_DICT = {'euler': Euler, 'midpoint': Midpoint,
                'alf': AsynchronousLeapfrog, 'AsynchronousLeapfrog': AsynchronousLeapfrog}
 
 
-MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero, 
+MS_SOLVER_DICT = {'mszero': MSZero, 'zero': MSZero, 'parareal': MSZero,
                   'msbackward': MSBackward, 'backward': MSBackward, 'discrete-adjoint': MSBackward,
                   'ieuler': ParallelImplicitEuler, 'parallel-implicit-euler': ParallelImplicitEuler}
 
@@ -356,3 +331,6 @@ def str_to_ms_solver(solver_name, dtype=torch.float32):
     "Returns MSSolver class corresponding to a given string."
     solver = MS_SOLVER_DICT[solver_name]
     return solver()
+
+
+

@@ -1,5 +1,5 @@
 import pytest
-from torchdyn.numerics.root import *
+from torchdyn.numerics.solvers.root import *
 from .conftest import *
 
 

@@ -10,8 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torchdyn.numerics.solvers import Euler, RungeKutta4, Tsitouras45, DormandPrince45, AsynchronousLeapfrog, MSZero, MSBackward
-from torchdyn.numerics.hypersolvers import HyperEuler
+from torchdyn.numerics.solvers.ode import Euler, RungeKutta4, Tsitouras45, DormandPrince45, AsynchronousLeapfrog, MSZero, MSBackward
+from torchdyn.numerics.solvers.hyper import HyperEuler
 from torchdyn.numerics.odeint import odeint, odeint_symplectic, odeint_mshooting, odeint_hybrid
 from torchdyn.numerics.systems import VanDerPol, Lorenz
 

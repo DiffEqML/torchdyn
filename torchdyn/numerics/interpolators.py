@@ -13,7 +13,7 @@
 """Contains several Interpolator classes"""
 
 import torch
-from torchdyn.numerics._constants import construct_4th
+from torchdyn.numerics.solvers._constants import construct_4th
 class Interpolator:
     def __init__(self, order):
         self.order = order

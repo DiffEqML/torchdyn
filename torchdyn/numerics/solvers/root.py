@@ -15,7 +15,7 @@ import torch
 from torch import einsum
 from torch import norm
 import numpy as np
-from .utils import RootLogger
+from ..utils import RootLogger
 from torch.autograd.functional import jacobian
 
 

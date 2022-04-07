@@ -22,7 +22,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from torchdyn.numerics.solvers import AsynchronousLeapfrog, Tsitouras45, str_to_solver, str_to_ms_solver
+from torchdyn.numerics.solvers.ode import AsynchronousLeapfrog, Tsitouras45, str_to_solver, str_to_ms_solver
 from torchdyn.numerics.interpolators import str_to_interp
 from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
