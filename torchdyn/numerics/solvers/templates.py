@@ -4,13 +4,22 @@ import torch.nn as nn
 
 
 class DiffEqSolver(nn.Module):
-    def __init__(self, order, min_factor:float=0.2, max_factor:float=10, safety:float=0.9):
+    def __init__(
+            self, 
+            order, 
+            stepping_class:str="fixed", 
+            min_factor:float=0.2, 
+            max_factor:float=10, 
+            safety:float=0.9
+        ):
+
         super(DiffEqSolver, self).__init__()
         self.order = order
         self.min_factor = torch.tensor([min_factor])
         self.max_factor = torch.tensor([max_factor])
         self.safety = torch.tensor([safety])
         self.tableau = None
+        self.stepping_class = stepping_class
 
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
@@ -33,13 +42,16 @@ class BaseExplicit(DiffEqSolver):
         """Base template for an explicit differential equation solver
         """
         super(BaseExplicit, DiffEqSolver).__init__(*args, **kwargs)
+        assert self.stepping_class in ["fixed", "adaptive"]
+
 
 
 class BaseImplicit(DiffEqSolver):
     def __init__(self, *args, **kwargs):
-        super(BaseImplicit, DiffEqSolver).__init__(*args, **kwargs)
         """Base template for an implicit differential equation solver
         """
+        super(BaseImplicit, DiffEqSolver).__init__(*args, **kwargs)
+        assert self.stepping_class in ["fixed", "adaptive"]
 
     @staticmethod
     def _residual(f, x, t, dt, x_sol):
