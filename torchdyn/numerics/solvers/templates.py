@@ -1,6 +1,12 @@
 import torch
 import torch.nn as nn
-#from torchdyn.numerics.solvers.utils import str_to_solver, str_to_ms_solver
+
+# TODO: work around circular imports
+# multiple shooting solvers are "composite": they use
+# several "base" solvers and this are further down in the dependency chain
+# likely solution: place composite solver templates in a different file
+
+# from torchdyn.numerics.solvers.ode import str_to_solver, str_to_ms_solver
 
 
 class DiffEqSolver(nn.Module):
