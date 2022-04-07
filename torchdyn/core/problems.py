@@ -6,7 +6,8 @@ from typing import Callable, Generator, Iterable, Union, List
 
 from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
-from torchdyn.numerics.odeint import odeint, odeint_mshooting, str_to_solver
+from torchdyn.numerics.odeint import odeint, odeint_mshooting
+from torchdyn.numerics.solvers.ode import str_to_solver, str_to_ms_solver
 from torchdyn.core.utils import standardize_vf_call_signature
 
 
