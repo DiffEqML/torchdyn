@@ -44,6 +44,7 @@ class ODEProblem(nn.Module):
         self.solver, self.interpolator, self.atol, self.rtol = solver, interpolator, atol, rtol
         self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint = solver_adjoint, atol_adjoint, rtol_adjoint
         self.sensitivity, self.integral_loss = sensitivity, integral_loss
+        self.save_at = save_at
         
         # wrap vector field if `t, x` is not the call signature
         vector_field = standardize_vf_call_signature(vector_field)
@@ -91,18 +92,19 @@ class ODEProblem(nn.Module):
                                                                     problem_type='standard').apply
 
 
-    def odeint(self, x:Tensor, t_span:Tensor):
+    def odeint(self, x:Tensor, t_span:Tensor, t_save:Tensor=[]):
         "Returns Tuple(`t_eval`, `solution`)"
         self._prep_odeint()
         if self.sensalg == 'autograd':
-            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator)
+            return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
+                          save_at=t_save)
 
         else:
-            return self.autograd_function(self.vf_params, x, t_span)
+            return self.autograd_function(self.vf_params, x, t_span, t_save)
 
-    def forward(self, x:Tensor, t_span:Tensor):
+    def forward(self, x:Tensor, t_span:Tensor, t_save:Tensor=()):
         "For safety redirects to intended method `odeint`"
-        return self.odeint(x, t_span)
+        return self.odeint(x, t_span, t_save)
 
 
 class MultipleShootingProblem(ODEProblem):
