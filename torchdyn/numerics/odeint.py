@@ -86,6 +86,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 			t = t_span[0]
 			k1 = f_(t, x)
 			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
+			if len(t_save) > 0: warn("Setting t_save has no effect on adaptive-step methods")
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, interpolator, return_all_eval, seminorm)
 
 
@@ -415,7 +416,7 @@ def _fixed_odeint(f, x, t_span, solver, t_save=()):
 	while steps <= len(t_span) - 1:
 		_, x, _ = solver.step(f, x, t, dt)
 		t = t + dt
-		if t in t_save:
+		if torch.isclose(t, t_save).sum():
 			sol.append(x)
 			t_store.append(t)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
