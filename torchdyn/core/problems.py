@@ -91,12 +91,12 @@ class ODEProblem(nn.Module):
                                                                     problem_type='standard').apply
 
 
-    def odeint(self, x:Tensor, t_span:Tensor, t_save:Tensor=[]):
+    def odeint(self, x:Tensor, t_span:Tensor, t_save:Tensor=()):
         "Returns Tuple(`t_eval`, `solution`)"
         self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
-                          save_at=t_save)
+                          t_save=t_save)
 
         else:
             return self.autograd_function(self.vf_params, x, t_span, t_save)

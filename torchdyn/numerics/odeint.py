@@ -29,7 +29,7 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False,
-		   save_at:Union[List, Tensor]=(), seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+		   t_save:Union[List, Tensor]=(), seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
 
 	   Functional `odeint` API of the `torchdyn` package.
@@ -45,7 +45,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		verbose (bool, optional): Defaults to False.
 		interpolator (bool, optional): Defaults to False.
 		return_all_eval (bool, optional): Defaults to False.
-		save_at (Union[List, Tensor], optional): Defaults to t_span
+		t_save (Union[List, Tensor], optional): Defaults to t_span
 		seminorm (Tuple[bool, Union[int, None]], optional): Whether to use seminorms in local error computation.
 
 	Returns:
@@ -81,7 +81,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed':
 			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
-			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at)
+			return _fixed_odeint(f_, x, t_span, solver, t_save=t_save)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
 			k1 = f_(t, x)
@@ -91,7 +91,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 
 # TODO (qol) state augmentation for symplectic methods
 def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
-		   verbose:bool=False, return_all_eval:bool=False, save_at:Union[List, Tensor]=()):
+		   verbose:bool=False, return_all_eval:bool=False, t_save:Union[List, Tensor]=()):
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using symplectic methods.
 
 	   Designed to be a subroutine of `odeint` (i.e. will eventually automatically be dispatched to here, much like `_adaptive_odeint`)
@@ -105,7 +105,7 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		rtol (float, optional): Defaults to 1e-3.
 		verbose (bool, optional): Defaults to False.
 		return_all_eval (bool, optional): Defaults to False.
-		save_at (Union[List, Tensor], optional): Defaults to t_span
+		t_save (Union[List, Tensor], optional): Defaults to t_span
 	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
@@ -135,7 +135,7 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		if stepping_class == 'fixed':
 			if atol != odeint_symplectic.__defaults__[0] or rtol != odeint_symplectic.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
-			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at)
+			return _fixed_odeint(f_, x, t_span, solver, t_save=t_save)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
 			if f.order == 1:
@@ -405,9 +405,9 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-def _fixed_odeint(f, x, t_span, solver, save_at=()):
+def _fixed_odeint(f, x, t_span, solver, t_save=()):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
-	if len(save_at) == 0: save_at = t_span
+	if len(t_save) == 0: t_save = t_span
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
 	sol = [x]
 	t_store = [t]
@@ -415,7 +415,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 	while steps <= len(t_span) - 1:
 		_, x, _ = solver.step(f, x, t, dt)
 		t = t + dt
-		if t in save_at:
+		if t in t_save:
 			sol.append(x)
 			t_store.append(t)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t

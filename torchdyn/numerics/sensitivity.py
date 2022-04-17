@@ -22,7 +22,7 @@ def generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator
     "Dispatches to appropriate `odeint` function depending on `Problem` class (ODEProblem, MultipleShootingProblem)"
     if problem_type == 'standard':
         return odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=return_all_eval,
-                      save_at=t_save)
+                      t_save=t_save)
     elif problem_type == 'multiple_shooting':
         return odeint_mshooting(vf, x, t_span, solver, B0=B0, fine_steps=fine_steps, maxiter=maxiter)
 
