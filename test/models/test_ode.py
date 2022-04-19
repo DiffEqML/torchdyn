@@ -65,6 +65,22 @@ def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
     assert len(trajectory) == 30
 
 
+# TODO: extend to GPU and Multi-GPU
+@pytest.mark.parametrize('device', devices)
+def test_save(moons_trainloader, small_mlp, testlearner, device):
+    model = NeuralODE(small_mlp, solver='euler')
+    learn = testlearner(t_span, model, trainloader=moons_trainloader)
+    trainer = pl.Trainer(max_epochs=5)
+    trainer.fit(learn)
+    num_save = int(torch.randint(1, len(t_span)//2, [1]))  # random number of save points up to half as many as in tspan
+    unique_inds = torch.unique(torch.randint(1, len(t_span), [num_save]))  # get that many indices and trim to unique
+    t_save = t_span[unique_inds]
+    t_save.sort()
+    x, _ = next(iter(moons_trainloader))
+    _, y_save = model(x, t_span, t_save)
+    assert len(y_save) == len(t_save)
+
+
 @pytest.mark.skip(reason='Update to test saving and loading')
 @pytest.mark.parametrize('device', devices)
 def test_deepcopy(small_mlp, device):
@@ -213,7 +229,7 @@ def test_arg_ode():
             self.l = l
         def forward(self, t, x, u, v, z):
             return self.l(x + u + v + z)
-        
+
     tfunc = TFunc(l)
 
     u = v = z = torch.randn(1, 1)

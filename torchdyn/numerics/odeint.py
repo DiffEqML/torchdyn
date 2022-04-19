@@ -410,12 +410,17 @@ def _fixed_odeint(f, x, t_span, solver, t_save=()):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
 	if len(t_save) == 0: t_save = t_span
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
-	sol = [x]
-	t_store = [t]
+
+	sol, t_store = [], []
+
+	if torch.isclose(torch.Tensor([0.0]), t_save).sum():
+		t_store, sol = [t], [x]
+
 	steps = 1
 	while steps <= len(t_span) - 1:
 		_, x, _ = solver.step(f, x, t, dt)
 		t = t + dt
+
 		if torch.isclose(t, t_save).sum():
 			sol.append(x)
 			t_store.append(t)
