@@ -427,7 +427,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 			sol.append(x)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
-	return torch.stack([save_at]), torch.stack(sol)
+	return torch.Tensor(save_at), torch.stack(sol)
 
 
 def _shifted_fixed_odeint(f, x, t_span):
