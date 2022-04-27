@@ -74,11 +74,11 @@ def test_save(moons_trainloader, small_mlp, testlearner, device):
     trainer.fit(learn)
     num_save = int(torch.randint(1, len(t_span)//2, [1]))  # random number of save points up to half as many as in tspan
     unique_inds = torch.unique(torch.randint(1, len(t_span), [num_save]))  # get that many indices and trim to unique
-    t_save = t_span[unique_inds]
-    t_save.sort()
+    save_at = t_span[unique_inds]
+    save_at.sort()
     x, _ = next(iter(moons_trainloader))
-    _, y_save = model(x, t_span, t_save)
-    assert len(y_save) == len(t_save)
+    _, y_save = model(x, t_span, save_at)
+    assert len(y_save) == len(save_at)
 
 
 @pytest.mark.skip(reason='Update to test saving and loading')

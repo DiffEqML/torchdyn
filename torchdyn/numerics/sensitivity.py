@@ -18,11 +18,11 @@ from torchdyn.numerics.odeint import odeint, odeint_mshooting
 
 
 def generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B0=None, 
-                  return_all_eval=False, maxiter=4, fine_steps=4, t_save=()):
+                  return_all_eval=False, maxiter=4, fine_steps=4, save_at=()):
     "Dispatches to appropriate `odeint` function depending on `Problem` class (ODEProblem, MultipleShootingProblem)"
     if problem_type == 'standard':
         return odeint(vf, x, t_span, solver, atol=atol, rtol=rtol, interpolator=interpolator, return_all_eval=return_all_eval,
-                      t_save=t_save)
+                      save_at=save_at)
     elif problem_type == 'multiple_shooting':
         return odeint_mshooting(vf, x, t_span, solver, B0=B0, fine_steps=fine_steps, maxiter=maxiter)
 
@@ -34,9 +34,9 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator, sol
     "Prepares definition of autograd.Function for adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x, t_span, B=None, t_save=()):
+        def forward(ctx, vf_params, x, t_span, B=None, save_at=()):
             t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
-                                        False, maxiter, fine_steps, t_save)
+                                        False, maxiter, fine_steps, save_at)
             ctx.save_for_backward(sol, t_sol)
             return t_sol, sol
 
@@ -106,9 +106,9 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
     "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
     class _ODEProblemFunc(Function):
         @staticmethod
-        def forward(ctx, vf_params, x, t_span, B=None, t_save=()):
+        def forward(ctx, vf_params, x, t_span, B=None, save_at=()):
             t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
-                                        True, maxiter, fine_steps, t_save)
+                                        True, maxiter, fine_steps, save_at)
             ctx.save_for_backward(sol, t_span, t_sol)
             return t_sol, sol
 
