@@ -27,24 +27,25 @@ from torchdyn.numerics.interpolators import str_to_interp
 from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
 
 
-def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False, 
-		   seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
+		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False,
+		   save_at:Union[List, Tensor]=(), seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
-	   
+
 	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
-		f (Callable): 
-		x (Tensor): 
-		t_span (Union[List, Tensor]): 
-		solver (Union[str, nn.Module]): 
+		f (Callable):
+		x (Tensor):
+		t_span (Union[List, Tensor]):
+		solver (Union[str, nn.Module]):
 		atol (float, optional): Defaults to 1e-3.
 		rtol (float, optional): Defaults to 1e-3.
 		t_stops (Union[List, Tensor, None], optional): Defaults to None.
 		verbose (bool, optional): Defaults to False.
 		interpolator (bool, optional): Defaults to False.
 		return_all_eval (bool, optional): Defaults to False.
+		save_at (Union[List, Tensor], optional): Defaults to t_span
 		seminorm (Tuple[bool, Union[int, None]], optional): Whether to use seminorms in local error computation.
 
 	Returns:
@@ -68,7 +69,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
 		interpolator = None
 
-	if type(interpolator) == str: 
+	if type(interpolator) == str:
 		interpolator = str_to_interp(interpolator, x.dtype)
 		x, t_span = interpolator.sync_device_dtype(x, t_span)
 
@@ -80,30 +81,32 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed':
 			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
-			return _fixed_odeint(f_, x, t_span, solver) 
+			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
 			k1 = f_(t, x)
 			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
+			if len(save_at) > 0: warn("Setting save_at has no effect on adaptive-step methods")
 			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, interpolator, return_all_eval, seminorm)
 
 
-# TODO (qol) state augmentation for symplectic methods 
-def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3, 
-		   verbose:bool=False, return_all_eval:bool=False):
+# TODO (qol) state augmentation for symplectic methods
+def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
+		   verbose:bool=False, return_all_eval:bool=False, save_at:Union[List, Tensor]=()):
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x` using symplectic methods.
-	   
+
 	   Designed to be a subroutine of `odeint` (i.e. will eventually automatically be dispatched to here, much like `_adaptive_odeint`)
 
 	Args:
-		f (Callable): 
+		f (Callable):
 		x (Tensor):
 		t_span (Union[List, Tensor]):
-		solver (Union[str, nn.Module]): 
+		solver (Union[str, nn.Module]):
 		atol (float, optional): Defaults to 1e-3.
 		rtol (float, optional): Defaults to 1e-3.
 		verbose (bool, optional): Defaults to False.
 		return_all_eval (bool, optional): Defaults to False.
+		save_at (Union[List, Tensor], optional): Defaults to t_span
 	"""
 	if t_span[1] < t_span[0]: # time is reversed
 		if verbose: warn("You are integrating on a reversed time domain, adjusting the vector field automatically")
@@ -121,7 +124,7 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 	# additional bookkeeping for symplectic solvers
 	if not hasattr(f, 'order'):
 		raise RuntimeError('The system order should be specified as an attribute `order` of `vector_field`')
-	if isinstance(solver, AsynchronousLeapfrog) and f.order == 2: 
+	if isinstance(solver, AsynchronousLeapfrog) and f.order == 2:
 		raise RuntimeError('ALF solver should be given a vector field specified as a first-order symplectic system: v = f(t, x)')
 	solver.x_shape = x.shape[-1] // 2
 
@@ -133,10 +136,10 @@ def odeint_symplectic(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:U
 		if stepping_class == 'fixed':
 			if atol != odeint_symplectic.__defaults__[0] or rtol != odeint_symplectic.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
-			return _fixed_odeint(f_, x, t_span, solver) 
+			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
-			if f.order == 1: 
+			if f.order == 1:
 				pos = x[..., : solver.x_shape]
 				k1 = f(t, pos)
 				dt = init_step(f, k1, pos, t, solver.order, atol, rtol)
@@ -154,14 +157,14 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 		x (Tensor): batch of initial conditions
 		t_span (Tensor): integration interval
 		solver (Union[str, nn.Module]): parallel-in-time solver.
-		B0 ([type], optional): Initialized shooting parameters. If left to None, will compute automatically 
+		B0 ([type], optional): Initialized shooting parameters. If left to None, will compute automatically
 							   using the coarse method of solver. Defaults to None.
 		fine_steps (int, optional): Defaults to 2.
 		maxiter (int, optional): Defaults to 4.
 
 	Notes:
-		TODO: At the moment assumes the ODE to NOT be time-varying. An extension is possible by adaptive the step 
-		function of a parallel-in-time solvers. 
+		TODO: At the moment assumes the ODE to NOT be time-varying. An extension is possible by adaptive the step
+		function of a parallel-in-time solvers.
 	"""
 	if type(solver) == str:
 		solver = str_to_ms_solver(solver)
@@ -178,16 +181,16 @@ def odeint_mshooting(f:Callable, x:Tensor, t_span:Tensor, solver:Union[str, nn.M
 
 def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3, event_tol=1e-4, priority='jump',
 				  seminorm:Tuple[bool, Union[int, None]]=(False, None)):
-	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`, with jump events defined 
+	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`, with jump events defined
 	   by a callbacks.
 
 	Args:
-		f ([type]): 
-		x ([type]): 
-		t_span ([type]): 
-		j_span ([type]): 
-		solver ([type]): 
-		callbacks ([type]): 
+		f ([type]):
+		x ([type]):
+		t_span ([type]):
+		j_span ([type]):
+		solver ([type]):
+		callbacks ([type]):
 		t_eval (list, optional): Defaults to [].
 		atol ([type], optional): Defaults to 1e-3.
 		rtol ([type], optional): Defaults to 1e-3.
@@ -200,7 +203,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 	x_shape = x.shape
 	ckpt_counter, ckpt_flag, jnum = 0, False, 0
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
-	
+
 	###### initial jumps ###########
 	event_states = EventState([False for _ in range(len(callbacks))])
 
@@ -223,7 +226,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 	eval_times, sol = [t], [x]
 
 	while t < T and jnum < j_span:
-		
+
 		############### checkpointing ###############################
 		if t + dt > t_span[-1]:
 			dt = t_span[-1] - t
@@ -244,7 +247,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 
 		# if event, close in on switching state in [t, t + Δt] via bisection
 		if triggered_events > 0:
-			
+
 			dt_pre, t_inner, dt_inner, x_inner, niters = dt, t, dt, x, 0
 			max_iters = 100  # TODO (numerics): compute tol as function of tolerances
 
@@ -288,14 +291,14 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 
 		else:
 			################# compute error #############################
-			if seminorm[0] == True: 
+			if seminorm[0] == True:
 				state_dim = seminorm[1]
 				error = x_err[:state_dim]
 				error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
-			else: 
+			else:
 				error = x_err
 				error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
-			
+
 			error_ratio = hairer_norm(error_scaled)
 			accept_step = error_ratio <= 1
 
@@ -323,45 +326,45 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	"""Adaptive ODE solve routine, called by `odeint`.
 
 	Args:
-		f ([type]): 
-		k1 ([type]): 
-		x ([type]): 
-		dt ([type]): 
-		t_span ([type]): 
-		solver ([type]): 
+		f ([type]):
+		k1 ([type]):
+		x ([type]):
+		dt ([type]):
+		t_span ([type]):
+		solver ([type]):
 		atol ([type], optional): Defaults to 1e-4.
 		rtol ([type], optional): Defaults to 1e-4.
 		use_interp (bool, optional):
 		return_all_eval (bool, optional): Defaults to False.
 
-	
+
 	Notes:
 		(1) We check if the user wants all evaluated solution points, not only those
 		corresponding to times in `t_span`. This is automatically set to `True` when `odeint`
 		is called for interpolated adjoints
 	"""
 	t_eval, t, T = t_span[1:], t_span[:1], t_span[-1]
-	ckpt_counter, ckpt_flag = 0, False	
+	ckpt_counter, ckpt_flag = 0, False
 	eval_times, sol = [t], [x]
 	while t < T:
-		if t + dt > T: 
+		if t + dt > T:
 			dt = T - t
 		############### checkpointing ###############################
 		if t_eval is not None:
 			# satisfy checkpointing by using interpolation scheme or resetting `dt`
 			if (ckpt_counter < len(t_eval)) and (t + dt > t_eval[ckpt_counter]):
-				if interpolator == None:	
+				if interpolator == None:
 					# save old dt, raise "checkpoint" flag and repeat step
 					dt_old, ckpt_flag = dt, True
 					dt = t_eval[ckpt_counter] - t
 
 		f_new, x_new, x_err, stages = solver.step(f, x, t, dt, k1=k1)
 		################# compute error #############################
-		if seminorm[0] == True: 
+		if seminorm[0] == True:
 			state_dim = seminorm[1]
 			error = x_err[:state_dim]
 			error_scaled = error / (atol + rtol * torch.max(x[:state_dim].abs(), x_new[:state_dim].abs()))
-		else: 
+		else:
 			error = x_err
 			error_scaled = error / (atol + rtol * torch.max(x.abs(), x_new.abs()))
 		error_ratio = hairer_norm(error_scaled)
@@ -387,14 +390,14 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 				# we only increment the ckpt counter if the solution points corresponds to a time point in `t_span`
 				if t + dt == t_eval[ckpt_counter]: ckpt_counter += 1
 			t, x = t + dt, x_new
-			k1 = f_new 
+			k1 = f_new
 
 		################ stepsize control ###########################
 		# reset "dt" in case of checkpoint without interp
 		if ckpt_flag:
 			dt = dt_old - dt
 			ckpt_flag = False
-			
+
 		dt = adapt_step(dt, error_ratio,
 						solver.safety,
 						solver.min_factor,
@@ -403,24 +406,34 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-def _fixed_odeint(f, x, t_span, solver):
+def _fixed_odeint(f, x, t_span, solver, save_at=()):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
+	if len(save_at) == 0: save_at = t_span
+	assert all(torch.isclose(t, save_at).sum() == 1 for t in save_at),\
+		"each element of save_at [torch.Tensor] must be contained in t_span [torch.Tensor] once and only once"
+
 	t, T, dt = t_span[0], t_span[-1], t_span[1] - t_span[0]
-	sol = [x]
+
+	sol = []
+	if torch.isclose(t, save_at).sum():
+		sol = [x]
+
 	steps = 1
 	while steps <= len(t_span) - 1:
 		_, x, _ = solver.step(f, x, t, dt)
-		sol.append(x)
 		t = t + dt
+
+		if torch.isclose(t, save_at).sum():
+			sol.append(x)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
-	return t_span, torch.stack(sol)
+	return torch.Tensor(save_at), torch.stack(sol)
 
 
 def _shifted_fixed_odeint(f, x, t_span):
 	"""Solves ``n_segments'' jagged IVPs in parallel with fixed-step methods. All subproblems
 	have equal step sizes and number of solution points
-	
+
 	Notes:
 		Assumes `dt` fixed. TODO: update in each loop evaluation."""
 	t, T = t_span[..., 0], t_span[..., -1]
