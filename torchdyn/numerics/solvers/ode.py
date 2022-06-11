@@ -45,7 +45,7 @@ class SolverTemplate(nn.Module):
         self.max_factor = self.max_factor.to(device)
         return x, t_span
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         pass
 
 
@@ -56,7 +56,7 @@ class Euler(SolverTemplate):
         self.dtype = dtype
         self.stepping_class = 'fixed'
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         if k1 == None: k1 = f(t, x)
         x_sol = x + dt * k1
         return None, x_sol, None
@@ -70,7 +70,7 @@ class Midpoint(DiffEqSolver):
         self.dtype = dtype
         self.stepping_class = 'fixed'
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         if k1 == None: k1 = f(t, x)
         x_mid = x + 0.5 * dt * k1
         x_sol = x + dt * f(t + 0.5 * dt, x_mid)
@@ -85,7 +85,7 @@ class RungeKutta4(DiffEqSolver):
         self.stepping_class = 'fixed'
         self.tableau = construct_rk4(self.dtype)
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         c, a, bsol, _ = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * (a[0] * k1))
@@ -110,7 +110,7 @@ class AsynchronousLeapfrog(DiffEqSolver):
         self.x_shape = None
 
 
-    def step(self, f, xv, t, dt, k1=None):
+    def step(self, f, xv, t, dt, k1=None, args=None):
         half_state_dim = xv.shape[-1] // 2
         x, v = xv[..., :half_state_dim], xv[..., half_state_dim:]
         if k1 == None: k1 = f(t, x)
@@ -133,7 +133,7 @@ class DormandPrince45(DiffEqSolver):
         self.stepping_class = 'adaptive'
         self.tableau = construct_dopri5(self.dtype)
 
-    def step(self, f, x, t, dt, k1=None) -> Tuple:
+    def step(self, f, x, t, dt, k1=None, args=None) -> Tuple:
         c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0] * k1)
@@ -155,7 +155,7 @@ class Tsitouras45(DiffEqSolver):
         self.stepping_class = 'adaptive'
         self.tableau = construct_tsit5(self.dtype)
 
-    def step(self, f, x, t, dt, k1=None) -> Tuple:
+    def step(self, f, x, t, dt, k1=None, args=None) -> Tuple:
         c, a, bsol, berr = self.tableau
         if k1 == None: k1 = f(t, x)
         k2 = f(t + c[0] * dt, x + dt * a[0][0] * k1)
@@ -182,7 +182,7 @@ class ImplicitEuler(DiffEqSolver):
         f_sol = f(t, x_sol)
         return torch.sum((x_sol - x - dt*f_sol)**2)
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         x_sol = x.clone()
         x_sol = nn.Parameter(data=x_sol)
         opt = self.opt([x_sol], lr=1, max_iter=self.max_iters, max_eval=10*self.max_iters,
