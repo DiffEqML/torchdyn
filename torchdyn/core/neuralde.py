@@ -59,7 +59,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
                          solver=solver, atol=atol, rtol=rtol, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
                          seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss, optimizable_params=optimizable_params)
-        self.u, self.controlled, self.t_span = None, False, None # data-control conditioning
+        self._control, self.controlled, self.t_span = None, False, None # data-control conditioning
         self.return_t_eval = return_t_eval
         if integral_loss is not None: self.vf.integral_loss = integral_loss
         self.vf.sensitivity = sensitivity
@@ -84,7 +84,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
                 excess_dims += 1
 
             # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
-            if hasattr(module, 'u'):
+            if hasattr(module, '_control'):
                 self.controlled = True
                 module.u = x[:, excess_dims:].detach()
         return x, t_span
@@ -142,7 +142,7 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
         self.intloss = intloss
-        self.u, self.controlled = None, False  # datasets-control
+        self._control, self.controlled = None, False  # datasets-control
         self.ds = ds
 
     def _prep_sdeint(self, x:torch.Tensor):
