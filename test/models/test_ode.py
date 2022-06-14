@@ -69,9 +69,6 @@ def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
 @pytest.mark.parametrize('device', devices)
 def test_save(moons_trainloader, small_mlp, testlearner, device):
     model = NeuralODE(small_mlp, solver='euler')
-    learn = testlearner(t_span, model, trainloader=moons_trainloader)
-    trainer = pl.Trainer(max_epochs=5)
-    trainer.fit(learn)
     num_save = int(torch.randint(1, len(t_span)//2, [1]))  # random number of save points up to half as many as in tspan
     unique_inds = torch.unique(torch.randint(1, len(t_span), [num_save]))  # get that many indices and trim to unique
     save_at = t_span[unique_inds]

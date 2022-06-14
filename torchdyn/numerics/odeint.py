@@ -427,7 +427,15 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 			sol.append(x)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
 		steps += 1
-	return torch.Tensor(save_at), torch.stack(sol)
+
+	if isinstance(sol[0], dict):
+		final_out = {k: [v] for k, v in sol[0].items()}
+		_ = [final_out[k].append(x[k]) for k in x.keys() for x in sol[1:]]
+		final_out = {k: torch.stack(v) for k, v in final_out}
+	else:
+		final_out = torch.stack(sol)
+
+	return torch.Tensor(save_at), final_out
 
 
 def _shifted_fixed_odeint(f, x, t_span):
