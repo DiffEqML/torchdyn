@@ -91,19 +91,19 @@ class ODEProblem(nn.Module):
                                                                     problem_type='standard').apply
 
 
-    def odeint(self, x:Tensor, t_span:Tensor, save_at:Tensor=()):
+    def odeint(self, x:Tensor, t_span:Tensor, save_at:Tensor=(), args={}):
         "Returns Tuple(`t_eval`, `solution`)"
         self._prep_odeint()
         if self.sensalg == 'autograd':
             return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
-                          save_at=save_at)
+                          save_at=save_at, args=args)
 
         else:
-            return self.autograd_function(self.vf_params, x, t_span, save_at)
+            return self.autograd_function(self.vf_params, x, t_span, save_at, args)
 
-    def forward(self, x:Tensor, t_span:Tensor, save_at:Tensor=()):
+    def forward(self, x:Tensor, t_span:Tensor, save_at:Tensor=(), args={}):
         "For safety redirects to intended method `odeint`"
-        return self.odeint(x, t_span, save_at)
+        return self.odeint(x, t_span, save_at, args)
 
 
 class MultipleShootingProblem(ODEProblem):

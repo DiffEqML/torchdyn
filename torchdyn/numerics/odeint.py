@@ -15,7 +15,7 @@
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
 from inspect import getargspec
-from typing import List, Tuple, Union, Callable
+from typing import List, Tuple, Union, Callable, Dict
 from warnings import warn
 
 import torch
@@ -29,7 +29,7 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False,
-		   save_at:Union[List, Tensor]=(), seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+		   save_at:Union[List, Tensor]=(), args:Dict={}, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
 
 	   Functional `odeint` API of the `torchdyn` package.
@@ -46,6 +46,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		interpolator (bool, optional): Defaults to False.
 		return_all_eval (bool, optional): Defaults to False.
 		save_at (Union[List, Tensor], optional): Defaults to t_span
+		args (Dict): Arbitrary parameters used in step
 		seminorm (Tuple[bool, Union[int, None]], optional): Whether to use seminorms in local error computation.
 
 	Returns:
@@ -81,13 +82,13 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed':
 			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
-			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at)
+			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at, args=args)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
 			k1 = f_(t, x)
 			dt = init_step(f, k1, x, t, solver.order, atol, rtol)
 			if len(save_at) > 0: warn("Setting save_at has no effect on adaptive-step methods")
-			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, interpolator, return_all_eval, seminorm)
+			return _adaptive_odeint(f_, k1, x, dt, t_span, solver, atol, rtol, args, interpolator, return_all_eval, seminorm)
 
 
 # TODO (qol) state augmentation for symplectic methods
@@ -322,7 +323,7 @@ def odeint_hybrid(f, x, t_span, j_span, solver, callbacks, atol=1e-3, rtol=1e-3,
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpolator=None, return_all_eval=False, seminorm=(False, None)):
+def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, args=None, interpolator=None, return_all_eval=False, seminorm=(False, None)):
 	"""Adaptive ODE solve routine, called by `odeint`.
 
 	Args:
@@ -334,6 +335,7 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 		solver ([type]):
 		atol ([type], optional): Defaults to 1e-4.
 		rtol ([type], optional): Defaults to 1e-4.
+		args (Dict):
 		use_interp (bool, optional):
 		return_all_eval (bool, optional): Defaults to False.
 
@@ -358,7 +360,7 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 					dt_old, ckpt_flag = dt, True
 					dt = t_eval[ckpt_counter] - t
 
-		f_new, x_new, x_err, stages = solver.step(f, x, t, dt, k1=k1)
+		f_new, x_new, x_err, stages = solver.step(f, x, t, dt, k1=k1, args=args)
 		################# compute error #############################
 		if seminorm[0] == True:
 			state_dim = seminorm[1]
@@ -406,7 +408,7 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, interpo
 	return torch.cat(eval_times), torch.stack(sol)
 
 
-def _fixed_odeint(f, x, t_span, solver, save_at=()):
+def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
 	if len(save_at) == 0: save_at = t_span
 	assert all(torch.isclose(t, save_at).sum() == 1 for t in save_at),\
@@ -420,7 +422,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 
 	steps = 1
 	while steps <= len(t_span) - 1:
-		_, x, _ = solver.step(f, x, t, dt)
+		_, x, _ = solver.step(f, x, t, dt, k1=None, args=args)
 		t = t + dt
 
 		if torch.isclose(t, save_at).sum():
