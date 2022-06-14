@@ -432,8 +432,10 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 		final_out = {k: [v] for k, v in sol[0].items()}
 		_ = [final_out[k].append(x[k]) for k in x.keys() for x in sol[1:]]
 		final_out = {k: torch.stack(v) for k, v in final_out.items()}
-	else:
+	elif isinstance(sol[0], torch.Tensor):
 		final_out = torch.stack(sol)
+	else:
+		raise NotImplementedError(f"{type(x)} is not supported as the state variable")
 
 	return torch.Tensor(save_at), final_out
 

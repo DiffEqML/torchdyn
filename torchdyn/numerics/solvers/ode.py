@@ -38,8 +38,10 @@ class SolverTemplate(nn.Module):
 
         if isinstance(x, dict):
             proto_arr = x[list(x.keys())[0]]
-        else:
+        elif isinstance(x, torch.Tensor):
             proto_arr = x
+        else:
+            raise NotImplementedError(f"{type(x)} is not supported as the state variable")
 
         device = proto_arr.device
 
