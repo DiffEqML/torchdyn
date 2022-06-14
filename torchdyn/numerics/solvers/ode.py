@@ -35,10 +35,19 @@ class SolverTemplate(nn.Module):
 
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
-        device = x.device
+
+        if isinstance(x, dict):
+            proto_arr = x[list(x.keys())[0]]
+        elif isinstance(x, torch.Tensor):
+            proto_arr = x
+        else:
+            raise NotImplementedError(f"{type(x)} is not supported as the state variable")
+
+        device = proto_arr.device
+
         if self.tableau is not None:
             c, a, bsol, berr = self.tableau
-            self.tableau = c.to(x), [a.to(x) for a in a], bsol.to(x), berr.to(x)
+            self.tableau = c.to(proto_arr), [a.to(proto_arr) for a in a], bsol.to(proto_arr), berr.to(proto_arr)
         t_span = t_span.to(device)
         self.safety = self.safety.to(device)
         self.min_factor = self.min_factor.to(device)

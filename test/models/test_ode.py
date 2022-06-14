@@ -19,7 +19,7 @@ import torch.utils.data as data
 from torchdyn.datasets import ToyDataset
 from torchdyn.core import NeuralODE
 from torchdyn.nn import GalLinear, GalConv2d, DepthCat, Augmenter, DataControl
-from torchdyn.numerics import odeint
+from torchdyn.numerics import odeint, Euler
 
 from functools import partial
 import copy
@@ -69,9 +69,6 @@ def test_trajectory(moons_trainloader, small_mlp, testlearner, device):
 @pytest.mark.parametrize('device', devices)
 def test_save(moons_trainloader, small_mlp, testlearner, device):
     model = NeuralODE(small_mlp, solver='euler')
-    learn = testlearner(t_span, model, trainloader=moons_trainloader)
-    trainer = pl.Trainer(max_epochs=5)
-    trainer.fit(learn)
     num_save = int(torch.randint(1, len(t_span)//2, [1]))  # random number of save points up to half as many as in tspan
     unique_inds = torch.unique(torch.randint(1, len(t_span), [num_save]))  # get that many indices and trim to unique
     save_at = t_span[unique_inds]
@@ -79,6 +76,27 @@ def test_save(moons_trainloader, small_mlp, testlearner, device):
     x, _ = next(iter(moons_trainloader))
     _, y_save = model(x, t_span, save_at)
     assert len(y_save) == len(save_at)
+
+# TODO: extend to GPU and Multi-GPU
+@pytest.mark.parametrize('device', devices)
+def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
+
+    def fun(t, x):
+        inps = torch.cat([x["i1"], x["i2"]], dim=-1)
+        outs = small_mlp(inps)
+        return t, {"i1": outs[..., 0:1], "i2": outs[..., 1:2]}
+
+    class DummyIntegrator(Euler):
+        def __init__(self):
+            super(DummyIntegrator, self).__init__()
+
+        def step(self, f, x, t, dt, k1=None):
+            _, x_sol = f(t, x)
+            return None, x_sol, None
+
+    x0 = {"i1": torch.rand(1, 1), "i2": torch.rand(1, 1)}
+    model = NeuralODE(fun, solver=DummyIntegrator())
+    _, y_save = model(x0, t_span)
 
 
 @pytest.mark.skip(reason='Update to test saving and loading')
