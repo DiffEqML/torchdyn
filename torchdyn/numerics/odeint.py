@@ -431,7 +431,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=()):
 	if isinstance(sol[0], dict):
 		final_out = {k: [v] for k, v in sol[0].items()}
 		_ = [final_out[k].append(x[k]) for k in x.keys() for x in sol[1:]]
-		final_out = {k: torch.stack(v) for k, v in final_out}
+		final_out = {k: torch.stack(v) for k, v in final_out.items()}
 	else:
 		final_out = torch.stack(sol)
 

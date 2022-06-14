@@ -82,9 +82,9 @@ def test_save(moons_trainloader, small_mlp, testlearner, device):
 def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
 
     def fun(t, x):
-        inps = torch.cat([x["i1"][None, None], x["i2"][None, None]], dim=-1)
+        inps = torch.cat([x["i1"], x["i2"]], dim=-1)
         outs = small_mlp(inps)
-        return t, {"i1": outs[..., 0], "i2": outs[..., 1]}
+        return t, {"i1": outs[..., 0:1], "i2": outs[..., 1:2]}
 
     class DummyIntegrator(Euler):
         def __init__(self):
@@ -94,7 +94,7 @@ def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
             _, x_sol = f(t, x)
             return None, x_sol, None
 
-    x0 = {"i1": torch.rand(1,1), "i2": torch.rand(1,1)}
+    x0 = {"i1": torch.rand(1, 1), "i2": torch.rand(1, 1)}
     model = NeuralODE(fun, solver=DummyIntegrator())
     _, y_save = model(x0, t_span)
 
