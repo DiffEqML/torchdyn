@@ -90,7 +90,7 @@ def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
         def __init__(self):
             super(DummyIntegrator, self).__init__()
 
-        def step(self, f, x, t, dt, k1=None):
+        def step(self, f, x, t, dt, k1=None, args=None):
             _, x_sol = f(t, x)
             return None, x_sol, None
 
@@ -130,7 +130,7 @@ def test_augmenter_func_is_trained():
                       nn.Tanh(),
                       nn.Linear(64, 6))
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
-                          NeuralDE(f, solver='dopri5')
+                          NeuralODE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(t_span, model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
@@ -144,7 +144,7 @@ def test_augmenter_func_is_trained():
 # TODO
 @pytest.mark.skip(reason='clean up to new API')
 def test_augmented_data_control():
-    """Data-controlled NeuralDE with IL-Augmentation"""
+    """Data-controlled NeuralODE with IL-Augmentation"""
     d = ToyDataset()
     X, yn = d.generate(n_samples=512, dataset_type='spirals', noise=.4)
     X_train = torch.Tensor(X).to(device)
@@ -159,7 +159,7 @@ def test_augmented_data_control():
                      nn.Linear(64, 6))
 
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
-                          NeuralDE(f, solver='dopri5')
+                          NeuralODE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(t_span, model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
@@ -186,7 +186,7 @@ def test_vanilla_galerkin():
                       GalLinear(64, 6, basisfunc=Polynomial(2)))
 
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 4)),
-                          NeuralDE(f, solver='dopri5')
+                          NeuralODE(f, solver='dopri5')
                          ).to(device)
     learn = TestLearner(t_span, model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
@@ -206,7 +206,7 @@ def test_vanilla_conv_galerkin():
                       DepthCat(1),
                       GalConv2d(12, 1, kernel_size=3, padding=1, basisfunc=Fourier(3)))
 
-    model = nn.Sequential(NeuralDE(f, solver='dopri5')).to(device)
+    model = nn.Sequential(NeuralODE(f, solver='dopri5')).to(device)
     model(X)
 
 
@@ -229,7 +229,7 @@ def test_2nd_order():
                       nn.Linear(65, 2))
 
     model = nn.Sequential(Augmenter(augment_idx=1, augment_func=nn.Linear(2, 2)),
-                          NeuralDE(f, solver='dopri5', order=2)
+                          NeuralODE(f, solver='dopri5', order=2)
                          ).to(device)
     learn = TestLearner(model, trainloader=trainloader)
     trainer = pl.Trainer(min_epochs=1, max_epochs=1)
