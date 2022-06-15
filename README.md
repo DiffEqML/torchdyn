@@ -39,7 +39,7 @@ Contribute to the library with your benchmark and model variants! No need to rei
 
 **Stable** release:
 
-`pip install torchdyn==1.0.1`
+`pip install torchdyn==1.0.2`
 
 Alternatively, you can build a virtual dev environment for `torchdyn` with poetry, following the steps outlined in `Contributing`.
 
