@@ -76,7 +76,7 @@ class DataControl(nn.Module):
     """
     def __init__(self):
         super().__init__()
-        self.u = None
+        self._control = None
 
     def forward(self, x):
-        return torch.cat([x, self.u], 1).to(x)
+        return torch.cat([x, self._control], 1).to(x)
