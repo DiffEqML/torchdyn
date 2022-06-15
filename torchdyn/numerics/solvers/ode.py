@@ -17,7 +17,7 @@
     [2]: Poli M., Massaroli S. et al "Hypersolvers: Toward fast continuous-depth models." NeurIPS 2020
 """
 
-from typing import Tuple
+from typing import Tuple, List, Dict, Union
 import torch
 import torch.nn as nn
 from torchdyn.numerics.solvers.templates import DiffEqSolver, MultipleShootingDiffeqSolver
@@ -36,8 +36,12 @@ class SolverTemplate(nn.Module):
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
 
-        if isinstance(x, dict):
+        # Choose element 0 of (List, Dict, Tuple) as prototypical tensor
+        # to set base device
+        if isinstance(x, Dict):
             proto_arr = x[list(x.keys())[0]]
+        elif isinstance(x, (List, Tuple)):
+            proto_arr = x[0]
         elif isinstance(x, torch.Tensor):
             proto_arr = x
         else:

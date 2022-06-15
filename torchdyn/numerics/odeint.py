@@ -29,14 +29,14 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False,
-		   save_at:Union[List, Tensor]=(), args:Dict={}, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+		   save_at:Union[List, Tensor]=(), args:Dict={}, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]):
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
-
+	
 	   Functional `odeint` API of the `torchdyn` package.
 
 	Args:
 		f (Callable):
-		x (Tensor):
+	x (Tensor):
 		t_span (Union[List, Tensor]):
 		solver (Union[str, nn.Module]):
 		atol (float, optional): Defaults to 1e-3.
