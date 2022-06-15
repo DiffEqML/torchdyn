@@ -34,3 +34,13 @@ force-cuda11 = "python -m pip install torch==1.10.0+cu111 torchvision torchaudio
 [build-system]
 build-backend = "poetry.masonry.api"
 requires = ["poetry", "wheel", "setuptools-cpp"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+        "ignore:Call to deprecated create function FieldDescriptor",  # pytorch lightning needs tensorboard which has a conflict with python 3.9
+        "ignore:Call to deprecated create function Descriptor", # pytorch lightning needs tensorboard which has a conflict with python 3.9
+        "ignore:Call to deprecated create function EnumDescriptor", # pytorch lightning needs tensorboard which has a conflict with python 3.9
+        "ignore:Call to deprecated create function EnumValueDescriptor", # pytorch lightning needs tensorboard which has a conflict with python 3.9
+        "ignore:Call to deprecated create function FileDescriptor", # pytorch lightning needs tensorboard which has a conflict with python 3.9
+        "ignore:Call to deprecated create function OneofDescriptor", # pytorch lightning needs tensorboard which has a conflict with python 3.9
+    ]
