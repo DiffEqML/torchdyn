@@ -150,9 +150,9 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         excess_dims = 0
         for _, module in self.defunc.named_modules():
-            if hasattr(module, 'u'):
+            if hasattr(module, '_control'):
                 self.controlled = True
-                module.u = x[:, excess_dims:].detach()
+                module._control = x[:, excess_dims:].detach()
 
         return x
 
