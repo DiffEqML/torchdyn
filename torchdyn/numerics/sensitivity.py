@@ -32,8 +32,7 @@ def generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator
 def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator, solver_adjoint, 
                             atol_adjoint, rtol_adjoint, integral_loss, problem_type, maxiter=4, fine_steps=4):
     "Prepares definition of autograd.Function for adjoint sensitivity analysis of the above `ODEProblem`"
-    global _ODEProblemFuncAdjoint
-    class _ODEProblemFuncAdjoint(Function):
+    class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span, B=None, save_at=()):
             t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
@@ -98,15 +97,14 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator, sol
             λ_tspan = torch.stack([dLdt[0], dLdt[-1]])
             return (μ, λ, λ_tspan, None, None, None)
 
-    return _ODEProblemFuncAdjoint
+    return _ODEProblemFunc
 
 
 #TODO: introduce `t_span` grad as above
 def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolator, solver_adjoint, 
                                    atol_adjoint, rtol_adjoint, integral_loss, problem_type, maxiter=4, fine_steps=4):
     "Prepares definition of autograd.Function for interpolated adjoint sensitivity analysis of the above `ODEProblem`"
-    global _ODEProblemFuncInterpAdjoint
-    class _ODEProblemFuncInterpAdjoint(Function):
+    class _ODEProblemFunc(Function):
         @staticmethod
         def forward(ctx, vf_params, x, t_span, B=None, save_at=()):
             t_sol, sol = generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B, 
@@ -160,4 +158,4 @@ def _gather_odefunc_interp_adjoint(vf, vf_params, solver, atol, rtol, interpolat
             λ, μ = λ.reshape(λT.shape), μ.reshape(μT.shape)
             return (μ, λ, None, None, None)
 
-    return _ODEProblemFuncInterpAdjoint
+    return _ODEProblemFunc
