@@ -1,10 +1,8 @@
 import torch
-from torch.autograd import Function
 from torch import Tensor
 import torch.nn as nn
-from typing import Callable, Generator, Iterable, Union, List
+from typing import Callable, Generator, Iterable, Union
 
-from torchdyn.core.defunc import DEFuncBase
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
 from torchdyn.numerics.odeint import odeint, odeint_mshooting
 from torchdyn.numerics.solvers.ode import str_to_solver, str_to_ms_solver

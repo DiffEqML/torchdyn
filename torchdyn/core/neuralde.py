@@ -10,11 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Union, List, Iterable, Generator
+from typing import Callable, Union, Iterable, Generator, Dict
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
 from torchdyn.numerics import odeint
-from torchdyn.core.defunc import DEFunc, DEFuncBase, SDEFunc
+from torchdyn.core.defunc import SDEFunc
 from torchdyn.core.utils import standardize_vf_call_signature
 
 import pytorch_lightning as pl
@@ -89,7 +89,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
                 module._control = x[:, excess_dims:].detach()
         return x, t_span
 
-    def forward(self, x:Tensor, t_span:Tensor=None, save_at:Iterable=(), args={}):
+    def forward(self, x:Union[Tensor, Dict], t_span:Tensor=None, save_at:Iterable=(), args={}):
         x, t_span = self._prep_integration(x, t_span)
         t_eval, sol =  super().forward(x, t_span, save_at, args)
         if self.return_t_eval: return t_eval, sol
