@@ -78,9 +78,9 @@ def test_save(moons_trainloader, small_mlp, testlearner, device):
 
 # TODO: extend to GPU and Multi-GPU
 @pytest.mark.parametrize('device', devices)
-def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
+def test_dict_out_and_args(moons_trainloader, small_mlp, testlearner, device):
 
-    def fun(t, x):
+    def fun(t, x, args):
         inps = torch.cat([x["i1"], x["i2"]], dim=-1)
         outs = small_mlp(inps)
         return t, {"i1": outs[..., 0:1], "i2": outs[..., 1:2]}
@@ -90,7 +90,7 @@ def test_dict_out(moons_trainloader, small_mlp, testlearner, device):
             super(DummyIntegrator, self).__init__()
 
         def step(self, f, x, t, dt, k1=None, args=None):
-            _, x_sol = f(t, x)
+            _, x_sol = f(t, x, args)
             return None, x_sol, None
 
     x0 = {"i1": torch.rand(1, 1), "i2": torch.rand(1, 1)}
@@ -244,7 +244,7 @@ def test_arg_ode():
         def __init__(self, l):
             super().__init__()
             self.l = l
-        def forward(self, t, x, u, v, z):
+        def forward(self, t, x, u, v, z, args={}):
             return self.l(x + u + v + z)
 
     tfunc = TFunc(l)
