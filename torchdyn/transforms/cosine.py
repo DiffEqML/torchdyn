@@ -14,10 +14,19 @@
 # Thanks to https://github.com/zh217/torch-dct for the original implementation of type-II DCT (1d and 2d)
 
 import torch
+from torch.fft import fft, fft2, ifft, ifft2
+import torch.nn as nn
 import numpy as np
 
-def dct1d(x, norm=None):
+def dct1d(x, norm=None, type=2):
+    assert type in [2], "Only DCT type 2 is implemented."
+    if type == 2:
+        return _dct1d_type2(x, norm=norm)
 
+def _dct1d_type1(x, norm=None):
+    raise NotImplementedError("")
+
+def _dct1d_type2(x, norm=None):
     x_shape = x.shape
     N = x_shape[-1]
     x = x.contiguous().view(-1, N)
@@ -40,8 +49,21 @@ def dct1d(x, norm=None):
 
     return V
 
-def idct1d(X, norm=None):
+def _dct1d_type3(x, norm=None):
+    raise NotImplementedError("")
 
+def _dct1d_type4(x, norm=None):
+    raise NotImplementedError("")
+
+def idct1d(X, norm=None, type=2):
+    assert type in [2], "Only iDCT type 2 is implemented."
+    if type == 2:
+        return _idct1d_type2(X, norm=norm)
+
+def _idct1d_type1(X, norm=None):
+    raise NotImplementedError("")
+
+def _idct1d_type2(X, norm=None):
     x_shape = X.shape
     N = x_shape[-1]
 
@@ -70,6 +92,12 @@ def idct1d(X, norm=None):
 
     return x.view(*x_shape)
 
+def _dct1d_type3(X, norm=None):
+    raise NotImplementedError("")
+
+def _idct1d_type4(X, norm=None):
+    raise NotImplementedError("")
+
 def dct2d(x, norm=None):
     X1 = dct1d(x, norm=norm)
     X2 = dct1d(X1.transpose(-1, -2), norm=norm)
@@ -79,3 +107,49 @@ def idct2d(X, norm=None):
     x1 = idct1d(X, norm=norm)
     x2 = idct1d(x1.transpose(-1, -2), norm=norm)
     return x2.transpose(-1, -2)
+
+# transforms as layers
+class DiscreteFourierTransform1d(nn.Module):
+    def __init__(self, norm=None, ttype=2, explicit=False):
+        super(DiscreteCosineTransform1d, self).__init__()
+        self.norm = norm
+        self.ttype = ttype
+        self.explicit = explicit
+    def forward(self, x):
+        return fft(x, norm=self.norm)
+    def inverse(self, X):
+        return ifft(X, norm=self.norm)
+
+class DiscreteFourierTransform2d(nn.Module):
+    def __init__(self, norm=None, ttype=2, explicit=False):
+        super(DiscreteCosineTransform1d, self).__init__()
+        self.norm = norm
+        self.ttype = ttype
+        self.explicit = explicit
+    def forward(self, x):
+        return fft2(x, norm=self.norm, type=self.ttype)
+    def inverse(self, X):
+        return ifft2(X, norm=self.norm)
+
+class DiscreteCosineTransform1d(nn.Module):
+    def __init__(self, norm=None, ttype=2, explicit=False):
+        super(DiscreteCosineTransform1d, self).__init__()
+        self.norm = norm
+        self.ttype = ttype
+        self.explicit = explicit
+    def forward(self, x):
+        return dct1d(x, norm=self.norm, type=self.ttype)
+    def inverse(self, X):
+        return idct1d(X, norm=self.norm)
+
+class DiscreteCosineTransform2d(nn.Module):
+    def __init__(self, norm=None, ttype=2, explicit=False):
+        super(DiscreteCosineTransform1d, self).__init__()
+        self.norm = norm
+        self.ttype = ttype
+        self.explicit = explicit
+    def forward(self, x):
+        return dct2d(x, norm=self.norm, ttype=self.ttype)
+    def inverse(self, X):
+        return idct2d(X, norm=self.norm)
+
