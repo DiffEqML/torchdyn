@@ -422,7 +422,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	if torch.isclose(t, save_at).sum():
 		sol = [x]
 
-	for steps in tqdm(range(len(t_span))):
+	for steps in tqdm(range(1, len(t_span))):
 		_, x, _ = solver.step(f, x, t, dt, k1=None, args=args)
 		t = t + dt
 
