@@ -22,6 +22,8 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
+from tqdm import tqdm
+
 from torchdyn.numerics.solvers.ode import AsynchronousLeapfrog, Tsitouras45, str_to_solver, str_to_ms_solver
 from torchdyn.numerics.interpolators import str_to_interp
 from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventState
@@ -420,15 +422,13 @@ def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	if torch.isclose(t, save_at).sum():
 		sol = [x]
 
-	steps = 1
-	while steps <= len(t_span) - 1:
+	for steps in tqdm(range(len(t_span))):
 		_, x, _ = solver.step(f, x, t, dt, k1=None, args=args)
 		t = t + dt
 
 		if torch.isclose(t, save_at).sum():
 			sol.append(x)
 		if steps < len(t_span) - 1: dt = t_span[steps+1] - t
-		steps += 1
 
 	if isinstance(sol[0], dict):
 		final_out = {k: [v] for k, v in sol[0].items()}
