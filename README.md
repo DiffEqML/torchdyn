@@ -1,7 +1,7 @@
 # torchdyn
 
 <p align="center">
-<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/animations/animated_logo_no_background.gif" width="180" height="180">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_full_v2.png" width="434" height="100">
 </p>
 <div align="center">
 
@@ -89,6 +89,6 @@ If you find `torchdyn` valuable for your research or applied projects:
 ```
 
 <p align="center">
-<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150" height="179">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150" height="150">
 </p>
 <div align="center">
