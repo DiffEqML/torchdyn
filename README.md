@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_full_v2.png" width="477" height="110">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_full_v2.png" width="477">
 </p>
 <div align="center">
 
@@ -93,6 +93,6 @@ If you find Torchdyn valuable for your research or applied projects:
 ```
 
 <p align="center">
-<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150" height="150">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150">
 </p>
 <div align="center">
