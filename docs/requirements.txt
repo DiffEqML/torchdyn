@@ -18,3 +18,4 @@ pytest-cov
 papermill 
 torchsde
 torchcde
+torchdyn-sphinx-theme

@@ -108,7 +108,7 @@ nbsphinx_prolog = r"""
 #
 #html_theme = 'alabaster'
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "torchdyn_sphinx_theme"
 html_logo = '_static/torchdyn_logo.png'
 html_theme_options = {
     'logo_only': True,
