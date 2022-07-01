@@ -89,6 +89,6 @@ If you find `torchdyn` valuable for your research or applied projects:
 ```
 
 <p align="center">
-<img src="media/torchdyn_logo.png" width="150" height="179">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150" height="179">
 </p>
 <div align="center">
