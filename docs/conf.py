@@ -109,10 +109,8 @@ nbsphinx_prolog = r"""
 #html_theme = 'alabaster'
 
 html_theme = "torchdyn_sphinx_theme"
-html_logo = '_static/torchdyn_logo.png'
 html_theme_options = {
-    'logo_only': True,
-    'display_version': False,
+    'logo': '_static/torchdyn_logo.svg',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,

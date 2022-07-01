@@ -1,8 +1,8 @@
-# torchdyn
+# Torchdyn
 
 <p align="center">
-<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/animations/animated_logo_no_background.gif" width="180" height="180">
-</p>
+<img src="./docs/_statis/torchdyn_logo.svg" width="567" height="130">
+</p> 
 <div align="center">
 
 ## A PyTorch library dedicated to **neural differential equations** and **implicit models**. Maintained by [DiffEqML](https://github.com/DiffEqML).
