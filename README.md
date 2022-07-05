@@ -1,7 +1,7 @@
 # Torchdyn
 
 <p align="center">
-<img src="./docs/_statis/torchdyn_logo.svg" width="567" height="130">
+<img src="./docs/_static/torchdyn_logo.svg" width="567" height="130">
 </p> 
 <div align="center">
 
