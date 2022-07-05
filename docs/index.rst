@@ -1,4 +1,4 @@
-torchdyn reference documentation
+Torchdyn reference documentation
 ====================================
 (New release 1.0 is out!)
 

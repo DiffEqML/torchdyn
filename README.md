@@ -1,6 +1,7 @@
 <p align="center">
 <img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_full_v2.png" width="477">
 </p>
+
 <div align="center">
 
 --------------------------------------------------------------------------------
