@@ -39,7 +39,7 @@ class DiffEqSolver(nn.Module):
         self.max_factor = self.max_factor.to(device)
         return x, t_span
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         raise NotImplementedError("Stepping rule not implemented for the solver")
 
 

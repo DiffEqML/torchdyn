@@ -1,11 +1,12 @@
-# Torchdyn
-
 <p align="center">
-<img src="./docs/_static/torchdyn_logo.svg" width="567" height="130">
-</p> 
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_full_v2.png" width="477">
+</p>
+
 <div align="center">
 
-## A PyTorch library dedicated to **neural differential equations** and **implicit models**. Maintained by [DiffEqML](https://github.com/DiffEqML).
+--------------------------------------------------------------------------------
+
+Torchdyn is a PyTorch library dedicated to **numerical deep learning**: differential equations, integral transforms, numerical methods. Maintained by [DiffEqML](https://github.com/DiffEqML).
 
 ![license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?)
 ![CI](https://github.com/DiffEqML/torchdyn/actions/workflows/os-coverage.yml/badge.svg)
@@ -18,7 +19,8 @@
 
 ### Quick Start
 
-Neural differential equations made easy:
+Torchdyn provides utilities and layers to easily construct numerical deep learning models. For example, neural differential equations:
+
 ```
 from torchdyn.core import NeuralODE
 
@@ -30,25 +32,28 @@ f = nn.Sequential(nn.Conv2d(1, 32, 3),
 
 nde = NeuralODE(f)
 ```
-And you have a trainable model. Feel free to combine similar `torchdyn` classes with any `PyTorch` modules to build composite models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in `torchdyn` other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods, benchmarks...
+And you have a trainable model. Feel free to combine Torchdyn classes with any PyTorch modules to build composite models. We offer additional tools to build custom neural differential equation and implicit models, including a functional API for numerical methods. There is much more in Torchdyn other than `NeuralODE` and `NeuralSDE` classes: tutorials, a functional API to a variety of GPU-compatible numerical methods and benchmarks.
 
-Contribute to the library with your benchmark and model variants! No need to reinvent the wheel :)
+Contribute to the library with your benchmark, tasks and numerical deep learning utilities! No need to reinvent the wheel :)
 
 ## Installation
 
-
 **Stable** release:
 
-`pip install torchdyn==1.0.1`
+`pip install torchdyn`
 
 Alternatively, you can build a virtual dev environment for `torchdyn` with poetry, following the steps outlined in `Contributing`.
 
 
 ## Documentation
+
 Check our [docs](https://torchdyn.readthedocs.io/) for more information.
 
 ## Introduction
-Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. Central to the `torchdyn` approach are continuous and implicit neural networks, where layer *depth* is taken to an infinite limit. 
+
+Interest in the blend of differential equations, deep learning and dynamical systems has been reignited by recent works [[1](https://arxiv.org/abs/1806.07366),[2](https://arxiv.org/abs/2001.04385), [3](https://arxiv.org/abs/2002.08071), [4](https://arxiv.org/abs/1909.01377)]. Modern deep learning frameworks such as PyTorch, coupled with further improvements in computational resources have allowed the continuous version of neural networks, with proposals dating back to the 80s [[5](https://ieeexplore.ieee.org/abstract/document/6814892)], to finally come to life and provide a novel perspective on classical machine learning problems. 
+
+We explore how differentiable programming can unlock the effectiveness of deep learning to accelerate progress across scientific domains, including control, fluid dynamics and in general prediction of complex dynamical systems. Conversely, we focus on models powered by numerical methods and signal processing to advance the state of AI in classical domains such as vision of natural language.
 
 <p align="center">
 <img src="https://github.com/DiffEqML/diffeqml-media/blob/main/animations/GalNODE.gif" width="200" height="200">
@@ -76,11 +81,11 @@ run `poetry run poe force-cuda11`, or add your version to `pyproject.toml`.
 If you wish to run `jupyter` notebooks within your newly created poetry environments, use `poetry run ipython kernel install --user --name=torchdyn` and switch the notebook kernel.
 
 
-**Choosing what to work on:** There is always [ongoing work](https://github.com/DiffEqML/torchdyn/issues) on new features, tests and tutorials. Contributing to any of the above is extremely valuable to us. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details.
+**Choosing what to work on:** There is always [ongoing work](https://github.com/DiffEqML/torchdyn/issues) on new features, tests and tutorials. If you wish to work on additional features not currently WIP, feel free to reach out on Slack or via email. We'll be glad to discuss details.
 
 
 #### Cite us
-If you find `torchdyn` valuable for your research or applied projects:
+If you find Torchdyn valuable for your research or applied projects:
 ```
 @article{politorchdyn,
   title={TorchDyn: Implicit Models and Neural Numerical Methods in PyTorch},
@@ -89,6 +94,6 @@ If you find `torchdyn` valuable for your research or applied projects:
 ```
 
 <p align="center">
-<img src="media/torchdyn_logo.png" width="150" height="179">
+<img src="https://github.com/DiffEqML/diffeqml-media/blob/main/images/torchdyn_v2.png" width="150">
 </p>
 <div align="center">
