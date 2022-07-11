@@ -18,6 +18,7 @@ import attr
 import torch
 import torch.nn as nn
 from torch.distributions import Exponential
+from torchdyn.core.utils import CubicSpline, hermite_cubic_coefficients_with_backward_differences
 from torchcde import CubicSpline, hermite_cubic_coefficients_with_backward_differences
 
 

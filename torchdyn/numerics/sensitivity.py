@@ -13,8 +13,8 @@
 from inspect import getfullargspec
 import torch
 from torch.autograd import Function, grad
-from torchcde import CubicSpline, natural_cubic_coeffs
 from torchdyn.numerics.odeint import odeint, odeint_mshooting
+from torchdyn.core.utils import CubicSpline, natural_cubic_coeffs
 
 
 def generic_odeint(problem_type, vf, x, t_span, solver, atol, rtol, interpolator, B0=None, 
