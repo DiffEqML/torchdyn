@@ -15,7 +15,7 @@
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
 from inspect import getargspec
-from typing import List, Tuple, Union, Callable, Dict
+from typing import List, Tuple, Union, Callable, Dict, Iterable
 from warnings import warn
 
 import torch
@@ -29,7 +29,7 @@ from torchdyn.numerics.utils import hairer_norm, init_step, adapt_step, EventSta
 
 def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, nn.Module], atol:float=1e-3, rtol:float=1e-3,
 		   t_stops:Union[List, Tensor, None]=None, verbose:bool=False, interpolator:Union[str, Callable, None]=None, return_all_eval:bool=False,
-		   save_at:Union[List, Tensor]=(), args:Dict={}, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
+		   save_at:Union[Iterable, Tensor]=(), args:Dict={}, seminorm:Tuple[bool, Union[int, None]]=(False, None)) -> Tuple[Tensor, Tensor]:
 	"""Solve an initial value problem (IVP) determined by function `f` and initial condition `x`.
 
 	   Functional `odeint` API of the `torchdyn` package.
@@ -64,6 +64,11 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		solver = str_to_solver(solver, x.dtype)
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
+
+	# instantiate save_at tensor
+	if len(save_at) == 0: save_at = t_span
+	if not isinstance(save_at, torch.Tensor):
+		save_at = torch.tensor(save_at)
 
 	# instantiate the interpolator similar to the solver steps above
 	if isinstance(solver, Tsitouras45):
@@ -410,7 +415,6 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, args=No
 
 def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
-	if len(save_at) == 0: save_at = t_span
 	assert all(torch.isclose(t, save_at).sum() == 1 for t in save_at),\
 		"each element of save_at [torch.Tensor] must be contained in t_span [torch.Tensor] once and only once"
 
@@ -439,7 +443,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	else:
 		raise NotImplementedError(f"{type(x)} is not supported as the state variable")
 
-	return torch.Tensor(save_at), final_out
+	return save_at, final_out
 
 
 def _shifted_fixed_odeint(f, x, t_span):
