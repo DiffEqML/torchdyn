@@ -411,6 +411,9 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, args=No
 def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
 	if len(save_at) == 0: save_at = t_span
+	if not isinstance(save_at, torch.Tensor):
+		save_at = torch.tensor(save_at)
+
 	assert all(torch.isclose(t, save_at).sum() == 1 for t in save_at),\
 		"each element of save_at [torch.Tensor] must be contained in t_span [torch.Tensor] once and only once"
 
@@ -439,7 +442,7 @@ def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	else:
 		raise NotImplementedError(f"{type(x)} is not supported as the state variable")
 
-	return torch.Tensor(save_at), final_out
+	return save_at, final_out
 
 
 def _shifted_fixed_odeint(f, x, t_span):
