@@ -29,7 +29,9 @@ papermill = "*"
 poethepoet = "^0.10.0"
 
 [tool.poe.tasks]
-force-cuda11 = "python -m pip install torch==1.10.0+cu111 torchvision torchaudio -f https://download.pytorch.org/whl/torch_stable.html"
+install-ltt = "python3 -m pip install light-the-torch"
+run-ltt = "python3 -m light_the_torch install --upgrade torch torchaudio torchvision"
+autoinstall-torch-cuda = ["install-ltt", "run-ltt"]
 
 [build-system]
 build-backend = "poetry.masonry.api"
