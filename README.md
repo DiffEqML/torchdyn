@@ -78,7 +78,7 @@ We use `poetry` to manage requirements, virtual python environment creation, and
 To set up your dev environment, run `poetry install`. In example, `poetry run pytest` will then run all `torchdyn` tests inside your newly created env.
 
 `poetry` does not currently offer a way to select `torch` wheels based on desired `cuda` and `OS`, and will install a version without GPU support. For CUDA `torch` wheels,
-run `poetry run poe autoinstall-torch-cuda`, that will automatically install PyTorch based on your CUDA configuration.
+run `poetry run poe autoinstall-torch-cuda`, that will [automatically install](https://github.com/pmeier/light-the-torch) PyTorch based on your CUDA configuration.
 
 If you wish to run `jupyter` notebooks within your newly created poetry environments, use `poetry run ipython kernel install --user --name=torchdyn` and switch the notebook kernel.
 
