@@ -7,7 +7,9 @@ from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefu
 from torchdyn.numerics.odeint import odeint, odeint_mshooting
 from torchdyn.numerics.solvers.ode import str_to_solver, str_to_ms_solver
 from torchdyn.core.utils import standardize_vf_call_signature
-
+from torchdyn.core.defunc import SDEFunc
+from torchdyn.numerics import sdeint
+from torchsde._brownian import BrownianInterval
 
 class ODEProblem(nn.Module):
     def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1,
@@ -136,7 +138,27 @@ class MultipleShootingProblem(ODEProblem):
 
 
 class SDEProblem(nn.Module):
-    def __init__(self):
+    def __init__(self, func:SDEFunc, order, sensitivity, s_span, solver,
+                 atol, rtol):
         "Extension of `ODEProblem` to SDE"
         super().__init__()
-        raise NotImplementedError("Hopefully soon...")
+        self.defunc = func
+        self.order = order
+        self.sensitivity = sensitivity
+        self.s_span = s_span
+        self.solver = solver
+        self.atol = atol
+        self.rtol = rtol
+
+    def sdeint(self, x: Tensor, t_span: Tensor, bm:BrownianInterval):
+        "Returns Tuple(`t_eval`, `solution`)"
+        if self.sensitivity == 'autograd':
+            return sdeint(self.defunc, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
+                          save_at=save_at, args=args)
+        else:
+            raise NotImplementedError("adjoint is not yet implemented")
+
+    def forward(self, x: Tensor, t_span: Tensor, bm:BrownianInterval):
+
+        "For safety redirects to intended method `sdeint`"
+        return self.sdeint(x, t_span, bm)

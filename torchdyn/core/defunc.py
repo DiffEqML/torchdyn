@@ -87,7 +87,7 @@ class DEFunc(nn.Module):
 
 
 class SDEFunc(nn.Module):
-    def __init__(self, f:Callable, g:Callable, order:int=1):
+    def __init__(self, f:Callable, g:Callable, order:int=1, noise_type=None, sde_type=None):
         """"Special vector field wrapper for Neural SDEs.
 
         Args:
@@ -95,23 +95,20 @@ class SDEFunc(nn.Module):
             g (Callable): callable defining the diffusion term
             order (int, optional): order of the differential equation. Defaults to 1.
         """
-        super().__init__()
+        super().__init__()  
         self.order, self.intloss, self.sensitivity = order, None, None
         self.f_func, self.g_func = f, g
         self.nfe = 0
+        self.noise_type = noise_type
+        self.sde_type = sde_type
 
-    def forward(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
-        pass
-
-    def f(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
+        raise NotImplementedError("Hopefully soon...")
+    
+    def f(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
-        for _, module in self.f_func.named_modules():
-            if hasattr(module, 't'):
-                module.t = t
-        return self.f_func(x, args)
+        return self.f_func(t, x)
+    
+    def g(self, t:Tensor, x:Tensor) -> Tensor:
+        return self.g_func(t, x)
 
-    def g(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
-        for _, module in self.g_func.named_modules():
-            if hasattr(module, 't'):
-                module.t = t
-        return self.g_func(x, args)

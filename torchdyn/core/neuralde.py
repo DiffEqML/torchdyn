@@ -113,7 +113,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 class NeuralSDE(SDEProblem, pl.LightningModule):
     def __init__(self, drift_func, diffusion_func, noise_type ='diagonal', sde_type = 'ito', order=1,
                  sensitivity='autograd', s_span=torch.linspace(0, 1, 2), solver='srk',
-                 atol=1e-4, rtol=1e-4, ds = 1e-3, intloss=None):
+                 atol=1e-4, rtol=1e-4, ds = 1e-3, intloss=None, bm=None):
         """Generic Neural Stochastic Differential Equation. Follows the same design of the `NeuralODE` class.
 
         Args:
@@ -129,6 +129,7 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
             rtol ([type], optional): Defaults to 1e-4.
             ds ([type], optional): Defaults to 1e-3.
             intloss ([type], optional): Defaults to None.
+            bm : Brownian Motion
 
         Raises:
             NotImplementedError: higher-order Neural SDEs are not yet implemented, raised by setting `order` to >1.
@@ -144,6 +145,7 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         self.intloss = intloss
         self._control, self.controlled = None, False  # datasets-control
         self.ds = ds
+        self.bm = bm
 
     def _prep_sdeint(self, x:torch.Tensor):
         self.s_span = self.s_span.to(x)
@@ -158,13 +160,15 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
 
     def forward(self, x:torch.Tensor):
         x = self._prep_sdeint(x)
-        switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
-        }
-        sdeint = switcher.get(self.sensitivity)
-        out = sdeint(x)
-        return out
+        # switcher = {
+        #     'autograd': self._autograd,
+        #     'adjoint': self._adjoint,
+        # }
+        # sdeint = switcher.get(self.sensitivity)
+        # out = sdeint(x)
+        t_eval, sol =  super().forward(x, t_span, save_at, args)
+        if self.return_t_eval: return t_eval, sol
+        else: return sol
     
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         x = self._prep_sdeint(x)
