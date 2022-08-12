@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Union, Iterable, Generator, Dict
+from typing import Callable, Union, Tuple, NamedTuple
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
 from torchdyn.numerics import odeint
@@ -26,11 +26,11 @@ import torchsde
 import warnings
 
 
-class NeuralODE(ODEProblem, pl.LightningModule):
+class NeuralODE(ODEProblem):
     def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module]='tsit5', order:int=1, 
                 atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, 
                 atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, interpolator:Union[str, Callable, None]=None, \
-                integral_loss:Union[Callable, None]=None, seminorm:bool=False, return_t_eval:bool=True, optimizable_params:Union[Iterable, Generator]=()):
+                integral_loss:Union[Callable, None]=None, seminorm:bool=False, return_t_eval:bool=True, optimizable_params:Tuple=()):
         """Generic Neural Ordinary Differential Equation.
 
         Args:
@@ -47,7 +47,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             integral_loss (Union[Callable, None], optional): Defaults to None.
             seminorm (bool, optional): Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
             return_t_eval (bool): Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
-            optimizable_parameters (Union[Iterable, Generator]): parameters to calculate sensitivies for. Defaults to ().
+            optimizable_parameters (Tuple): parameters to calculate sensitivies for. Defaults to ().
         Notes:
             In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
             as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
@@ -64,7 +64,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         if integral_loss is not None: self.vf.integral_loss = integral_loss
         self.vf.sensitivity = sensitivity
 
-    def _prep_integration(self, x:Tensor, t_span:Tensor) -> Tensor:
+    def _prep_integration(self, x:Tensor, t_span:Tensor) -> Tuple[Tensor, Tensor]:
         "Performs generic checks before integration. Assigns data control inputs and augments state for CNFs"
 
         # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
@@ -89,9 +89,9 @@ class NeuralODE(ODEProblem, pl.LightningModule):
                 module._control = x[:, excess_dims:].detach()
         return x, t_span
 
-    def forward(self, x:Union[Tensor, Dict], t_span:Tensor=None, save_at:Iterable=(), args={}):
+    def forward(self, x:Tensor, t_span:Tensor=None, save_at:Tensor=()):
         x, t_span = self._prep_integration(x, t_span)
-        t_eval, sol =  super().forward(x, t_span, save_at, args)
+        t_eval, sol =  super().forward(x, t_span, save_at)
         if self.return_t_eval: return t_eval, sol
         else: return sol
 

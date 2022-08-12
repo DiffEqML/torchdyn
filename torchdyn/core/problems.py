@@ -1,7 +1,7 @@
 import torch
 from torch import Tensor
 import torch.nn as nn
-from typing import Callable, Generator, Iterable, Union
+from typing import Callable, Generator, Tuple, NamedTuple, Union
 
 from torchdyn.numerics.sensitivity import _gather_odefunc_adjoint, _gather_odefunc_interp_adjoint
 from torchdyn.numerics.odeint import odeint, odeint_mshooting
@@ -12,7 +12,7 @@ from torchdyn.core.utils import standardize_vf_call_signature
 class ODEProblem(nn.Module):
     def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, order:int=1,
                 atol:float=1e-4, rtol:float=1e-4, sensitivity:str='autograd', solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6,
-                rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None, optimizable_params:Union[Iterable, Generator]=()):
+                rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None, optimizable_params:Tuple=()):
         """An ODE Problem coupling a given vector field with solver and sensitivity algorithm to compute gradients w.r.t different quantities.
 
         Args:
@@ -28,7 +28,7 @@ class ODEProblem(nn.Module):
             rtol_adjoint (float, optional): Defaults to 1e-6.
             seminorm (bool, optional): Indicates whether the a seminorm should be used for error estimation during adjoint backsolves. Defaults to False.
             integral_loss (Union[Callable, None]): Integral loss to optimize for. Defaults to None.
-            optimizable_parameters (Union[Iterable, Generator]): parameters to calculate sensitivies for. Defaults to ().
+            optimizable_parameters (Tuple): parameters to calculate sensitivies for. Defaults to ().
         Notes:
             Integral losses can be passed as generic function or `nn.Modules`.
         """
@@ -76,17 +76,17 @@ class ODEProblem(nn.Module):
                                                             self.solver_adjoint, self.atol_adjoint, self.rtol_adjoint, self.integral_loss,
                                                             problem_type='standard').apply
 
-    def odeint(self, x:Tensor, t_span:Tensor, save_at:Tensor=(), args={}):
+    def odeint(self, x:Tensor, t_span:Tensor, save_at:Tensor=()):
         "Returns Tuple(`t_eval`, `solution`)"
         if self.sensalg == 'autograd':
             return odeint(self.vf, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
-                          save_at=save_at, args=args)
+                          save_at=save_at)
         else:
-            return self._autograd_func()(self.vf_params, x, t_span, save_at, args)
+            return self._autograd_func()(self.vf_params, x, t_span, save_at)
 
-    def forward(self, x:Tensor, t_span:Tensor, save_at:Tensor=(), args={}):
+    def forward(self, x:Tensor, t_span:Tensor, save_at:Tensor=()):
         "For safety redirects to intended method `odeint`"
-        return self.odeint(x, t_span, save_at, args)
+        return self.odeint(x, t_span, save_at)
 
 
 class MultipleShootingProblem(ODEProblem):

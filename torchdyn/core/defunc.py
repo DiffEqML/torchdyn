@@ -10,7 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Dict
+from ast import Str
+from typing import Callable
 import torch
 from torch import Tensor, cat
 import torch.nn as nn
@@ -27,9 +28,9 @@ class DEFuncBase(nn.Module):
         super().__init__()
         self.nfe, self.vf, self.has_time_arg = 0., vector_field, has_time_arg
 
-    def forward(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
-        if self.has_time_arg: return self.vf(t, x, args=args)
+        if self.has_time_arg: return self.vf(t, x)
         else: return self.vf(x)
 
 
@@ -55,7 +56,7 @@ class DEFunc(nn.Module):
         self.order, self.integral_loss, self.sensitivity = order, None, None
         # identify whether vector field already has time arg
 
-    def forward(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
         # set `t` depth-variable to DepthCat modules
         for _, module in self.vf.named_modules():
@@ -67,17 +68,17 @@ class DEFunc(nn.Module):
             x_dyn = x[:, 1:]
             dlds = self.integral_loss(t, x_dyn)
             if len(dlds.shape) == 1: dlds = dlds[:, None]
-            if self.order > 1: x_dyn = self.horder_forward(t, x_dyn, args)
+            if self.order > 1: x_dyn = self.horder_forward(t, x_dyn)
             else: x_dyn = self.vf(t, x_dyn)
             return cat([dlds, x_dyn], 1).to(x_dyn)
 
         # regular forward
         else:
             if self.order > 1: x = self.higher_order_forward(t, x)
-            else: x = self.vf(t, x, args=args)
+            else: x = self.vf(t, x)
             return x
 
-    def higher_order_forward(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def higher_order_forward(self, t:Tensor, x:Tensor) -> Tensor:
         x_new = []
         size_order = x.size(1) // self.order
         for i in range(1, self.order):
@@ -100,18 +101,18 @@ class SDEFunc(nn.Module):
         self.f_func, self.g_func = f, g
         self.nfe = 0
 
-    def forward(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def forward(self, t:Tensor, x:Tensor) -> Tensor:
         pass
 
-    def f(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def f(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
         for _, module in self.f_func.named_modules():
             if hasattr(module, 't'):
                 module.t = t
-        return self.f_func(x, args)
+        return self.f_func(x)
 
-    def g(self, t:Tensor, x:Tensor, args:Dict={}) -> Tensor:
+    def g(self, t:Tensor, x:Tensor) -> Tensor:
         for _, module in self.g_func.named_modules():
             if hasattr(module, 't'):
                 module.t = t
-        return self.g_func(x, args)
+        return self.g_func(x)
