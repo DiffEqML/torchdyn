@@ -138,27 +138,28 @@ class MultipleShootingProblem(ODEProblem):
 
 
 class SDEProblem(nn.Module):
-    def __init__(self, func:SDEFunc, order, sensitivity, s_span, solver,
-                 atol, rtol):
+
+    def __init__(self, defunc:SDEFunc, solver:Union[str, nn.Module], interpolator:Union[str, Callable, None]=None, atol:float=1e-4, rtol:float=1e-4, sensitivity:str='autograd', 
+                 solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, rtol_adjoint:float=1e-6):
+
         "Extension of `ODEProblem` to SDE"
         super().__init__()
-        self.defunc = func
-        self.order = order
+        self.defunc = defunc
         self.sensitivity = sensitivity
-        self.s_span = s_span
         self.solver = solver
+        self.interpolator = interpolator
         self.atol = atol
         self.rtol = rtol
 
-    def sdeint(self, x: Tensor, t_span: Tensor, bm:BrownianInterval):
+    def sdeint(self, x: Tensor, t_span: Tensor, bm:BrownianInterval,save_at:Tensor=(), args={}):
         "Returns Tuple(`t_eval`, `solution`)"
         if self.sensitivity == 'autograd':
-            return sdeint(self.defunc, x, t_span, self.solver, self.atol, self.rtol, interpolator=self.interpolator,
+            return sdeint(self.defunc, x, t_span, self.solver, bm, self.atol, self.rtol, interpolator=self.interpolator,
                           save_at=save_at, args=args)
         else:
             raise NotImplementedError("adjoint is not yet implemented")
 
-    def forward(self, x: Tensor, t_span: Tensor, bm:BrownianInterval):
+    def forward(self, x: Tensor, t_span: Tensor, bm:BrownianInterval,save_at:Tensor=(), args={}):
 
         "For safety redirects to intended method `sdeint`"
-        return self.sdeint(x, t_span, bm)
+        return self.sdeint(x, t_span, bm, save_at, args)

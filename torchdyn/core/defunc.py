@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from inspect import getfullargspec
 from typing import Callable, Dict
 import torch
 from torch import Tensor, cat
@@ -107,8 +107,17 @@ class SDEFunc(nn.Module):
     
     def f(self, t:Tensor, x:Tensor) -> Tensor:
         self.nfe += 1
-        return self.f_func(t, x)
+        # print(self.f_func)
+
+        if 't' not in getfullargspec(self.f_func.forward).args:
+            return self.f_func(x)
+        else: 
+            return self.f_func(t, x)
     
     def g(self, t:Tensor, x:Tensor) -> Tensor:
-        return self.g_func(t, x)
+        self.nfe += 1
+        if 't' not in getfullargspec(self.g_func.forward).args:
+            return self.g_func(x)
+        else: 
+            return self.g_func(t, x)
 

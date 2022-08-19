@@ -13,7 +13,7 @@
 from typing import Callable, Union, Iterable, Generator, Dict
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
-from torchdyn.numerics import odeint
+from torchdyn.numerics import odeint, sdeint
 from torchdyn.core.defunc import SDEFunc
 from torchdyn.core.utils import standardize_vf_call_signature
 
@@ -111,81 +111,86 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
 
 class NeuralSDE(SDEProblem, pl.LightningModule):
-    def __init__(self, drift_func, diffusion_func, noise_type ='diagonal', sde_type = 'ito', order=1,
-                 sensitivity='autograd', s_span=torch.linspace(0, 1, 2), solver='srk',
-                 atol=1e-4, rtol=1e-4, ds = 1e-3, intloss=None, bm=None):
+
+    def __init__(self, drift_func, diffusion_func, order=1, solver='euler', noise_type ='diagonal', sde_type = 'ito',  t_span = torch.linspace(0, 1, 2),
+                 atol=1e-4, rtol=1e-4, sensitivity='autograd',ds = 1e-3, interpolator:Union[str, Callable, None]=None, intloss=None, bm=None, return_t_eval:bool=True):
+        super().__init__(defunc=SDEFunc(f=drift_func, g=diffusion_func, order=order), solver=solver, interpolator=interpolator,atol=atol, rtol=rtol,sensitivity=sensitivity)
+        
         """Generic Neural Stochastic Differential Equation. Follows the same design of the `NeuralODE` class.
 
         Args:
             drift_func ([type]): drift function
             diffusion_func ([type]): diffusion function
+            order (int, optional): Defaults to 1.
+            solver (str, optional): Defaults to 'euler'.
             noise_type (str, optional): Defaults to 'diagonal'.
             sde_type (str, optional): Defaults to 'ito'.
-            order (int, optional): Defaults to 1.
-            sensitivity (str, optional): Defaults to 'autograd'.
-            s_span ([type], optional): Defaults to torch.linspace(0, 1, 2).
-            solver (str, optional): Defaults to 'srk'.
+            t_span ([type], optional): Defaults to torch.linspace(0, 1, 2).
             atol ([type], optional): Defaults to 1e-4.
             rtol ([type], optional): Defaults to 1e-4.
+            sensitivity (str, optional): Defaults to 'autograd'.
             ds ([type], optional): Defaults to 1e-3.
             intloss ([type], optional): Defaults to None.
             bm : Brownian Motion
-
+            return_t_eval (bool): Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralSDEs in `nn.Sequential`.
+            
         Raises:
             NotImplementedError: higher-order Neural SDEs are not yet implemented, raised by setting `order` to >1.
 
         Notes:
             The current implementation is rougher around the edges compared to `NeuralODE`, and is not guaranteed to have the same features.
         """
-        super().__init__(func=SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
-                                      atol=atol, rtol=rtol)
         if order != 1: raise NotImplementedError
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
+        self.solver = solver
+        self.t_span = t_span
         self.intloss = intloss
-        self._control, self.controlled = None, False  # datasets-control
+        self._control, self.controlled = None, False # datasets-control
         self.ds = ds
         self.bm = bm
+        self.return_t_eval = return_t_eval
 
-    def _prep_sdeint(self, x:torch.Tensor):
-        self.s_span = self.s_span.to(x)
-        # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
+    def _prep_sdeint(self, x:Tensor, t_span:Tensor):
+        # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
+        if t_span is None and self.t_span is None: t_span = torch.linspace(0, 1, 2)
+        elif t_span is None: t_span = self.t_span
+        # todo : datasets-control set routine. Is performed once at the beginning of sdeint since the control is fixed to IC
         excess_dims = 0
         for _, module in self.defunc.named_modules():
             if hasattr(module, '_control'):
                 self.controlled = True
                 module._control = x[:, excess_dims:].detach()
 
-        return x
+        return x, t_span
 
-    def forward(self, x:torch.Tensor):
-        x = self._prep_sdeint(x)
+    def forward(self, x:Union[Tensor, Dict], t_span:Tensor=None, save_at:Iterable=(), args={}):
+        x, t_span = self._prep_sdeint(x, t_span)
         # switcher = {
         #     'autograd': self._autograd,
         #     'adjoint': self._adjoint,
         # }
         # sdeint = switcher.get(self.sensitivity)
         # out = sdeint(x)
-        t_eval, sol =  super().forward(x, t_span, save_at, args)
+        t_eval, sol =  super().forward(x, t_span, self.bm, save_at, args)
         if self.return_t_eval: return t_eval, sol
         else: return sol
     
-    def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+    def trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
         x = self._prep_sdeint(x)
-        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol, 
-                              method=self.solver, dt=self.ds)
+        sol = sdeint(self.defunc, x, t_span, solver=self.solver, rtol=self.rtol, atol=self.atol , dt=self.ds)
         return sol
     
-    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+    def backward_trajectory(self, x:torch.Tensor, t_span:torch.Tensor):
         raise NotImplementedError
         
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
-        return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
+        return torchsde.sdeint(self.defunc, x, self.t_span, rtol=self.rtol, atol=self.atol,
                                    adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
     
     def _adjoint(self, x):
-        out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
+        out = torchsde.sdeint_adjoint(self.defunc, x, self.t_span, rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
         return out
 

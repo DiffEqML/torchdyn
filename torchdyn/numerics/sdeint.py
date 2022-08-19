@@ -37,9 +37,7 @@ def sdeint(sde: Callable, x: Tensor, t_span: Union[List, Tensor], solver: Union[
 
     if type(solver) == str:
         solver = sde_str_to_solver(solver, sde, bm, x.dtype)
-
     x, t_span = solver.sync_device_dtype(x, t_span)
-
     stepping_class = solver.stepping_class
     # instantiate save_at tensor
     if len(save_at) == 0: save_at = t_span
