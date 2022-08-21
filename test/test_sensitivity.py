@@ -45,8 +45,9 @@ def test_odeint_adjoint(sensitivity, solver, interpolator, stiffness):
 
     f = VanDerPol(stiffness)
     x = torch.randn(1024, 2, requires_grad=True)
-    t0 = time.time()
+    
     prob = ODEProblem(f, sensitivity=sensitivity, interpolator=interpolator, solver=solver, atol=1e-4, rtol=1e-4, atol_adjoint=1e-4, rtol_adjoint=1e-4)
+    t0 = time.time()
     t_eval, sol_torchdyn = prob.odeint(x, t_span)
     t_end1 = time.time() - t0
 
