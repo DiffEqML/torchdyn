@@ -10,8 +10,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Test adjoint and perform a rough benchmarking of wall-clock time
+
 import time
 from copy import deepcopy
+import logging
 
 import pytest
 import torch
@@ -27,8 +30,9 @@ from torchdyn.numerics import VanDerPol
 batch_size = 128
 torch.manual_seed(1415112413244349)
 
-
 t_span = torch.linspace(0, 1, 100)
+
+logger = logging.getLogger("out")
 
 
 # TODO(numerics): log wall-clock times and other torch.grad tests
@@ -38,16 +42,20 @@ t_span = torch.linspace(0, 1, 100)
 @pytest.mark.parametrize('stiffness', [0.1, 0.5])
 @pytest.mark.parametrize('interpolator', [None])
 def test_odeint_adjoint(sensitivity, solver, interpolator, stiffness):
+
     f = VanDerPol(stiffness)
     x = torch.randn(1024, 2, requires_grad=True)
-    t0 = time.time()
+    
     prob = ODEProblem(f, sensitivity=sensitivity, interpolator=interpolator, solver=solver, atol=1e-4, rtol=1e-4, atol_adjoint=1e-4, rtol_adjoint=1e-4)
+    t0 = time.time()
     t_eval, sol_torchdyn = prob.odeint(x, t_span)
     t_end1 = time.time() - t0
 
     t0 = time.time()
     sol_torchdiffeq = torchdiffeq.odeint_adjoint(f, x, t_span, method='dopri5', atol=1e-4, rtol=1e-4)
     t_end2 = time.time() - t0
+
+    logger.info(f"Fwd times: {t_end1:.3f}, {t_end2:.3f}")
 
     true_sol = torchdiffeq.odeint_adjoint(f, x, t_span, method='dopri5', atol=1e-9, rtol=1e-9)
 
@@ -58,6 +66,8 @@ def test_odeint_adjoint(sensitivity, solver, interpolator, stiffness):
     t0 = time.time()
     grad2 = torch.autograd.grad(sol_torchdiffeq[-1].sum(), x)[0]
     t_end2 = time.time() - t0
+
+    logger.info(f"Bwd times: {t_end1:.3f}, {t_end2:.3f}")
 
     grad_true = torch.autograd.grad(true_sol[-1].sum(), x)[0]
 
