@@ -1,5 +1,13 @@
-Public API: torchdyn package
+Public API Documentation
 ===============================
+
+Highest Level Classes
+----------------------
+.. toctree::
+  torchdyn.highlevel
+
+
+
 
 Subpackages
 -----------
@@ -12,20 +20,3 @@ Subpackages
    torchdyn.models
    torchdyn.nn
    torchdyn.numerics
-
-Submodules
-----------
-
-torchdyn.utils module
----------------------
-
-.. automodule:: torchdyn.utils
-   :members:
-   :undoc-members:
-
-Module contents
----------------
-
-.. automodule:: torchdyn
-   :members:
-   :undoc-members:

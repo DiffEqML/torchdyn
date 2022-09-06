@@ -1,11 +1,13 @@
-Torchdyn reference documentation
+What is Torchdyn?
 ====================================
-(New release 1.0 is out!)
-
-torchdyn is a Python library entirely dedicated to continuous, implicit neural architectures and the numerical methods that underpin them. 
+`torchdyn` is a Python library entirely dedicated to continuous, implicit neural architectures and the numerical methods that underpin them.
 
 It features a self-contained numerical suite of differential equation and root solvers, including sensitivity methods (continuous backsolve or interpolated adjoints, reverse-mode AD). 
 The library further contains a model zoo and an extensive set of tutorials for researchers and practitioners.
+
+
+Installation
+====================================
 
 .. code:: bash
 
@@ -13,10 +15,9 @@ The library further contains a model zoo and an extensive set of tutorials for r
 
 `GitHub link <https://github.com/diffeqml/torchdyn>`_.
 
-.. note::
 
-    * This library is developed and maintained by **Michael Poli** & **Stefano Massaroli**, with gracious contributions from the community.
-
+Getting Started
+====================================
 
 Refer to the links below for a quickstart to core torchdyn features and a description of the library goals and design principles. 
 
@@ -43,3 +44,9 @@ A set of extended tutorials, covering everything from models, benchmarks and num
 
    source/torchdyn
 
+
+Citation
+====================================
+.. note::
+
+    * This library is developed and maintained by **Michael Poli** & **Stefano Massaroli**, with gracious contributions from the community.
