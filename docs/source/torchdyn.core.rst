@@ -1,8 +1,17 @@
-torchdyn.core 
-=====================
+NeuralODE / NeuralSDE Classes
+==============================
 
-These are the modules at the core of `torchdyn`.
-`NeuralODE`, `ODEProblem`, `MultipleShootingLayers` as well as their utilities are defined here
+These modules represent the framework necessary for solving Ordinary Differential Equations (ODE) or Stochastic
+Differential Equations (SDEs) numerically. This is typically the first access point for using `torchdyn`.
+
+These classes can be used as differentiable modules within a larger differentiable numerical program that requires
+the solution of ODEs / SDEs.
+
+.. autoclass:::: torchdyn.core.NeuralODE
+   :members:
+
+
+
 
 Module contents
 ---------------

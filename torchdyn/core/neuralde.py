@@ -25,14 +25,45 @@ import torchsde
 
 import warnings
 
-__all__ =   ['NeuralODE', 'NeuralSDE']
 
 class NeuralODE(ODEProblem, pl.LightningModule):
-    def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module]='tsit5', order:int=1,
-                atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None,
-                atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, interpolator:Union[str, Callable, None]=None, \
-                integral_loss:Union[Callable, None]=None, seminorm:bool=False, return_t_eval:bool=True, optimizable_params:Union[Iterable, Generator]=()):
-        """Generic Neural Ordinary Differential Equation.
+    def __init__(
+        self,
+        vector_field: Union[Callable, nn.Module],
+        solver: Union[str, nn.Module] = "tsit5",
+        order: int = 1,
+        atol: float = 1e-3,
+        rtol: float = 1e-3,
+        sensitivity="autograd",
+        solver_adjoint: Union[str, nn.Module, None] = None,
+        atol_adjoint: float = 1e-4,
+        rtol_adjoint: float = 1e-4,
+        interpolator: Union[str, Callable, None] = None,
+        integral_loss: Union[Callable, None] = None,
+        seminorm: bool = False,
+        return_t_eval: bool = True,
+        optimizable_params: Union[Iterable, Generator] = (),
+    ):
+        """
+
+        This is a class that represents an (a system of) ODE(s) given by the `vector_field`. The vector field simply
+        needs to be a `Callable`. It could be a learned function or a specified function.
+
+        After instantiation, when this object is called, it treats the input as an initial condition and solves the ODE
+        as an Initial Value Problem (IVP) given the previously mentioned vector field.
+
+        This class is typically used as an NN module itself for when the solution to an ODE is required inside a
+        PyTorch program. An example training loop may look like --
+        inputs -> neuralODE(neural_network)(t_final) -> outputs
+        where there may be other neural networks that modify the data as it enters or exits the NeuralODE. In this
+        example, the vector field is learned.
+
+        In order to integrate, this class relies on `odeint`. `odeint` is a lower-level function that performs
+        the integration not dissimilar to (at a high level) from what SciPy's or MATLAB's `odeint` might do.
+
+        Details:
+        The operations performed within the neural ODE can be controlled by the various parameters. The usual suspects
+         are the integrator that is used, the method used to calculate the sensitivities/gradients of the ODE solve.
 
         Args:
             vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`.
@@ -57,46 +88,64 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used.
             The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
         """
-        super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
-                         solver=solver, atol=atol, rtol=rtol, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint,
-                         seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss, optimizable_params=optimizable_params)
-        self._control, self.controlled, self.t_span = None, False, None # data-control conditioning
+        super().__init__(
+            vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True),
+            order=order,
+            sensitivity=sensitivity,
+            solver=solver,
+            atol=atol,
+            rtol=rtol,
+            solver_adjoint=solver_adjoint,
+            atol_adjoint=atol_adjoint,
+            rtol_adjoint=rtol_adjoint,
+            seminorm=seminorm,
+            interpolator=interpolator,
+            integral_loss=integral_loss,
+            optimizable_params=optimizable_params,
+        )
+        self._control, self.controlled, self.t_span = None, False, None  # data-control conditioning
         self.return_t_eval = return_t_eval
-        if integral_loss is not None: self.vf.integral_loss = integral_loss
+        if integral_loss is not None:
+            self.vf.integral_loss = integral_loss
         self.vf.sensitivity = sensitivity
 
-    def _prep_integration(self, x:Tensor, t_span:Tensor) -> Tensor:
+    def _prep_integration(self, x: Tensor, t_span: Tensor) -> Tensor:
         "Performs generic checks before integration. Assigns data control inputs and augments state for CNFs"
 
         # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
-        if t_span is None and self.t_span is None: t_span = torch.linspace(0, 1, 2)
-        elif t_span is None: t_span = self.t_span
+        if t_span is None and self.t_span is None:
+            t_span = torch.linspace(0, 1, 2)
+        elif t_span is None:
+            t_span = self.t_span
 
         # loss dimension detection routine; for CNF div propagation and integral losses w/ autograd
         excess_dims = 0
-        if (not self.integral_loss is None) and self.sensitivity == 'autograd':
+        if (not self.integral_loss is None) and self.sensitivity == "autograd":
             excess_dims += 1
 
         # handle aux. operations required for some jacobian trace CNF estimators e.g Hutchinson's
         # as well as datasets-control set to DataControl module
         for _, module in self.vf.named_modules():
-            if hasattr(module, 'trace_estimator'):
-                if module.noise_dist is not None: module.noise = module.noise_dist.sample((x.shape[0],))
+            if hasattr(module, "trace_estimator"):
+                if module.noise_dist is not None:
+                    module.noise = module.noise_dist.sample((x.shape[0],))
                 excess_dims += 1
 
             # data-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
-            if hasattr(module, '_control'):
+            if hasattr(module, "_control"):
                 self.controlled = True
                 module._control = x[:, excess_dims:].detach()
         return x, t_span
 
-    def forward(self, x:Union[Tensor, Dict], t_span:Tensor=None, save_at:Iterable=(), args={}):
+    def forward(self, x: Union[Tensor, Dict], t_span: Tensor = None, save_at: Iterable = (), args={}):
         x, t_span = self._prep_integration(x, t_span)
-        t_eval, sol =  super().forward(x, t_span, save_at, args)
-        if self.return_t_eval: return t_eval, sol
-        else: return sol
+        t_eval, sol = super().forward(x, t_span, save_at, args)
+        if self.return_t_eval:
+            return t_eval, sol
+        else:
+            return sol
 
-    def trajectory(self, x:torch.Tensor, t_span:Tensor):
+    def trajectory(self, x: torch.Tensor, t_span: Tensor):
         x, t_span = self._prep_integration(x, t_span)
         _, sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
         return sol
@@ -112,9 +161,21 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
 
 class NeuralSDE(SDEProblem, pl.LightningModule):
-    def __init__(self, drift_func, diffusion_func, noise_type ='diagonal', sde_type = 'ito', order=1,
-                 sensitivity='autograd', s_span=torch.linspace(0, 1, 2), solver='srk',
-                 atol=1e-4, rtol=1e-4, ds = 1e-3, intloss=None):
+    def __init__(
+        self,
+        drift_func,
+        diffusion_func,
+        noise_type="diagonal",
+        sde_type="ito",
+        order=1,
+        sensitivity="autograd",
+        s_span=torch.linspace(0, 1, 2),
+        solver="srk",
+        atol=1e-4,
+        rtol=1e-4,
+        ds=1e-3,
+        intloss=None,
+    ):
         """Generic Neural Stochastic Differential Equation. Follows the same design of the `NeuralODE` class.
 
         Args:
@@ -137,60 +198,93 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         Notes:
             The current implementation is rougher around the edges compared to `NeuralODE`, and is not guaranteed to have the same features.
         """
-        super().__init__(func=SDEFunc(f=drift_func, g=diffusion_func, order=order), order=order, sensitivity=sensitivity, s_span=s_span, solver=solver,
-                                      atol=atol, rtol=rtol)
-        if order != 1: raise NotImplementedError
+        super().__init__(
+            func=SDEFunc(f=drift_func, g=diffusion_func, order=order),
+            order=order,
+            sensitivity=sensitivity,
+            s_span=s_span,
+            solver=solver,
+            atol=atol,
+            rtol=rtol,
+        )
+        if order != 1:
+            raise NotImplementedError
         self.defunc.noise_type, self.defunc.sde_type = noise_type, sde_type
         self.adaptive = False
         self.intloss = intloss
         self._control, self.controlled = None, False  # datasets-control
         self.ds = ds
 
-    def _prep_sdeint(self, x:torch.Tensor):
+    def _prep_sdeint(self, x: torch.Tensor):
         self.s_span = self.s_span.to(x)
         # datasets-control set routine. Is performed once at the beginning of odeint since the control is fixed to IC
         excess_dims = 0
         for _, module in self.defunc.named_modules():
-            if hasattr(module, '_control'):
+            if hasattr(module, "_control"):
                 self.controlled = True
                 module._control = x[:, excess_dims:].detach()
 
         return x
 
-    def forward(self, x:torch.Tensor):
+    def forward(self, x: torch.Tensor):
         x = self._prep_sdeint(x)
         switcher = {
-            'autograd': self._autograd,
-            'adjoint': self._adjoint,
+            "autograd": self._autograd,
+            "adjoint": self._adjoint,
         }
         sdeint = switcher.get(self.sensitivity)
         out = sdeint(x)
         return out
 
-    def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+    def trajectory(self, x: torch.Tensor, s_span: torch.Tensor):
         x = self._prep_sdeint(x)
-        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol,
-                              method=self.solver, dt=self.ds)
+        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol, method=self.solver, dt=self.ds)
         return sol
 
-    def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
+    def backward_trajectory(self, x: torch.Tensor, s_span: torch.Tensor):
         raise NotImplementedError
 
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
-        return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
-                                   adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
+        return torchsde.sdeint(
+            self.defunc,
+            x,
+            self.s_span,
+            rtol=self.rtol,
+            atol=self.atol,
+            adaptive=self.adaptive,
+            method=self.solver,
+            dt=self.ds,
+        )[-1]
 
     def _adjoint(self, x):
-        out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
-                     adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
+        out = torchsde.sdeint_adjoint(
+            self.defunc,
+            x,
+            self.s_span,
+            rtol=self.rtol,
+            atol=self.atol,
+            adaptive=self.adaptive,
+            method=self.solver,
+            dt=self.ds,
+        )[-1]
         return out
 
 
 class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
-    def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
-                 maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6,
-                 rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
+    def __init__(
+        self,
+        vector_field: Callable,
+        solver: str,
+        sensitivity: str = "autograd",
+        maxiter: int = 4,
+        fine_steps: int = 4,
+        solver_adjoint: Union[str, nn.Module, None] = None,
+        atol_adjoint: float = 1e-6,
+        rtol_adjoint: float = 1e-6,
+        seminorm: bool = False,
+        integral_loss: Union[Callable, None] = None,
+    ):
         """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885.
 
         Uses parallel-in-time ODE solvers to solve an ODE parametrized by neural network `vector_field`.
@@ -214,7 +308,15 @@ class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
             For the moment only a thin wrapper around `MultipleShootingProblem`. At this level will be convenience routines for special
             initializations of shooting parameters `B0`, as well as usual convenience checks for integral losses.
         """
-        super().__init__(vector_field, solver, sensitivity, maxiter, fine_steps, solver_adjoint, atol_adjoint,
-                         rtol_adjoint, seminorm, integral_loss)
-
-
+        super().__init__(
+            vector_field,
+            solver,
+            sensitivity,
+            maxiter,
+            fine_steps,
+            solver_adjoint,
+            atol_adjoint,
+            rtol_adjoint,
+            seminorm,
+            integral_loss,
+        )

@@ -13,7 +13,7 @@ Installation
 
    pip install torchdyn
 
-`GitHub link <https://github.com/diffeqml/torchdyn>`_.
+The GitHub repo is `here <https://github.com/diffeqml/torchdyn>`_.
 
 
 Getting Started

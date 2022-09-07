@@ -17,5 +17,5 @@ from torchdyn.core.problems import ODEProblem, SDEProblem, MultipleShootingProbl
 # backward-compatibility (pre v0.2.0)
 NeuralDE = NeuralODE
 
-__all__ =   ['DEFunc', 'NeuralODE', 'NeuralDE', 'NeuralSDE', 'ODEProblem', 'SDEProblem', 
+__all__ =   ['NeuralODE', 'DEFunc', 'NeuralDE', 'NeuralSDE', 'ODEProblem', 'SDEProblem',
             'MultipleShootingProblem', 'MultipleShootingLayer']
