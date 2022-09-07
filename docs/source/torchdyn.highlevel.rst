@@ -11,5 +11,5 @@ the solution of ODEs / SDEs.
 Module contents
 ---------------
 
-.. automodule:: torchdyn.core.neuralde.neuralODE
+.. automodule:: torchdyn.core.neuralde
    :members:
