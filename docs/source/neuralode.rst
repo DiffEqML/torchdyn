@@ -1,5 +1,5 @@
 NeuralODE
-===============================
+==========
 A `NeuralODE` represents the framework necessary for solving Ordinary Differential Equations (ODE) numerically.
 This is typically the first access point for using `torchdyn`.
 
@@ -8,15 +8,3 @@ numerical program
 
 .. autoclass:: torchdyn.core.neuralde.NeuralODE
    :members:
-
-Lower-level constructs and their APIs
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   torchdyn.core
-   torchdyn.datasets
-   torchdyn.models
-   torchdyn.nn
-   torchdyn.numerics

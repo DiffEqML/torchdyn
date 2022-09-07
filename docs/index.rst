@@ -40,9 +40,19 @@ A set of extended tutorials, covering everything from models, benchmarks and num
 
 .. toctree::
    :maxdepth: 1
-   :caption: API documentation
+   :caption: High Level API
 
-   source/torchdyn
+   source/neuralode
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Low Level API
+
+   source/torchdyn.core
+   source/torchdyn.datasets
+   source/torchdyn.models
+   source/torchdyn.nn
+   source/torchdyn.numerics
 
 
 Citation
