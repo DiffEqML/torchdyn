@@ -74,10 +74,10 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Parameters
         ----------
         vector_field: Callable
-        the vector field, called with `vector_field(t, x)`, that will be called during integration
+          the vector field, called with `vector_field(t, x)`, that will be called during integration
 
         solver: Union[str, nn.Module] = "tsit5"
-        The solver used for integration. The default is an adaptive 5th order scheme
+          The solver used for integration. The default is an adaptive 5th order scheme
 
         order: (int, optional)
         Order of the ODE. Default = 1
