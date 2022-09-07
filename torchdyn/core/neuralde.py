@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable, Union, Iterable, Generator, Dict
+from typing import Callable, Union, Iterable, Generator, Dict, Tuple
 
 from torchdyn.core.problems import MultipleShootingProblem, ODEProblem, SDEProblem
 from torchdyn.numerics import odeint
@@ -65,13 +65,13 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         The operations performed within the neural ODE can be controlled by the various parameters. The usual suspects
         are the integrator that is used, the method used to calculate the sensitivities/gradients of the ODE solve.
 
-        Notes:
-            In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
-            as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
-            the solution only.
 
-            The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used.
-            The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
+        In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
+        as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
+        the solution only.
+
+        The Neural ODE class automates certain steps specific to the solver and model used.
+        The `prep_odeint` method carries out those steps. Neural ODEs wrap `ODEProblem`.
 
         Parameters
         ----------
@@ -136,20 +136,23 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             self.vf.integral_loss = integral_loss
         self.vf.sensitivity = sensitivity
 
-    def _prep_integration(self, x: Tensor, t_span: Tensor) -> Tensor:
+    def _prep_integration(self, x: Tensor, t_span: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Performs generic checks before integration. Assigns data control inputs and augments state for CNFs
 
         Parameters
         ----------
-        x: Tensor
-        The input PyTorch Tensor
-        t_span: Tensor
-        The integration interval
+        x: torch.Tensor
+          The input PyTorch Tensor
+        t_span: torch.Tensor
+          The integration interval
 
         Returns
         -------
-        Tuple(x, t_span)
+        x: torch.Tensor
+          The prepped input PyTorch Tensor
+        t_span: torch.Tensor
+          The prepped integration interval
 
         """
         # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
@@ -184,13 +187,24 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
         Parameters
         ----------
-        x
-        t_span
-        save_at
-        args
+        x: Union[torch.Tensor, Dict]
+          Input data. If the ODE dimension were time, then these are the initial conditions
+
+        t_span: torch.Tensor
+          Integration interval
+
+        save_at: Iterable
+          Locations at which to save and return the solution to the ODE
+
+        args: Dict
+          Other parameters
 
         Returns
         -------
+        t_eval: torch.Tensor
+          the times at which the solution is saved
+        sol: Union[torch.Tensor, Dict]
+          the solution to the ODE saved at different steps along the integral
 
         """
         x, t_span = self._prep_integration(x, t_span)
