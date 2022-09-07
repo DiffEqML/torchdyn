@@ -45,7 +45,6 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         optimizable_params: Union[Iterable, Generator] = (),
     ):
         """
-
         A `NeuralODE` represents an (a system of) ODE(s) given by the `vector_field`. The vector field simply
         needs to be a `Callable`. It could be a learned function or a specified function.
 
@@ -62,23 +61,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         the integration not dissimilar to (at a high level) from what SciPy's or MATLAB's `odeint` might do.
 
         The operations performed within the neural ODE can be controlled by the various parameters. The usual suspects
-         are the integrator that is used, the method used to calculate the sensitivities/gradients of the ODE solve.
-
-        Args:
-            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`.
-                                       In the second case, the Callable is automatically wrapped for consistency
-            solver (Union[str, nn.Module]):
-            order (int, optional): Order of the ODE. Defaults to 1.
-            atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
-            rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
-            sensitivity (str, optional): Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
-            solver_adjoint (Union[str, nn.Module, None], optional): ODE solver for the adjoint. Defaults to None.
-            atol_adjoint (float, optional): Defaults to 1e-6.
-            rtol_adjoint (float, optional): Defaults to 1e-6.
-            integral_loss (Union[Callable, None], optional): Defaults to None.
-            seminorm (bool, optional): Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
-            return_t_eval (bool): Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
-            optimizable_parameters (Union[Iterable, Generator]): parameters to calculate sensitivies for. Defaults to ().
+        are the integrator that is used, the method used to calculate the sensitivities/gradients of the ODE solve.
 
         Notes:
             In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
@@ -87,6 +70,48 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
             The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used.
             The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
+
+        Parameters
+        ----------
+        vector_field: Callable
+        the vector field, called with `vector_field(t, x)`, that will be called during integration
+
+        solver: Union[str, nn.Module] = "tsit5"
+        The solver used for integration. The default is an adaptive 5th order scheme
+
+        order: (int, optional)
+        Order of the ODE. Default = 1
+
+        atol: (float, optional)
+        Absolute tolerance of the solver. Defaults to 1e-4.
+
+        rtol: (float, optional)
+        Relative tolerance of the solver. Defaults to 1e-4.
+
+        sensitivity: (str, optional)
+        Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
+
+        solver_adjoint: (Union[str, nn.Module, None], optional)
+        ODE solver for the adjoint. Defaults to None.
+
+        atol_adjoint: (float, optional)
+        Defaults to 1e-6.
+
+        rtol_adjoint: (float, optional)
+        Defaults to 1e-6.
+
+        integral_loss: (Union[Callable, None], optional)
+        Defaults to None.
+
+        seminorm: (bool, optional)
+        Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
+
+        return_t_eval: (bool)
+        Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
+
+        optimizable_parameters: (Union[Iterable, Generator])
+        parameters to calculate sensitivies for. Defaults to ().
+
         """
         super().__init__(
             vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True),
