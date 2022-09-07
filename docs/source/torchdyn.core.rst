@@ -7,7 +7,7 @@ Differential Equations (SDEs) numerically. This is typically the first access po
 These classes can be used as differentiable modules within a larger differentiable numerical program that requires
 the solution of ODEs / SDEs.
 
-.. autoclass:::: torchdyn.core.neuralde.NeuralODE
+.. autoclass:: torchdyn.core.neuralde.NeuralODE
    :members:
 
 

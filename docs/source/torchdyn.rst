@@ -1,10 +1,6 @@
-Public API Documentation
+torchdyn Public API Documentation
 ===============================
 
-Highest Level Classes
-----------------------
-.. toctree::
-  torchdyn.highlevel
 
 
 
