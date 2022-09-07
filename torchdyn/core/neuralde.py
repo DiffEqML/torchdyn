@@ -80,37 +80,37 @@ class NeuralODE(ODEProblem, pl.LightningModule):
           The solver used for integration. The default is an adaptive 5th order scheme
 
         order: (int, optional)
-        Order of the ODE. Default = 1
+          Order of the ODE. Default = 1
 
         atol: (float, optional)
-        Absolute tolerance of the solver. Defaults to 1e-4.
+          Absolute tolerance of the solver. Defaults to 1e-4.
 
         rtol: (float, optional)
-        Relative tolerance of the solver. Defaults to 1e-4.
+          Relative tolerance of the solver. Defaults to 1e-4.
 
         sensitivity: (str, optional)
-        Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
+          Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
 
         solver_adjoint: (Union[str, nn.Module, None], optional)
-        ODE solver for the adjoint. Defaults to None.
+          ODE solver for the adjoint. Defaults to None.
 
         atol_adjoint: (float, optional)
-        Defaults to 1e-6.
+          Defaults to 1e-6.
 
         rtol_adjoint: (float, optional)
-        Defaults to 1e-6.
+          Defaults to 1e-6.
 
         integral_loss: (Union[Callable, None], optional)
-        Defaults to None.
+          Defaults to None.
 
         seminorm: (bool, optional)
-        Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
+          Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
 
         return_t_eval: (bool)
-        Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
+          Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
 
         optimizable_parameters: (Union[Iterable, Generator])
-        parameters to calculate sensitivies for. Defaults to ().
+          parameters to calculate sensitivies for. Defaults to ().
 
         """
         super().__init__(
