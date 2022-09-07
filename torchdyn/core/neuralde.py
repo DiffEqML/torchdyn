@@ -46,7 +46,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
     ):
         """
 
-        This is a class that represents an (a system of) ODE(s) given by the `vector_field`. The vector field simply
+        A `NeuralODE` represents an (a system of) ODE(s) given by the `vector_field`. The vector field simply
         needs to be a `Callable`. It could be a learned function or a specified function.
 
         After instantiation, when this object is called, it treats the input as an initial condition and solves the ODE
@@ -61,7 +61,6 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         In order to integrate, this class relies on `odeint`. `odeint` is a lower-level function that performs
         the integration not dissimilar to (at a high level) from what SciPy's or MATLAB's `odeint` might do.
 
-        Details:
         The operations performed within the neural ODE can be controlled by the various parameters. The usual suspects
          are the integrator that is used, the method used to calculate the sensitivities/gradients of the ODE solve.
 
@@ -80,6 +79,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             seminorm (bool, optional): Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
             return_t_eval (bool): Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
             optimizable_parameters (Union[Iterable, Generator]): parameters to calculate sensitivies for. Defaults to ().
+
         Notes:
             In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
             as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
@@ -110,8 +110,21 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         self.vf.sensitivity = sensitivity
 
     def _prep_integration(self, x: Tensor, t_span: Tensor) -> Tensor:
-        "Performs generic checks before integration. Assigns data control inputs and augments state for CNFs"
+        """
+        Performs generic checks before integration. Assigns data control inputs and augments state for CNFs
 
+        Parameters
+        ----------
+        x: Tensor
+        The input PyTorch Tensor
+        t_span: Tensor
+        The integration interval
+
+        Returns
+        -------
+        Tuple(x, t_span)
+
+        """
         # assign a basic value to `t_span` for `forward` calls that do no explicitly pass an integration interval
         if t_span is None and self.t_span is None:
             t_span = torch.linspace(0, 1, 2)
@@ -138,6 +151,21 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         return x, t_span
 
     def forward(self, x: Union[Tensor, Dict], t_span: Tensor = None, save_at: Iterable = (), args={}):
+        """
+        Performs the integration using the `forward()` call which means it uses PyTorch nn Module hooks to also
+        enable gradient calculation
+
+        Parameters
+        ----------
+        x
+        t_span
+        save_at
+        args
+
+        Returns
+        -------
+
+        """
         x, t_span = self._prep_integration(x, t_span)
         t_eval, sol = super().forward(x, t_span, save_at, args)
         if self.return_t_eval:
@@ -146,6 +174,19 @@ class NeuralODE(ODEProblem, pl.LightningModule):
             return sol
 
     def trajectory(self, x: torch.Tensor, t_span: Tensor):
+        """
+        Just performs the integration
+
+
+        Parameters
+        ----------
+        x
+        t_span
+
+        Returns
+        -------
+
+        """
         x, t_span = self._prep_integration(x, t_span)
         _, sol = odeint(self.vf, x, t_span, solver=self.solver, atol=self.atol, rtol=self.rtol)
         return sol
