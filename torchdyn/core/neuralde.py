@@ -52,7 +52,7 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         as an Initial Value Problem (IVP) given the previously mentioned vector field.
 
         This class is typically used as an NN module itself for when the solution to an ODE is required inside a
-        PyTorch program. An example training loop may look like
+        PyTorch program. For example, a component may look like
 
         inputs -> neuralODE(neural_network)(t_final) -> outputs
 
@@ -81,37 +81,37 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         solver: Union[str, nn.Module] = "tsit5"
           The solver used for integration. The default is an adaptive 5th order scheme
 
-        order: (int, optional)
+        order: int, optional
           Order of the ODE. Default = 1
 
-        atol: (float, optional)
+        atol: float, optional
           Absolute tolerance of the solver. Defaults to 1e-4.
 
-        rtol: (float, optional)
+        rtol: float, optional
           Relative tolerance of the solver. Defaults to 1e-4.
 
-        sensitivity: (str, optional)
+        sensitivity: str, optional
           Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
 
-        solver_adjoint: (Union[str, nn.Module, None], optional)
+        solver_adjoint: Union[str, nn.Module, None], optional
           ODE solver for the adjoint. Defaults to None.
 
-        atol_adjoint: (float, optional)
+        atol_adjoint: float, optional
           Defaults to 1e-6.
 
-        rtol_adjoint: (float, optional)
+        rtol_adjoint: float, optional
           Defaults to 1e-6.
 
-        integral_loss: (Union[Callable, None], optional)
+        integral_loss: Union[Callable, None], optional
           Defaults to None.
 
-        seminorm: (bool, optional)
+        seminorm: bool, optional
           Whether to use seminorms for adaptive stepping in backsolve adjoints. Defaults to False.
 
-        return_t_eval: (bool)
+        return_t_eval: bool
           Whether to return (t_eval, sol) or only sol. Useful for chaining NeuralODEs in `nn.Sequential`.
 
-        optimizable_parameters: (Union[Iterable, Generator])
+        optimizable_parameters: Union[Iterable, Generator]
           parameters to calculate sensitivies for. Defaults to ().
 
         """
@@ -216,16 +216,21 @@ class NeuralODE(ODEProblem, pl.LightningModule):
 
     def trajectory(self, x: torch.Tensor, t_span: Tensor):
         """
-        Just performs the integration
+        Just performs the integration using a bare call of `odeint` rather than
+        relying on `forward()`
 
 
         Parameters
         ----------
-        x
-        t_span
+        x: torch.Tensor
+          Input data / initial conditions
+        t_span: torch.Tensor
+          Integration interval
 
         Returns
         -------
+        sol: Union[torch.Tensor, Dict]
+          the solution to the ODE saved at different steps along the integral
 
         """
         x, t_span = self._prep_integration(x, t_span)
