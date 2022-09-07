@@ -52,8 +52,10 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         as an Initial Value Problem (IVP) given the previously mentioned vector field.
 
         This class is typically used as an NN module itself for when the solution to an ODE is required inside a
-        PyTorch program. An example training loop may look like --
+        PyTorch program. An example training loop may look like
+
         inputs -> neuralODE(neural_network)(t_final) -> outputs
+
         where there may be other neural networks that modify the data as it enters or exits the NeuralODE. In this
         example, the vector field is learned.
 
