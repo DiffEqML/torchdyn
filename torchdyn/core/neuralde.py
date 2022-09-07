@@ -25,18 +25,19 @@ import torchsde
 
 import warnings
 
+__all__ =   ['NeuralODE', 'NeuralSDE']
 
 class NeuralODE(ODEProblem, pl.LightningModule):
-    def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module]='tsit5', order:int=1, 
-                atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None, 
+    def __init__(self, vector_field:Union[Callable, nn.Module], solver:Union[str, nn.Module]='tsit5', order:int=1,
+                atol:float=1e-3, rtol:float=1e-3, sensitivity='autograd', solver_adjoint:Union[str, nn.Module, None] = None,
                 atol_adjoint:float=1e-4, rtol_adjoint:float=1e-4, interpolator:Union[str, Callable, None]=None, \
                 integral_loss:Union[Callable, None]=None, seminorm:bool=False, return_t_eval:bool=True, optimizable_params:Union[Iterable, Generator]=()):
         """Generic Neural Ordinary Differential Equation.
 
         Args:
-            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`.
                                        In the second case, the Callable is automatically wrapped for consistency
-            solver (Union[str, nn.Module]): 
+            solver (Union[str, nn.Module]):
             order (int, optional): Order of the ODE. Defaults to 1.
             atol (float, optional): Absolute tolerance of the solver. Defaults to 1e-4.
             rtol (float, optional): Relative tolerance of the solver. Defaults to 1e-4.
@@ -51,13 +52,13 @@ class NeuralODE(ODEProblem, pl.LightningModule):
         Notes:
             In `torchdyn`-style, forward calls to a Neural ODE return both a tensor `t_eval` of time points at which the solution is evaluated
             as well as the solution itself. This behavior can be controlled by setting `return_t_eval` to False. Calling `trajectory` also returns
-            the solution only. 
+            the solution only.
 
-            The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used. 
+            The Neural ODE class automates certain delicate steps that must be done depending on the solver and model used.
             The `prep_odeint` method carries out such steps. Neural ODEs wrap `ODEProblem`.
         """
         super().__init__(vector_field=standardize_vf_call_signature(vector_field, order, defunc_wrap=True), order=order, sensitivity=sensitivity,
-                         solver=solver, atol=atol, rtol=rtol, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint, 
+                         solver=solver, atol=atol, rtol=rtol, solver_adjoint=solver_adjoint, atol_adjoint=atol_adjoint, rtol_adjoint=rtol_adjoint,
                          seminorm=seminorm, interpolator=interpolator, integral_loss=integral_loss, optimizable_params=optimizable_params)
         self._control, self.controlled, self.t_span = None, False, None # data-control conditioning
         self.return_t_eval = return_t_eval
@@ -165,21 +166,21 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
         sdeint = switcher.get(self.sensitivity)
         out = sdeint(x)
         return out
-    
+
     def trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         x = self._prep_sdeint(x)
-        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol, 
+        sol = torchsde.sdeint(self.defunc, x, s_span, rtol=self.rtol, atol=self.atol,
                               method=self.solver, dt=self.ds)
         return sol
-    
+
     def backward_trajectory(self, x:torch.Tensor, s_span:torch.Tensor):
         raise NotImplementedError
-        
+
     def _autograd(self, x):
         self.defunc.intloss, self.defunc.sensitivity = self.intloss, self.sensitivity
         return torchsde.sdeint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                                    adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
-    
+
     def _adjoint(self, x):
         out = torchsde.sdeint_adjoint(self.defunc, x, self.s_span, rtol=self.rtol, atol=self.atol,
                      adaptive=self.adaptive, method=self.solver, dt=self.ds)[-1]
@@ -188,20 +189,20 @@ class NeuralSDE(SDEProblem, pl.LightningModule):
 
 class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
     def __init__(self, vector_field:Callable, solver:str, sensitivity:str='autograd',
-                 maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6, 
+                 maxiter:int=4, fine_steps:int=4, solver_adjoint:Union[str, nn.Module, None] = None, atol_adjoint:float=1e-6,
                  rtol_adjoint:float=1e-6, seminorm:bool=False, integral_loss:Union[Callable, None]=None):
-        """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885. 
-        
-        Uses parallel-in-time ODE solvers to solve an ODE parametrized by neural network `vector_field`. 
+        """Multiple Shooting Layer as defined in https://arxiv.org/abs/2106.03885.
+
+        Uses parallel-in-time ODE solvers to solve an ODE parametrized by neural network `vector_field`.
 
         Args:
-            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`. 
+            vector_field ([Callable]): the vector field, called with `vector_field(t, x)` for `vector_field(x)`.
                                        In the second case, the Callable is automatically wrapped for consistency
             solver (Union[str, nn.Module]): parallel-in-time solver, ['zero', 'direct']
             sensitivity (str, optional): Sensitivity method ['autograd', 'adjoint', 'interpolated_adjoint']. Defaults to 'autograd'.
             maxiter (int): number of iterations of the root finding routine defined to parallel solve the ODE.
             fine_steps (int): number of fine-solver steps to perform in each subinterval of the parallel solution.
-            solver_adjoint (Union[str, nn.Module, None], optional): Standard sequential ODE solver for the adjoint system. 
+            solver_adjoint (Union[str, nn.Module, None], optional): Standard sequential ODE solver for the adjoint system.
             atol_adjoint (float, optional): Defaults to 1e-6.
             rtol_adjoint (float, optional): Defaults to 1e-6.
             integral_loss (Union[Callable, None], optional): Currently not implemented
@@ -209,11 +210,11 @@ class MultipleShootingLayer(MultipleShootingProblem, pl.LightningModule):
         Notes:
             The number of shooting parameters (first dimension in `B0`) is implicitly defined by passing `t_span` during forward calls.
             For example, a `t_span=torch.linspace(0, 1, 10)` will define 9 intervals and 10 shooting parameters.
-            
+
             For the moment only a thin wrapper around `MultipleShootingProblem`. At this level will be convenience routines for special
             initializations of shooting parameters `B0`, as well as usual convenience checks for integral losses.
         """
         super().__init__(vector_field, solver, sensitivity, maxiter, fine_steps, solver_adjoint, atol_adjoint,
                          rtol_adjoint, seminorm, integral_loss)
-                    
+
 
