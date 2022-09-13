@@ -116,16 +116,27 @@ class SDEFunc(nn.Module):
 
     def f(self, t: Tensor, x: Tensor) -> Tensor:
         self.nfe += 1
-        # print(self.f_func)
-
-        if "t" not in getfullargspec(self.f_func.forward).args:
-            return self.f_func(x)
+        if issubclass(type(self.f_func), nn.Module):
+            if "t" not in getfullargspec(self.f_func.forward).args:
+                return self.f_func(x)
+            else:
+                return self.f_func(t, x)
         else:
-            return self.f_func(t, x)
+            if "t" not in getfullargspec(self.f_func).args:
+                return self.f_func(x)
+            else:
+                return self.f_func(t, x)
 
     def g(self, t: Tensor, x: Tensor) -> Tensor:
         self.nfe += 1
-        if "t" not in getfullargspec(self.g_func.forward).args:
-            return self.g_func(x)
+        if issubclass(type(self.g_func), nn.Module):
+
+            if "t" not in getfullargspec(self.g_func.forward).args:
+                return self.g_func(x)
+            else:
+                return self.g_func(t, x)
         else:
-            return self.g_func(t, x)
+            if "t" not in getfullargspec(self.g_func).args:
+                return self.g_func(x)
+            else:
+                return self.g_func(t, x)
