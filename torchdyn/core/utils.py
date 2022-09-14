@@ -9,16 +9,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Union, Callable
 
 from inspect import getfullargspec
 
-import torch
 from torchdyn.core.defunc import DEFuncBase, DEFunc
 import torch.nn as nn
 
 
-def standardize_vf_call_signature(vector_field, order=1, defunc_wrap=False):
-    "Ensures Callables or nn.Modules passed to `ODEProblems` and `NeuralODE` have consistent `__call__` signature (t, x)"
+def standardize_vf_call_signature(
+    vector_field: Union[nn.Module, Callable], order: int = 1, defunc_wrap: bool = False
+) -> nn.Module:
+    """
+    Ensures Callables or nn.Modules passed to `ODEProblems` and `NeuralODE` have consistent `__call__` signature (t, x)
+
+    Parameters
+    ----------
+    vector_field
+    order
+    defunc_wrap
+
+    Returns
+    -------
+
+    """
 
     if issubclass(type(vector_field), nn.Module):
         if "t" not in getfullargspec(vector_field.forward).args:
