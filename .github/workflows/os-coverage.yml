@@ -38,9 +38,10 @@ jobs:
         path: ~/.cache
         key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
     
-    - name: Install dependencies
+    - name: Install dependencies # hack for 🐛: don't let poetry try installing Torch https://github.com/pytorch/pytorch/issues/88049
       run: |
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov 
+        pip install torch torchvision pytorch-lightning
         poetry install
         poetry run pip install setuptools
     
