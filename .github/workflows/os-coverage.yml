@@ -41,7 +41,7 @@ jobs:
     - name: Install dependencies # hack for 🐛: don't let poetry try installing Torch https://github.com/pytorch/pytorch/issues/88049
       run: |
         pip install pytest pytest-cov papermill poethepoet>=0.10.0
-        pip install torch>=1.8.1 torchvision pytorch-lightning scikit-learn torchcde>=0.2.3 scipy matplotlib ipykernel ipywidgets 
+        pip install torch>=1.8.1 torchvision pytorch-lightning scikit-learn torchsde torchcde>=0.2.3 scipy matplotlib ipykernel ipywidgets 
         poetry install --only-root
         poetry run pip install setuptools
     
