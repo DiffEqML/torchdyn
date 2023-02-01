@@ -18,7 +18,8 @@ ExplicitRKTableau = namedtuple('ExplicitRKTableau', 'c, A, b_sol, b_err')
 
 
 def construct_rk4(dtype):
-    c = torch.tensor([0., 1 / 2, 1 / 2, 1], dtype=dtype)
+    t_dtype = getattr(torch, torch.finfo(dtype).dtype)
+    c = torch.tensor([0., 1 / 2, 1 / 2, 1], dtype=t_dtype)
     a = [
         torch.tensor([1 / 2], dtype=dtype),
         torch.tensor([0., 1 / 2], dtype=dtype),
@@ -29,7 +30,8 @@ def construct_rk4(dtype):
 
 
 def construct_dopri5(dtype):
-    c = torch.tensor([1 / 5, 3 / 10, 4 / 5, 8 / 9, 1., 1.], dtype=dtype)
+    t_dtype = getattr(torch, torch.finfo(dtype).dtype)
+    c = torch.tensor([1 / 5, 3 / 10, 4 / 5, 8 / 9, 1., 1.], dtype=t_dtype)
     a = [
         torch.tensor([1 / 5], dtype=dtype),
         torch.tensor([3 / 40, 9 / 40], dtype=dtype),
@@ -47,7 +49,7 @@ def construct_dopri5(dtype):
 
 
 def construct_tsit5(dtype):
-
+    t_dtype = getattr(torch, torch.finfo(dtype).dtype)
     c = torch.tensor([
         161 / 1000,
         327 / 1000,
@@ -55,7 +57,7 @@ def construct_tsit5(dtype):
         .9800255409045096857298102862870245954942137979563024768854764293221195950761080302604,
         1.,
         1.
-    ], dtype=dtype)
+    ], dtype=t_dtype)
     a = [
         torch.tensor([
             161 / 1000

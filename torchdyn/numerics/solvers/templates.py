@@ -30,9 +30,10 @@ class DiffEqSolver(nn.Module):
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
         device = x.device
+        t_dtype = getattr(torch, torch.finfo(x.dtype).dtype)
         if self.tableau is not None:
             c, a, bsol, berr = self.tableau
-            self.tableau = c.to(x), [a.to(x) for a in a], bsol.to(x), berr.to(x)
+            self.tableau = c.to(device, t_dtype), [a.to(x) for a in a], bsol.to(x), berr.to(x)
         t_span = t_span.to(device)
         self.safety = self.safety.to(device)
         self.min_factor = self.min_factor.to(device)
