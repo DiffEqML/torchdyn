@@ -259,3 +259,39 @@ def test_arg_ode():
 
     assert (sol1==sol2).all()
     grad(sol2.sum(), x0)
+
+
+def test_complex_ode():
+    """Test odeint for complex numbers with a simple complex-valued ODE, corresponding
+    to Rabi oscillations of quantum two-level system."""
+    class Rabi(nn.Module):
+        def __init__(self, omega):
+            super().__init__()
+            self.sx = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
+            self.omega = omega
+            return
+        def forward(self, t, x):
+            dx = -1.0j * self.omega * self.sx @ x
+            dx += dx.adjoint()
+            return dx
+
+    # Odeint parameters
+    omega = torch.randn(1)
+    rabi = Rabi(omega)
+    tspan = torch.linspace(0., 2., 10)
+    
+    # Random initial state
+    x0 = torch.rand(2, 2, dtype=torch.complex128)
+    x0 = 0.5 * (x0 + x0.adjoint()) / torch.real(x0.trace())
+    # Solve the ODE problem
+    t_eval, sol = odeint(f=rabi, x=x0, t_span=tspan, solver="dopri5", atol=1e-8, rtol=1e-6)
+    
+    # Expected solution
+    sx = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
+    si = torch.tensor([[1, 0], [0, 1]], dtype=torch.complex128)
+    U_t = torch.cos(omega * t_eval)[:, None, None] * si 
+    U_t += -1j * torch.sin(omega * t_eval)[:, None, None] * sx
+    sol_exp = U_t @ x0 @ U_t.adjoint()
+    
+    # Check result
+    assert torch.allclose(sol, sol_exp, rtol=1e-5, atol=1e-5)

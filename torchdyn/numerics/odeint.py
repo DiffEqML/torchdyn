@@ -65,11 +65,6 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
-	# instantiate save_at tensor
-	if len(save_at) == 0: save_at = t_span
-	if not isinstance(save_at, torch.Tensor):
-		save_at = torch.tensor(save_at)
-
 	# instantiate the interpolator similar to the solver steps above
 	if isinstance(solver, Tsitouras45):
 		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
@@ -87,6 +82,10 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed':
 			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
+			# instantiate save_at tensor
+			if len(save_at) == 0: save_at = t_span
+			if not isinstance(save_at, torch.Tensor):
+				save_at = torch.tensor(save_at)
 			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at, args=args)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
