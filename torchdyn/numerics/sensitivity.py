@@ -62,7 +62,7 @@ def _gather_odefunc_adjoint(vf, vf_params, solver, atol, rtol, interpolator, sol
                     x, t = x.requires_grad_(True), t.requires_grad_(True)
                     dx = vf(t, x)
                     dλ, dt, *dμ = tuple(grad(dx, (x, t) + tuple(vf.parameters()), -λ,
-                                    allow_unused=True, retain_graph=False))
+                                    allow_unused=True, retain_graph=True))
 
                     if integral_loss:
                         dg = torch.autograd.grad(integral_loss(t, x).sum(), x, allow_unused=True, retain_graph=True)[0]
