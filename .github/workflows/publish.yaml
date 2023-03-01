@@ -8,7 +8,7 @@ on:
     workflow_dispatch:
 
 jobs:
-  if: github.actor == Zymrael
+  if: github.actor == 'Zymrael'
   build:
     runs-on: ubuntu-20.04
     steps:
