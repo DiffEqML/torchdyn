@@ -1,0 +1,30 @@
+name: PyPI Release with Poetry
+
+on:
+  workflow_dispatch:
+  release:
+    types:
+      - created
+      - edited
+
+jobs:
+  build:
+    if: github.actor == 'Zymrael'
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+      with:
+        python-version: 3.8
+
+    - name: Build
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        poetry lock
+        poetry build
+
+    - name: Publish distribution 📦 to PyPI
+      if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
+      run: |
+        poetry config pypi-token.pypi ${{ secrets.pypi_token }}
+        poetry publish
