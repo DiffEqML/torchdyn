@@ -5,8 +5,7 @@ on:
     types:
       - created
       - edited
-    workflow_dispatch:
-
+      
 jobs:
   build:
     if: github.actor == 'Zymrael'
