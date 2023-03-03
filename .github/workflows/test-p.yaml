@@ -1,11 +1,7 @@
 name: PyPI Release with Poetry
 
 on:
-  workflow_dispatch:
-  release:
-    types:
-      - created
-      - edited
+  pull_request:
 
 jobs:
   build:
