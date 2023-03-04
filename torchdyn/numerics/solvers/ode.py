@@ -44,10 +44,11 @@ class SolverTemplate(nn.Module):
             raise NotImplementedError(f"{type(x)} is not supported as the state variable")
 
         device = proto_arr.device
-
+        t_dtype = getattr(torch, torch.finfo(proto_arr.dtype).dtype)
+        
         if self.tableau is not None:
             c, a, bsol, berr = self.tableau
-            self.tableau = c.to(proto_arr), [a.to(proto_arr) for a in a], bsol.to(proto_arr), berr.to(proto_arr)
+            self.tableau = c.to(device, t_dtype), [a.to(proto_arr) for a in a], bsol.to(proto_arr), berr.to(proto_arr)
         t_span = t_span.to(device)
         self.safety = self.safety.to(device)
         self.min_factor = self.min_factor.to(device)
