@@ -19,7 +19,7 @@ import torch.utils.data as data
 from torchdyn.datasets import ToyDataset
 from torchdyn.core import NeuralODE
 from torchdyn.nn import GalLinear, GalConv2d, DepthCat, Augmenter, DataControl
-from torchdyn.numerics import odeint, Euler
+from torchdyn.numerics import odeint, odeint_mshooting, Lorenz, Euler
 
 from functools import partial
 import copy
@@ -295,3 +295,21 @@ def test_complex_ode():
     
     # Check result
     assert torch.allclose(sol, sol_exp, rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.parametrize('solver', ['mszero'])
+def test_odeint_mshooting(solver):
+    x0 = torch.randn(8, 3) + 15
+    t_span = torch.linspace(0, 3, 10)
+    sys = Lorenz()
+
+    odeint_mshooting(sys, x0, t_span, solver=solver, fine_steps=2, maxiter=4)
+
+
+@pytest.mark.parametrize('solver', ['euler', 'rk4', 'dopri5'])
+def test_odeint(solver):
+    x0 = torch.randn(8, 3) + 15
+    t_span = torch.linspace(0., 2., 10)
+    sys = Lorenz()
+
+    odeint(sys, x0, t_span, solver=solver)

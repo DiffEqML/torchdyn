@@ -66,9 +66,11 @@ class BaseImplicit(DiffEqSolver):
 
 class MultipleShootingDiffeqSolver(nn.Module):
     def __init__(self, coarse_method, fine_method):
+        from torchdyn.numerics.solvers.ode import str_to_solver
+
         super(MultipleShootingDiffeqSolver, self).__init__()
-        # if type(coarse_method) == str: self.coarse_method = str_to_solver(coarse_method)
-        # if type(fine_method) == str: self.fine_method = str_to_solver(fine_method)
+        if type(coarse_method) == str: self.coarse_method = str_to_solver(coarse_method)
+        if type(fine_method) == str: self.fine_method = str_to_solver(fine_method)
 
     def sync_device_dtype(self, x, t_span):
         "Ensures `x`, `t_span`, `tableau` and other solver tensors are on the same device with compatible dtypes"
