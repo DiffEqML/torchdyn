@@ -14,7 +14,7 @@
 	Functional API of ODE integration routines, with specialized functions for different options
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
-from inspect import getargspec
+from inspect import getfullargspec
 from typing import List, Tuple, Union, Callable, Dict, Iterable
 from warnings import warn
 
