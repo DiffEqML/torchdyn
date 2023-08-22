@@ -20,7 +20,7 @@ setup(
     description="PyTorch package for all things neural differential equations.",
     url="https://github.com/DiffEqML/torchdyn",
     install_requires=[
-        "torch>=1.6.0",
+        "torch>=1.8.1",
         "pytorch-lightning>=0.8.4",
         "matplotlib",
         "scikit-learn",

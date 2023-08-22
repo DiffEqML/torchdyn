@@ -10,7 +10,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-torch = "^1.8.1"
+torch = ">=1.8.1"
 torchsde="*"
 torchcde="^0.2.3"
 scikit-learn = "*"

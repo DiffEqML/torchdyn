@@ -10,11 +10,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = '1.0'
+__version__ = '1.0.5'
 __author__  = 'Michael Poli, Stefano Massaroli et al.'
 
 from torch import Tensor
 from typing import Tuple
 
 TTuple = Tuple[Tensor, Tensor]
-
