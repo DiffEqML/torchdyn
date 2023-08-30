@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from packaging.version import parse
 import pytest
 import torch
 import torch.nn as nn
@@ -261,6 +262,8 @@ def test_arg_ode():
     grad(sol2.sum(), x0)
 
 
+@pytest.mark.skipif(parse(torch.__version__) < parse("1.11.0"),
+        reason="adjoint support added in torch 1.11.0")
 def test_complex_ode():
     """Test odeint for complex numbers with a simple complex-valued ODE, corresponding
     to Rabi oscillations of quantum two-level system."""
