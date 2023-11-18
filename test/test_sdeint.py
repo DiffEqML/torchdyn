@@ -63,7 +63,6 @@ def test_geo_brownian_ito(solver):
     assert_almost_equal(xs_true[0][-1], xs_torchdyn[-1], decimal=2)
 
 
-# todo : need to improve sdeint for stratonovich
 @pytest.mark.parametrize("solver", ["eulerHeun", "milstein_stratonovich"])
 def test_geo_brownian_stratonovich(solver):
     torch.manual_seed(0)

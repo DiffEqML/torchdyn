@@ -16,7 +16,6 @@ def _check_types(sde, solver_sde_type, solver_noise_type):
         )
 
 
-# todo : Should I make additional SDEqSolver?? so many duplicates here
 class EulerMaruyama(DiffEqSolver):
     def __init__(self, sde: SDEFunc, bm: BaseBrownian, dtype=torch.float32):
         super().__init__(order=1)
