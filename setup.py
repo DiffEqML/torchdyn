@@ -15,12 +15,12 @@ from setuptools import setup
 
 setup(
     name="torchdyn",
-    version="1.0.3",
+    version="1.0.6",
     author="Michael Poli and Stefano Massaroli",
     description="PyTorch package for all things neural differential equations.",
     url="https://github.com/DiffEqML/torchdyn",
     install_requires=[
-        "torch>=1.6.0",
+        "torch>=1.8.1",
         "pytorch-lightning>=0.8.4",
         "matplotlib",
         "scikit-learn",
@@ -31,4 +31,5 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
     ],
+    packages=["torchdyn"],
 )

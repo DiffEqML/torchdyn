@@ -21,7 +21,7 @@ class HyperEuler(Euler):
         self.stepping_class = 'fixed'
         self.op1 = self.order + 1
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         _, x_sol, _ = super().step(f, x, t, dt, k1)
         return None, x_sol + dt**(self.op1) * self.hypernet(t, x), None
     
@@ -32,7 +32,7 @@ class HyperMidpoint(Midpoint):
         self.stepping_class = 'fixed'
         self.op1 = self.order + 1
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         _, x_sol, _ = super().step(f, x, t, dt, k1)
         return None, x_sol + dt**(self.op1) * self.hypernet(t, x), None
 
@@ -42,6 +42,6 @@ class HyperRungeKutta4(RungeKutta4):
         self.hypernet = hypernet
         self.op1 = self.order + 1
 
-    def step(self, f, x, t, dt, k1=None):
+    def step(self, f, x, t, dt, k1=None, args=None):
         _, x_sol, _ = super().step(f, x, t, dt, k1)
         return None, x_sol + dt**(self.op1) * self.hypernet(t, x), None

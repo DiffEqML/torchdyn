@@ -14,7 +14,6 @@
 	Functional API of ODE integration routines, with specialized functions for different options
 	`odeint` and `odeint_mshooting` prepare and redirect to more specialized routines, detected automatically.
 """
-from inspect import getargspec
 from typing import List, Tuple, Union, Callable, Dict, Iterable
 from warnings import warn
 
@@ -65,11 +64,6 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 	x, t_span = solver.sync_device_dtype(x, t_span)
 	stepping_class = solver.stepping_class
 
-	# instantiate save_at tensor
-	if len(save_at) == 0: save_at = t_span
-	if not isinstance(save_at, torch.Tensor):
-		save_at = torch.tensor(save_at)
-
 	# instantiate the interpolator similar to the solver steps above
 	if isinstance(solver, Tsitouras45):
 		if verbose: warn("Running interpolation not yet implemented for `tsit5`")
@@ -87,6 +81,7 @@ def odeint(f:Callable, x:Tensor, t_span:Union[List, Tensor], solver:Union[str, n
 		if stepping_class == 'fixed':
 			if atol != odeint.__defaults__[0] or rtol != odeint.__defaults__[1]:
 				warn("Setting tolerances has no effect on fixed-step methods")
+			# instantiate save_at tensor
 			return _fixed_odeint(f_, x, t_span, solver, save_at=save_at, args=args)
 		elif stepping_class == 'adaptive':
 			t = t_span[0]
@@ -415,6 +410,10 @@ def _adaptive_odeint(f, k1, x, dt, t_span, solver, atol=1e-4, rtol=1e-4, args=No
 
 def _fixed_odeint(f, x, t_span, solver, save_at=(), args={}):
 	"""Solves IVPs with same `t_span`, using fixed-step methods"""
+	if len(save_at) == 0: save_at = t_span
+	if not isinstance(save_at, torch.Tensor):
+		save_at = torch.tensor(save_at)
+		
 	assert all(torch.isclose(t, save_at).sum() == 1 for t in save_at),\
 		"each element of save_at [torch.Tensor] must be contained in t_span [torch.Tensor] once and only once"
 

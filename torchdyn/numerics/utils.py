@@ -31,7 +31,7 @@ def make_norm(state):
 
 
 def hairer_norm(tensor):
-    return tensor.pow(2).mean().sqrt()
+    return tensor.abs().pow(2).mean().sqrt()
 
 
 def init_step(f, f0, x0, t0, order, atol, rtol):
@@ -39,7 +39,7 @@ def init_step(f, f0, x0, t0, order, atol, rtol):
     d0, d1 = hairer_norm(x0 / scale), hairer_norm(f0 / scale)
 
     if d0 < 1e-5 or d1 < 1e-5:
-        h0 = torch.tensor(1e-6, dtype=x0.dtype, device=x0.device)
+        h0 = torch.tensor(1e-6, dtype=t0.dtype, device=t0.device)
     else:
         h0 = 0.01 * d0 / d1
 
@@ -47,7 +47,7 @@ def init_step(f, f0, x0, t0, order, atol, rtol):
     f_new = f(t0 + h0, x_new)
     d2 = hairer_norm((f_new - f0) / scale) / h0
     if d1 <= 1e-15 and d2 <= 1e-15:
-        h1 = torch.max(torch.tensor(1e-6, dtype=x0.dtype, device=x0.device), h0 * 1e-3)
+        h1 = torch.max(torch.tensor(1e-6, dtype=t0.dtype, device=t0.device), h0 * 1e-3)
     else:
         h1 = (0.01 / max(d1, d2)) ** (1. / float(order + 1))
     dt = torch.min(100 * h0, h1).to(t0)
