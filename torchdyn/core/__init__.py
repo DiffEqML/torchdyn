@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from torchdyn.core.defunc import DEFunc
+from torchdyn.core.defunc import DEFunc, SDEFunc
 from torchdyn.core.neuralde import NeuralODE, NeuralSDE, MultipleShootingLayer
 from torchdyn.core.problems import ODEProblem, SDEProblem, MultipleShootingProblem
 
 # backward-compatibility (pre v0.2.0)
 NeuralDE = NeuralODE
 
-__all__ =   ['DEFunc', 'NeuralODE', 'NeuralDE', 'NeuralSDE', 'ODEProblem', 'SDEProblem', 
+__all__ =   ['DEFunc', 'SDEFunc', 'NeuralODE', 'NeuralDE', 'NeuralSDE', 'ODEProblem', 'SDEProblem', 
             'MultipleShootingProblem', 'MultipleShootingLayer']
